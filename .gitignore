@@ -1,0 +1,25 @@
+.DS_Store
+.env
+.env.local
+*.log
+*.test
+*.out
+coverage.out
+
+# go
+backend/tmp/
+backend/bin/
+
+# data
+*.db
+*.db-shm
+*.db-wal
+data/
+
+# web
+node_modules/
+web/.next/
+web/out/
+web/tsconfig.tsbuildinfo
+e2e/node_modules/
+e2e/shots/
