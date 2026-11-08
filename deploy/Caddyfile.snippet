@@ -1,0 +1,8 @@
+# Add to the vps Caddyfile, then reload caddy (caddy reload, or restart its container).
+prulights.evanslack.dev {
+	encode zstd gzip
+	reverse_proxy prulights:8080 {
+		# Cloudflare sits in front; pass the visitor's address through
+		header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
+	}
+}

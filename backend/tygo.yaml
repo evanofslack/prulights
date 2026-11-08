@@ -1,0 +1,18 @@
+# go tool tygo generate (just types): the api types for the web client
+packages:
+  - path: "github.com/evanofslack/prulights/schedule"
+    output_path: "../web/interfaces/schedule.ts"
+    include_files: [palette.go, schedule.go]
+    type_mappings:
+      time.Time: "string"
+  - path: "github.com/evanofslack/prulights/server"
+    output_path: "../web/interfaces/api.ts"
+    include_files: [apitypes.go]
+    frontmatter: |
+      import type * as schedule from "./schedule";
+    type_mappings:
+      time.Time: "string"
+      schedule.Date: "schedule.Date"
+      schedule.Lighting: "schedule.Lighting"
+      schedule.Color: "schedule.Color"
+      schedule.Program: "schedule.Program"

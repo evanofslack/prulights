@@ -1,0 +1,30 @@
+# Production, on the vps in ~/prulights. Caddy terminates https and proxies to
+# this container over the shared docker network; see deploy/RUNBOOK.md.
+services:
+  prulights:
+    image: evanofslack/prulights:latest
+    container_name: prulights
+    restart: unless-stopped
+    environment:
+      BASE_URL: https://prulights.evanslack.dev
+      TRUST_PROXY: "true"
+      LOG_LEVEL: info
+    volumes:
+      - prulights-data:/data
+    expose:
+      - "8080"
+    networks:
+      - caddy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/readyz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  prulights-data:
+
+networks:
+  caddy:
+    external: true
+    name: ${CADDY_NETWORK:-caddy}

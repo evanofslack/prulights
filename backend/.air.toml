@@ -1,0 +1,16 @@
+# just backend: rebuild and restart the server when go files change
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o ./tmp/prulights ./cmd/prulights"
+entrypoint = ["./tmp/prulights", "serve"]
+include_ext = ["go", "sql", "yaml", "png", "ttf"]
+exclude_dir = ["tmp", "testdata"]
+delay = 300
+
+[log]
+time = false
+
+[misc]
+clean_on_exit = true
