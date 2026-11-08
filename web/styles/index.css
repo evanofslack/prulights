@@ -1,0 +1,57 @@
+/* mantine sits between tailwind's base and utilities: its components beat the
+   preflight, and utility classes beat its components */
+@layer theme, base, mantine, components, utilities;
+@import "tailwindcss";
+@import "@mantine/core/styles.layer.css";
+
+/* the dark color scheme, which Mantine marks on <html> */
+@custom-variant dark (&:where([data-mantine-color-scheme=dark], [data-mantine-color-scheme=dark] *));
+
+/*
+  Design tokens, named by role so components don't pick shades ad hoc. Colors
+  come from the Mantine theme (lib/theme.ts). Dark is the default; the light
+  values are below under [data-mantine-color-scheme="light"].
+*/
+@theme {
+    --color-surface: var(--mantine-color-dark-8); /* page: the night sky */
+    --color-panel: var(--mantine-color-dark-7); /* cards */
+    --color-raised: var(--mantine-color-dark-6); /* inputs, chips */
+    --color-fg: var(--mantine-color-dark-0);
+    --color-muted: var(--mantine-color-dark-2);
+    --color-subtle: var(--mantine-color-dark-3);
+    --color-line: var(--mantine-color-dark-5);
+    --color-accent: var(--mantine-color-gold-4);
+    --color-on-accent: var(--mantine-color-dark-9);
+    --color-danger: var(--mantine-color-red-6);
+    --color-tower: #2a3146; /* the tower's body */
+    --color-tower-line: #46506c;
+    --color-window: #3a4462;
+}
+
+[data-mantine-color-scheme="light"] {
+    --color-surface: #f6f7fb;
+    --color-panel: #ffffff;
+    --color-raised: #eceff6;
+    --color-fg: #141a2b;
+    --color-muted: #4a5470;
+    --color-subtle: #6b7590;
+    --color-line: #d4d9e6;
+    --color-accent: var(--mantine-color-gold-7);
+    --color-on-accent: #ffffff;
+    --color-tower: #8a93ab;
+    --color-tower-line: #6b7590;
+    --color-window: #a7afc4;
+}
+
+/* a visible keyboard focus ring everywhere */
+@layer base {
+    :focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+    html,
+    body {
+        background: var(--color-surface);
+        color: var(--color-fg);
+    }
+}

@@ -1,0 +1,83 @@
+set dotenv-load := false
+
+vps := env("VPS", "")
+air := "go run github.com/air-verse/air@v1.67.4"
+
+[private]
+default:
+    @just --list
+
+# install web deps if missing
+install:
+    cd web && [ -d node_modules ] || npm ci
+
+# go server on :8080 with hot reload; dev passkey origins for next on :3000
+backend:
+    cd backend && DEV=1 LOG_LEVEL=debug RP_ORIGINS=http://localhost:3000,http://localhost:8080 \
+        DATABASE_PATH=${DATABASE_PATH:-prulights.db} {{ air }}
+
+# next dev server on :3000, passing /api through to the go server
+web: install
+    cd web && npm run dev
+
+# backend and web together; ctrl-c stops both
+start:
+    #!/usr/bin/env bash
+    trap 'kill 0' EXIT
+    just backend & just web & wait
+
+# production-like: static export served by the go server on :8080
+serve: install
+    cd web && npm run build
+    cd backend && STATIC_DIR=../web/out go run ./cmd/prulights serve
+
+# format go and web code
+fmt:
+    cd backend && gofmt -w .
+    cd web && npx prettier --write . --log-level warn
+
+# vet go code
+lint:
+    cd backend && go vet ./...
+
+# run go tests
+test *args:
+    cd backend && go test -race {{ args }} ./...
+
+# generate the web's api types from the go code
+types:
+    cd backend && go tool tygo generate
+
+# same checks as ci
+check: install
+    cd backend && test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
+    cd backend && go vet ./...
+    cd backend && ./types-current.sh
+    cd backend && go test -race ./...
+    cd web && npm run type-check
+    cd web && npm run build
+
+# open sqlite on the dev database
+db:
+    sqlite3 backend/${DATABASE_PATH:-prulights.db}
+
+# build the production image locally, for this machine's arch (ci builds amd64 with buildx)
+docker-build:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    arch=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+    docker build --build-arg BUILDPLATFORM=linux/$arch --build-arg TARGETARCH=$arch -t evanofslack/prulights:dev .
+
+# run the production image locally on :8080 with a throwaway volume
+docker-run: docker-build
+    docker run --rm -p 8080:8080 -v prulights-dev-data:/data -e BASE_URL=http://localhost:8080 evanofslack/prulights:dev
+
+# pull and restart on the vps (VPS=user@host); see deploy/RUNBOOK.md
+deploy:
+    @test -n "{{ vps }}" || (echo "set VPS=user@host" && exit 1)
+    ssh {{ vps }} 'cd ~/prulights && docker compose pull && docker compose up -d && docker compose ps'
+
+# follow the container logs on the vps
+logs:
+    @test -n "{{ vps }}" || (echo "set VPS=user@host" && exit 1)
+    ssh {{ vps }} 'cd ~/prulights && docker compose logs --follow --tail 200'

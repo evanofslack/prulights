@@ -1,0 +1,8 @@
+**/node_modules
+web/.next
+web/out
+backend/tmp
+**/*.db*
+e2e
+plans
+.git
