@@ -29,19 +29,26 @@ type Server struct {
 	http    *http.Server
 	metrics *http.Server
 	ready   atomic.Bool
+
+	// now is the clock, swapped in tests.
+	now func() time.Time
 }
 
 // New builds the server and its routes.
 func New(cfg config.Config, st *store.Store) *Server {
 	registerExtensions()
-	s := &Server{cfg: cfg, store: st, router: chi.NewRouter()}
+	s := &Server{cfg: cfg, store: st, router: chi.NewRouter(), now: time.Now}
 	s.router.Use(middleware.RequestID)
 	s.router.Use(middleware.Recoverer)
 	s.router.Use(requestLog)
 	s.mountStatus()
 	s.router.Route("/api", func(r chi.Router) {
+		r.Route("/v1", s.mountPublic)
 		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusNotFound, "not found")
+		})
+		r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
+			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		})
 	})
 	s.mountStatic()
@@ -162,11 +169,6 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 	if err := json.NewEncoder(w).Encode(v); err != nil {
 		slog.Error("encode response", "error", err)
 	}
-}
-
-// apiError is the body of every error response.
-type apiError struct {
-	Error string `json:"error"`
 }
 
 func writeError(w http.ResponseWriter, code int, msg string) {

@@ -19,6 +19,9 @@ type Config struct {
 	BaseURL      string // BASE_URL: the public origin, e.g. https://prulights.evanslack.dev
 	TrustProxy   bool   // TRUST_PROXY: take the client address from CF-Connecting-IP / X-Forwarded-For
 	Dev          bool   // DEV: dev-only routes and relaxed origins
+	Version      string // set by main, not the environment
+
+	PublicRateLimit int // PUBLIC_RATE_LIMIT: public api requests per minute per client
 
 	ScrapeEnabled  bool          // SCRAPE_ENABLED
 	ScrapeInterval time.Duration // SCRAPE_INTERVAL
@@ -37,6 +40,8 @@ func Default() Config {
 		BaseURL:        "http://localhost:8080",
 		ScrapeEnabled:  true,
 		ScrapeInterval: 6 * time.Hour,
+
+		PublicRateLimit: 60,
 	}
 }
 
@@ -53,6 +58,7 @@ func Load() Config {
 	c.BaseURL = strings.TrimRight(c.BaseURL, "/")
 	envBool("TRUST_PROXY", &c.TrustProxy)
 	envBool("DEV", &c.Dev)
+	envInt("PUBLIC_RATE_LIMIT", &c.PublicRateLimit)
 	envBool("SCRAPE_ENABLED", &c.ScrapeEnabled)
 	envDuration("SCRAPE_INTERVAL", &c.ScrapeInterval)
 	envString("RP_ID", &c.RPID)
@@ -87,6 +93,16 @@ func (c *Config) fill() {
 func envString(key string, v *string) {
 	if s := os.Getenv(key); s != "" {
 		*v = s
+	}
+}
+
+func envInt(key string, v *int) {
+	if s := os.Getenv(key); s != "" {
+		if n, err := strconv.Atoi(s); err == nil && n > 0 {
+			*v = n
+		} else {
+			slog.Warn("invalid config, using default", "key", key, "value", s, "default", *v)
+		}
 	}
 }
 

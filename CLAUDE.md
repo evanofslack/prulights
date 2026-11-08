@@ -30,6 +30,11 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
 - `backend/server`: chi. `/api/...` is JSON; anything else is the static export from `STATIC_DIR`
   (`/calendar` is served from `calendar.html`, unknown paths fall back to `index.html`).
   `/healthz`, `/readyz`; Prometheus on `METRICS_ADDR`, never the public port.
+- Public api (`server/public.go`): `/api/v1/{tonight,lightings,lightings/{date},palette,meta,calendar.ics}`.
+  Open, rate limited per client (`PUBLIC_RATE_LIMIT`, client IP from Cloudflare headers when
+  `TRUST_PROXY`), ETag + `Cache-Control`, CORS `*`. Response types live in `server/apitypes.go`.
+  The spec is hand-written in `server/openapi.yaml` (served as yaml and json); `TestSpecCoversRoutes`
+  fails if a public route and the spec disagree, so update both together.
 - `web/` is a static export (`output: 'export'`, App Router). No API routes, SSR or middleware.
   Pages that need a parameter take it in the query string (`/night?d=2026-12-12`), not the path.
 - API types: Go structs → `just types` (tygo) → `web/interfaces/*.ts`. CI fails if stale.

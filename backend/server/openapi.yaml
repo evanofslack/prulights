@@ -1,0 +1,355 @@
+openapi: 3.1.0
+info:
+  title: prulights
+  version: "1"
+  summary: What color is the Pru tonight?
+  description: |
+    The lighting schedule for the crown of the Prudential Tower in Boston, read from the
+    Prudential Center's public tower lighting pages a few times a day.
+
+    - Dates are calendar dates in Boston (America/New_York), formatted `YYYY-MM-DD`.
+    - "Tonight" rolls over at 4am Boston time: at 1am you still get last night.
+    - Every night has a lighting. A night the source doesn't list is plain white
+      (`scheduled: false`, `kind: default`). Nights after `published_through` may simply not
+      be announced yet.
+    - Responses carry an `ETag`; send `If-None-Match` to get a `304`. The api is open and
+      needs no key, but is rate limited per client (60 requests a minute by default).
+
+    Not affiliated with the Prudential Center, BXP or Prudential Financial.
+  license:
+    name: MIT
+    identifier: MIT
+  contact:
+    name: prulights on GitHub
+    url: https://github.com/evanofslack/prulights
+servers:
+  - url: https://prulights.evanslack.dev/api/v1
+tags:
+  - name: schedule
+    description: The crown's colors by night.
+  - name: about
+    description: The palette, the sources, and this spec.
+
+paths:
+  /tonight:
+    get:
+      tags: [schedule]
+      operationId: getTonight
+      summary: Tonight's lighting and the next seven nights
+      responses:
+        "200":
+          description: Tonight and what's coming.
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TonightResponse" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /lightings:
+    get:
+      tags: [schedule]
+      operationId: getLightings
+      summary: One lighting per night over a range of dates
+      parameters:
+        - name: from
+          in: query
+          description: First night, inclusive. Defaults to tonight.
+          schema: { $ref: "#/components/schemas/Date" }
+        - name: to
+          in: query
+          description: Last night, inclusive. Defaults to 30 nights after `from`. At most 400 nights per request.
+          schema: { $ref: "#/components/schemas/Date" }
+        - name: fill
+          in: query
+          description: Include the white nights nothing lists. With `false`, only listed nights come back.
+          schema: { type: boolean, default: true }
+      responses:
+        "200":
+          description: The nights, in order.
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LightingsResponse" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /lightings/{date}:
+    get:
+      tags: [schedule]
+      operationId: getLighting
+      summary: One night's lighting
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/Date" }
+      responses:
+        "200":
+          description: The night. A night nothing lists is white.
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Lighting" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /calendar.ics:
+    get:
+      tags: [schedule]
+      operationId: getCalendar
+      summary: Subscribe to the listed nights in a calendar app
+      description: |
+        An iCalendar feed with one all-day event per listed night, from 60 days ago through
+        the last published night. White nights aren't included.
+      responses:
+        "200":
+          description: The calendar.
+          content:
+            text/calendar:
+              schema: { type: string }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /palette:
+    get:
+      tags: [about]
+      operationId: getPalette
+      summary: Every crown color, for screens and for six-color e-ink
+      responses:
+        "200":
+          description: The palette.
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaletteResponse" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /meta:
+    get:
+      tags: [about]
+      operationId: getMeta
+      summary: Where the schedule comes from and how fresh it is
+      responses:
+        "200":
+          description: Sources and freshness.
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MetaResponse" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /openapi.json:
+    get:
+      tags: [about]
+      operationId: getOpenAPIJSON
+      summary: This spec, as JSON
+      responses:
+        "200":
+          description: The spec.
+          content:
+            application/json:
+              schema: { type: object }
+
+  /openapi.yaml:
+    get:
+      tags: [about]
+      operationId: getOpenAPIYAML
+      summary: This spec, as YAML
+      responses:
+        "200":
+          description: The spec.
+          content:
+            application/yaml:
+              schema: { type: string }
+
+components:
+  headers:
+    ETag:
+      description: Send it back as `If-None-Match` to get a `304` when nothing changed.
+      schema: { type: string }
+
+  responses:
+    NotModified:
+      description: Nothing changed since the `ETag` you sent.
+    BadRequest:
+      description: A parameter is malformed or out of range.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    TooManyRequests:
+      description: Too many requests from this client in the last minute.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Date:
+      type: string
+      format: date
+      description: A calendar date in Boston.
+      examples: ["2026-12-12"]
+
+    ColorKey:
+      type: string
+      description: A palette color. See `/palette`.
+      enum: [white, red, blue, green, yellow, gold, orange, pink, purple, teal, maroon, black, silver, rainbow]
+
+    Kind:
+      type: string
+      description: |
+        What the night is for: a `nonprofit` partner, a `holiday`, a `sports` team or event, a
+        `civic` observance (heritage months, memorials, awareness days), or `default` (nothing
+        listed, so white).
+      enum: [nonprofit, holiday, sports, civic, default]
+
+    Program:
+      type: string
+      description: |
+        Where the night came from: the yearly tower lightings page (`regular`), 31 Nights of
+        Light every December (`31nights`), a correction (`override`), or nothing (`default`).
+      enum: [regular, 31nights, override, default]
+
+    Lighting:
+      type: object
+      required: [date, colors, cause, kind, program, scheduled, lights_on, lights_on_source]
+      properties:
+        date: { $ref: "#/components/schemas/Date" }
+        colors:
+          type: array
+          items: { $ref: "#/components/schemas/ColorKey" }
+          description: The crown's colors, in the order the source lists them.
+          examples: [[blue, pink, gold]]
+        colors_raw:
+          type: string
+          description: The colors as the source wrote them.
+          examples: ["Blue, Pink, & Gold"]
+        cause:
+          type: string
+          description: Who or what the night is for. Empty on default nights.
+          examples: ["The Gillian Remy Stepping Strong Center for Trauma Innovation"]
+        cause_url:
+          type: string
+          format: uri
+          description: The cause's website, when the source links one.
+        kind: { $ref: "#/components/schemas/Kind" }
+        program: { $ref: "#/components/schemas/Program" }
+        scheduled:
+          type: boolean
+          description: False for a night nothing lists (plain white).
+        source_url:
+          type: string
+          format: uri
+          description: The page the night was read from.
+        lights_on:
+          type: string
+          format: date-time
+          description: About when the crown lights, in Boston time.
+        lights_on_source:
+          type: string
+          enum: [source, sunset, default]
+          description: |
+            Where `lights_on` came from: stated by the source (31 Nights of Light says 5pm),
+            computed sunset at the tower, or 5pm when neither is known.
+
+    TonightResponse:
+      type: object
+      required: [date, lighting, upcoming, published_through]
+      properties:
+        date: { $ref: "#/components/schemas/Date" }
+        lighting: { $ref: "#/components/schemas/Lighting" }
+        upcoming:
+          type: array
+          items: { $ref: "#/components/schemas/Lighting" }
+          description: The next seven nights.
+        published_through:
+          $ref: "#/components/schemas/Date"
+          description: The last night the source lists.
+
+    LightingsResponse:
+      type: object
+      required: [from, to, lightings, published_through]
+      properties:
+        from: { $ref: "#/components/schemas/Date" }
+        to: { $ref: "#/components/schemas/Date" }
+        lightings:
+          type: array
+          items: { $ref: "#/components/schemas/Lighting" }
+        published_through: { $ref: "#/components/schemas/Date" }
+
+    InkRecipe:
+      type: object
+      description: |
+        How to draw a color on a six-color E Ink Spectra 6 panel: pigment `a`, with `mix` (0–1)
+        of its pixels swapped for pigment `b` by an ordered dither.
+      required: [a]
+      properties:
+        a: { type: string, enum: [black, white, yellow, red, blue, green] }
+        b: { type: string, enum: [black, white, yellow, red, blue, green] }
+        mix: { type: number, minimum: 0, maximum: 1 }
+
+    Color:
+      type: object
+      required: [key, label, hex, ink]
+      properties:
+        key: { $ref: "#/components/schemas/ColorKey" }
+        label: { type: string, examples: [Teal] }
+        hex: { type: string, examples: ["#14b8a6"], description: A screen color. }
+        ink: { $ref: "#/components/schemas/InkRecipe" }
+        bands:
+          type: array
+          items: { $ref: "#/components/schemas/ColorKey" }
+          description: For rainbow, the colors of its bands.
+
+    PaletteResponse:
+      type: object
+      required: [colors]
+      properties:
+        colors:
+          type: array
+          items: { $ref: "#/components/schemas/Color" }
+
+    MetaSource:
+      type: object
+      required: [url, title, year, program, nights, checked_at, changed_at]
+      properties:
+        url: { type: string, format: uri }
+        title: { type: string }
+        year: { type: integer }
+        program: { $ref: "#/components/schemas/Program" }
+        nights: { type: integer, description: Nights the page lists. }
+        checked_at: { type: string, format: date-time }
+        changed_at: { type: string, format: date-time }
+
+    MetaResponse:
+      type: object
+      required: [tonight, timezone, rollover_hour, published_through, last_scrape, sources, attribution, version]
+      properties:
+        tonight: { $ref: "#/components/schemas/Date" }
+        timezone: { type: string, examples: [America/New_York] }
+        rollover_hour: { type: integer, description: The hour "tonight" moves to the next day. }
+        published_through: { $ref: "#/components/schemas/Date" }
+        last_scrape:
+          type: [string, "null"]
+          format: date-time
+          description: When the source pages were last checked successfully.
+        sources:
+          type: array
+          items: { $ref: "#/components/schemas/MetaSource" }
+        attribution: { type: string }
+        version: { type: string }
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }

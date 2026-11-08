@@ -96,6 +96,7 @@ func openStore(ctx context.Context, cfg config.Config) (*store.Store, error) {
 
 func serve(ctx context.Context) error {
 	cfg := config.Load()
+	cfg.Version = version
 	slog.Info("starting", "version", version, "base_url", cfg.BaseURL)
 	st, err := openStore(ctx, cfg)
 	if err != nil {
