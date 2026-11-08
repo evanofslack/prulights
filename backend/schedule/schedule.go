@@ -192,14 +192,15 @@ var kindPatterns = []struct {
 	kind Kind
 	re   *regexp.Regexp
 }{
-	{KindSports, regexp.MustCompile(`(?i)\b(red sox|celtics|bruins|patriots|revolution|legacy fc|fifa|world cup|olympi|paralympi|marathon|regatta|head of the charles|super ?bowl|stanley cup|world series|nba finals|home opener|opening home game|jersey retirement|championship)\b`)},
+	{KindSports, regexp.MustCompile(`(?i)\b(red sox|celtics|bruins|patriots|revolution|legacy fc|fifa|world cup|olympi\w*|paralympi\w*|marathon|regatta|head of the charles|super ?bowl|stanley cup|world series|nba finals|home opener|opening home game|jersey retirement|championship)\b`)},
 	{KindHoliday, regexp.MustCompile(`(?i)\b(christmas|hanukkah|chanukah|kwanzaa|thanksgiving|new year|halloween|valentine|st\.? patrick|independence day|fourth of july|easter|passover|diwali|lunar new year|eid|rosh hashanah)\b`)},
-	{KindCivic, regexp.MustCompile(`(?i)\b(memorial day|veterans day|labor day|president'?s'? day|juneteenth|martin luther king|mlk|indigenous peoples|columbus day|9/11|september 11|patriots'? day|history month|heritage month|pride|awareness (day|week|month)|world [a-z]+ day|national [a-z ]+ day)\b`)},
+	{KindCivic, regexp.MustCompile(`(?i)\b(memorial day|veterans day|labor day|flag day|president\S* day|juneteenth|martin luther king|mlk|indigenous peoples|columbus day|9/11|september 11|patriots'? day|history month|heritage month|pride|awareness (day|week|month)|world [a-z]+ day|national [a-z ]+ day)\b`)},
 }
 
 // Classify guesses a lighting's kind from its cause. Holidays and sports are
 // named; observances are civic; everything else is a nonprofit partner.
 func Classify(cause string) Kind {
+	cause = strings.NewReplacer("’", "'", "‘", "'").Replace(cause)
 	for _, p := range kindPatterns {
 		if p.re.MatchString(cause) {
 			return p.kind

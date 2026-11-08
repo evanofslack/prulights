@@ -1,0 +1,498 @@
+{
+  "url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+  "title": "31 Nights of Light",
+  "year": 2026,
+  "program": "31nights",
+  "lightings": [
+    {
+      "date": "2026-12-01",
+      "colors": [
+        "gold",
+        "maroon"
+      ],
+      "colors_raw": "Gold \u0026 Maroon",
+      "cause": "Life is Good Playmaker Project",
+      "cause_url": "http://playmakerproject.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-02",
+      "colors": [
+        "orange"
+      ],
+      "colors_raw": "Orange",
+      "cause": "Food Rescue",
+      "cause_url": "http://www.foodrescue.us/boston",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-03",
+      "colors": [
+        "white",
+        "green"
+      ],
+      "colors_raw": "White \u0026 Green",
+      "cause": "Friends of the Public Garden",
+      "cause_url": "https://friendsofthepublicgarden.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-04",
+      "colors": [
+        "blue"
+      ],
+      "colors_raw": "Blue",
+      "cause": "Hanukkah",
+      "kind": "holiday",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-05",
+      "colors": [
+        "blue",
+        "green"
+      ],
+      "colors_raw": "Blue \u0026 Green",
+      "cause": "New England Donor Services",
+      "cause_url": "https://neds.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-06",
+      "colors": [
+        "orange",
+        "green"
+      ],
+      "colors_raw": "Orange \u0026 Green",
+      "cause": "Associates of the Boston Public Library",
+      "cause_url": "https://www.associatesbpl.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-07",
+      "colors": [
+        "blue",
+        "gold"
+      ],
+      "colors_raw": "Blue \u0026 Gold",
+      "cause": "Angel Flight",
+      "cause_url": "https://www.angelflightne.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-08",
+      "colors": [
+        "blue",
+        "teal",
+        "white"
+      ],
+      "colors_raw": "Blue, Teal \u0026 White",
+      "cause": "Save the Bay / Save the Harbor",
+      "cause_url": "https://www.savetheharbor.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-09",
+      "colors": [
+        "blue",
+        "white"
+      ],
+      "colors_raw": "Blue \u0026 White",
+      "cause": "Broken Tail rescue",
+      "cause_url": "https://www.brokentailrescue.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-10",
+      "colors": [
+        "red"
+      ],
+      "colors_raw": "Red",
+      "cause": "Dress for Success",
+      "cause_url": "http://boston.dressforsuccess.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-11",
+      "colors": [
+        "white",
+        "pink",
+        "maroon"
+      ],
+      "colors_raw": "White, Pink \u0026 Maroon",
+      "cause": "Pawsitively 4Pink",
+      "cause_url": "https://www.pawsitively4pink.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-12",
+      "colors": [
+        "blue",
+        "pink",
+        "gold"
+      ],
+      "colors_raw": "Blue, Pink, \u0026 Gold",
+      "cause": "Gillian Remy Stepping Strong Center for Trauma Innovation",
+      "cause_url": "http://bwhsteppingstrong.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-13",
+      "colors": [
+        "blue",
+        "orange",
+        "green"
+      ],
+      "colors_raw": "Blue, Orange \u0026 Green",
+      "cause": "Read to a Child Inc",
+      "cause_url": "https://readtoachild.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-14",
+      "colors": [
+        "blue",
+        "white"
+      ],
+      "colors_raw": "Blue \u0026 white",
+      "cause": "DEAF Inc",
+      "cause_url": "http://www.deafincma.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-15",
+      "colors": [
+        "purple"
+      ],
+      "colors_raw": "Purple",
+      "cause": "Cradles to Crayons",
+      "cause_url": "https://www.cradlestocrayons.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-16",
+      "colors": [
+        "blue",
+        "gold"
+      ],
+      "colors_raw": "Blue \u0026 Gold",
+      "cause": "IMPACT Melanoma",
+      "cause_url": "https://impactmelanoma.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-17",
+      "colors": [
+        "orange",
+        "gold"
+      ],
+      "colors_raw": "Orange \u0026 Gold",
+      "cause": "Boston HEAT",
+      "cause_url": "http://bostonheat.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-18",
+      "colors": [
+        "teal"
+      ],
+      "colors_raw": "Teal",
+      "cause": "Smile Mass",
+      "cause_url": "http://www.smilemass.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-19",
+      "colors": [
+        "teal",
+        "orange",
+        "green"
+      ],
+      "colors_raw": "Teal, Orange, \u0026 Green",
+      "cause": "Association for Autism and Neurodiversity",
+      "cause_url": "http://aane.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-20",
+      "colors": [
+        "blue",
+        "orange",
+        "red"
+      ],
+      "colors_raw": "Blue, Orange \u0026 Red",
+      "cause": "Hamilton-Garrett Center for Music \u0026 Arts",
+      "cause_url": "http://www.hamiltongarrett.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-21",
+      "colors": [
+        "red"
+      ],
+      "colors_raw": "Red",
+      "cause": "Victory Programs",
+      "cause_url": "http://vpi.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-22",
+      "colors": [
+        "blue"
+      ],
+      "colors_raw": "Blue",
+      "cause": "Cancer Education and Research Institute",
+      "cause_url": "https://canceredinstitute.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-23",
+      "colors": [
+        "teal",
+        "gold"
+      ],
+      "colors_raw": "Teal \u0026 Gold",
+      "cause": "Three Squares New England",
+      "cause_url": "https://threesquaresne.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-24",
+      "colors": [
+        "blue",
+        "red"
+      ],
+      "colors_raw": "Blue \u0026 Red",
+      "cause": "NEADS Service Dogs",
+      "cause_url": "http://neads.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-25",
+      "colors": [
+        "red",
+        "green"
+      ],
+      "colors_raw": "Red \u0026 Green",
+      "cause": "Christmas",
+      "kind": "holiday",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-26",
+      "colors": [
+        "purple"
+      ],
+      "colors_raw": "Purple",
+      "cause": "REACH Beyond Domestic Violence",
+      "cause_url": "https://reachma.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-27",
+      "colors": [
+        "white",
+        "green",
+        "purple"
+      ],
+      "colors_raw": "White, Green \u0026 Purple",
+      "cause": "Behavioral Health Network",
+      "cause_url": "https://www.bhninc.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-28",
+      "colors": [
+        "purple"
+      ],
+      "colors_raw": "Purple",
+      "cause": "Epilepsy Foundation New England",
+      "cause_url": "https://epilepsynewengland.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-29",
+      "colors": [
+        "blue",
+        "pink",
+        "gold"
+      ],
+      "colors_raw": "Blue, Pink \u0026 Gold",
+      "cause": "Zumix",
+      "cause_url": "http://www.zumix.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-30",
+      "colors": [
+        "purple"
+      ],
+      "colors_raw": "PURPLE",
+      "cause": "Massachusetts Society for the Prevention of Cruelty to Children",
+      "cause_url": "http://www.mspcc.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2026-12-31",
+      "colors": [
+        "gold"
+      ],
+      "colors_raw": "Gold",
+      "cause": "New Year’s Eve",
+      "kind": "holiday",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    }
+  ]
+}

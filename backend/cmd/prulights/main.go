@@ -1,19 +1,25 @@
 // Command prulights runs the server and its maintenance tasks.
 //
-//	prulights [serve]   run the api, web app and scraper
+//	prulights [serve]                 run the api, web app and scraper
+//	prulights scrape [flags]          check the source pages once
+//	prulights backfill                fetch and apply every source page
 package main
 
 import (
 	"context"
+	"encoding/json"
+	"flag"
 	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
+	"text/tabwriter"
 	"time"
 
 	"github.com/evanofslack/prulights/config"
+	"github.com/evanofslack/prulights/scrape"
 	"github.com/evanofslack/prulights/server"
 	"github.com/evanofslack/prulights/store"
 	"github.com/joho/godotenv"
@@ -39,6 +45,10 @@ func main() {
 	switch cmd {
 	case "serve":
 		err = serve(ctx)
+	case "scrape":
+		err = scrapeCmd(ctx, args, false)
+	case "backfill":
+		err = scrapeCmd(ctx, args, true)
 	case "version", "--version":
 		fmt.Println(version)
 	case "help", "-h", "--help":
@@ -47,7 +57,6 @@ func main() {
 		usage()
 		err = fmt.Errorf("unknown command %q", cmd)
 	}
-	_ = args
 	if err != nil {
 		slog.Error(cmd, "error", err)
 		os.Exit(1)
@@ -59,6 +68,8 @@ func usage() {
 
 commands:
   serve      run the api, web app and scraper (default)
+  scrape     check the source pages once (-dry-run, -force, -json, -url U)
+  backfill   fetch and apply every source page, ignoring what's cached
   version    print the version`)
 }
 
@@ -93,6 +104,9 @@ func serve(ctx context.Context) error {
 	defer st.Close()
 
 	s := server.New(cfg, st)
+	if cfg.ScrapeEnabled {
+		go scrape.New(st).Every(ctx, cfg.ScrapeInterval)
+	}
 	select {
 	case err := <-s.Run():
 		return err
@@ -102,4 +116,60 @@ func serve(ctx context.Context) error {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	return s.Shutdown(shutdownCtx)
+}
+
+type urlList []string
+
+func (u *urlList) String() string     { return strings.Join(*u, ",") }
+func (u *urlList) Set(s string) error { *u = append(*u, s); return nil }
+
+// scrapeCmd runs the scraper once and prints what it found.
+func scrapeCmd(ctx context.Context, args []string, backfill bool) error {
+	fs := flag.NewFlagSet("scrape", flag.ExitOnError)
+	dry := fs.Bool("dry-run", false, "parse but don't write to the database")
+	force := fs.Bool("force", backfill, "fetch every page, ignoring the sitemap's lastmod and etags")
+	asJSON := fs.Bool("json", false, "print the parsed pages as json")
+	var urls urlList
+	fs.Var(&urls, "url", "check only this page (repeatable)")
+	fs.Parse(args)
+
+	cfg := config.Load()
+	st, err := openStore(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer st.Close()
+
+	res, err := scrape.New(st).Run(ctx, scrape.Options{Force: *force, DryRun: *dry, URLs: urls})
+	if res == nil {
+		return err
+	}
+	if *asJSON {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		enc.Encode(res)
+		return err
+	}
+	tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
+	for _, p := range res.Pages {
+		fmt.Fprintf(tw, "\n%s (%d, %s): %d nights\n", p.Title, p.Year, p.Program, len(p.Lightings))
+		for _, l := range p.Lightings {
+			colors := make([]string, len(l.Colors))
+			for i, c := range l.Colors {
+				colors[i] = string(c)
+			}
+			fmt.Fprintf(tw, "  %s\t%s\t%s\t%s\n", l.Date, strings.Join(colors, ", "), l.Kind, l.Cause)
+		}
+	}
+	tw.Flush()
+	r := res.Run
+	fmt.Printf("\npages %d, fetched %d, nights %d, added %d, changed %d, removed %d, warnings %d\n",
+		r.Pages, r.Fetched, r.Items, r.Added, r.Changed, r.Removed, len(r.Warnings))
+	for _, w := range r.Warnings {
+		fmt.Println("  warning:", w)
+	}
+	if *dry {
+		fmt.Println("(dry run: nothing written)")
+	}
+	return err
 }

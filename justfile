@@ -57,6 +57,29 @@ check: install
     cd web && npm run type-check
     cd web && npm run build
 
+# check the source pages once against the live site; -dry-run is on unless you pass args
+scrape *args="-dry-run":
+    cd backend && go run ./cmd/prulights scrape {{ args }}
+
+# fetch and apply every source page into the dev database
+backfill:
+    cd backend && go run ./cmd/prulights backfill
+
+# re-download the saved source pages the scraper tests use (10s apart, as robots.txt asks)
+scrape-snapshot:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd backend/scrape/testdata
+    ua="prulights/1.0 (+https://prulights.evanslack.dev)"
+    site=https://www.prudentialcenter.com
+    curl -fsSL -A "$ua" -o event-sitemap.xml "$site/event-sitemap.xml"
+    for page in 2024-tower-lighting-schedule 2026-tower-lightings 31-nights-of-light; do
+        sleep 10
+        echo "$page"
+        curl -fsSL -A "$ua" -o "$page.html" "$site/experiences/events/$page/"
+    done
+    cd .. && go test . || echo "the pages changed: review, then go test ./scrape -update"
+
 # open sqlite on the dev database
 db:
     sqlite3 backend/${DATABASE_PATH:-prulights.db}

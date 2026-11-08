@@ -17,6 +17,16 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
 - `backend/config`: everything read from the environment, in one `Config`.
 - `backend/store`: one sqlite file (modernc, no cgo). Schema changes are new numbered files in
   `store/migrations/`, never edits to old ones. Tests use `store.Open(ctx, ":memory:")`.
+- `backend/schedule`: the domain, no I/O. `Lighting`, the palette (`ParseColors` maps the source's words
+  to keys; unknown words come back for a warning, never dropped), `Tonight` (Boston, rolls at 04:00),
+  `LightsOn` (source time > sunset > 5pm), `Fill` (unlisted nights are white), `Merge`, `Classify`.
+- `backend/scrape`: reads prudentialcenter.com. `ParsePage` handles the yearly page
+  (`date | colors for cause`) and 31 Nights (`date | cause | colors`, with the site's typos). `Scraper.Run`
+  reads `event-sitemap.xml`, fetches changed pages 10s apart (robots.txt), and applies them with
+  `store.ApplyPage`; a page that parses empty or to under half its nights is rejected and the last
+  good data kept. Tests run against saved pages in `scrape/testdata` with golden JSON
+  (`go test ./scrape -update` after reviewing a diff; `just scrape-snapshot` refreshes the pages).
+- `backend/metrics`: the one Prometheus registry.
 - `backend/server`: chi. `/api/...` is JSON; anything else is the static export from `STATIC_DIR`
   (`/calendar` is served from `calendar.html`, unknown paths fall back to `index.html`).
   `/healthz`, `/readyz`; Prometheus on `METRICS_ADDR`, never the public port.

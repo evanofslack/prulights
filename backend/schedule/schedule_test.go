@@ -195,6 +195,10 @@ func TestClassify(t *testing.T) {
 		"Women's History Month":                KindCivic,
 		"Martin Luther King Jr. Day":           KindCivic,
 		"Patriots, Super Bowl":                 KindSports,
+		"President’s Day":                      KindCivic,
+		"Flag Day":                             KindCivic,
+		"President’ Day":                       KindCivic,
+		"Our Returning Team USA Olympians":     KindSports,
 	}
 	for cause, want := range cases {
 		if got := Classify(cause); got != want {
