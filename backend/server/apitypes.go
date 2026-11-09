@@ -52,6 +52,9 @@ type MetaResponse struct {
 	Sources          []MetaSource  `json:"sources"`
 	Attribution      string        `json:"attribution"`
 	Version          string        `json:"version"`
+	// Dev is true when the server runs with DEV=1, so dev tools like the
+	// frame emulator's previews are available.
+	Dev bool `json:"dev"`
 }
 
 // apiError is the body of every error response.

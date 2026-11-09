@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/evanofslack/prulights/schedule"
@@ -262,4 +263,34 @@ func TestLightsOnText(t *testing.T) {
 	if got := lightsOnText(d.night("2026-11-20")); !strings.HasPrefix(got, "Lights on around 4:") {
 		t.Errorf("unlisted november night = %q", got)
 	}
+}
+
+// Renders from several goroutines (as the server does) draw the same frames as
+// one at a time.
+func TestRenderConcurrent(t *testing.T) {
+	d := SampleData("2026-12-12")
+	want := map[View]string{}
+	for _, v := range Views {
+		f, err := Render(v, d)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want[v] = f.SHA256()
+	}
+	var wg sync.WaitGroup
+	for range 4 {
+		for _, v := range Views {
+			wg.Go(func() {
+				f, err := Render(v, d)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if got := f.SHA256(); got != want[v] {
+					t.Errorf("%s drew differently alongside other renders", v)
+				}
+			})
+		}
+	}
+	wg.Wait()
 }

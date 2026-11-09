@@ -23,3 +23,4 @@ web/out/
 web/tsconfig.tsbuildinfo
 e2e/node_modules/
 e2e/shots/
+web/public/swagger/

@@ -17,7 +17,9 @@ for (const s of named) {
 function run(name) {
     const start = Date.now();
     return new Promise((resolve) => {
-        const child = spawn(process.execPath, [`${name}.mjs`], { stdio: ["ignore", "pipe", "pipe"] });
+        const child = spawn(process.execPath, [`${name}.mjs`], {
+            stdio: ["ignore", "pipe", "pipe"],
+        });
         let out = "";
         child.stdout.on("data", (d) => (out += d));
         child.stderr.on("data", (d) => (out += d));

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/evanofslack/prulights/schedule"
@@ -28,11 +29,18 @@ var (
 	nightBodyDim = style{w: regular, size: 20, ink: White}
 )
 
-// Render draws a view.
+// renderMu runs one render at a time. The cached font faces aren't safe to
+// share: an opentype face reuses its buffers between calls. Renders take
+// milliseconds and frames get cached by hash, so this costs nothing.
+var renderMu sync.Mutex
+
+// Render draws a view. It's safe to call from several goroutines.
 func Render(v View, d Data) (*Frame, error) {
 	if d.Tonight == "" {
 		return nil, fmt.Errorf("render %s: no tonight date", v)
 	}
+	renderMu.Lock()
+	defer renderMu.Unlock()
 	c := newCanvas(Width, Height, White)
 	switch v {
 	case ViewTonight:

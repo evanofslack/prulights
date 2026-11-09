@@ -241,6 +241,7 @@ func (s *Server) getMeta(w http.ResponseWriter, r *http.Request) {
 		Sources:          []MetaSource{},
 		Attribution:      attribution,
 		Version:          s.cfg.Version,
+		Dev:              s.cfg.Dev,
 	}
 	if last, err := s.store.LastSuccess(ctx); err == nil && !last.IsZero() {
 		out.LastScrape = &last

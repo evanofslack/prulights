@@ -56,4 +56,9 @@ export interface MetaResponse {
   sources: MetaSource[];
   attribution: string;
   version: string;
+  /**
+   * Dev is true when the server runs with DEV=1, so dev tools like the
+   * frame emulator's previews are available.
+   */
+  dev: boolean;
 }

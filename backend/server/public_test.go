@@ -160,7 +160,7 @@ func TestPaletteAndMeta(t *testing.T) {
 	}
 	meta, rec := getJSON[MetaResponse](t, s, "/api/v1/meta")
 	if rec.Code != http.StatusOK || meta.Tonight != "2026-12-12" || meta.Timezone != "America/New_York" ||
-		meta.PublishedThrough != "2026-12-25" || meta.LastScrape != nil || meta.Attribution == "" {
+		meta.PublishedThrough != "2026-12-25" || meta.LastScrape != nil || meta.Attribution == "" || meta.Dev {
 		t.Errorf("meta = %+v", meta)
 	}
 }

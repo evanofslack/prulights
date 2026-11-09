@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { MetaResponse } from "@/interfaces/api";
 
 // The api lives on the same origin: the go server serves both, and in dev next
 // passes /api through to it (next.config.ts).
@@ -84,4 +85,20 @@ export function useApi<T>(path: string | null, refreshMs?: number): Loaded<T> {
     }, [refreshMs, reload]);
 
     return { data, error, loading, reload };
+}
+
+// useMeta loads /meta once per page load and shares it between components
+// (the header uses it to know whether dev tools exist).
+let metaPromise: Promise<MetaResponse> | undefined;
+
+export function useMeta(): MetaResponse | undefined {
+    const [meta, setMeta] = useState<MetaResponse>();
+    useEffect(() => {
+        metaPromise ??= api<MetaResponse>("/meta").catch((e) => {
+            metaPromise = undefined;
+            throw e;
+        });
+        metaPromise.then(setMeta).catch(() => {});
+    }, []);
+    return meta;
 }
