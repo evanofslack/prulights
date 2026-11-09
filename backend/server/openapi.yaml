@@ -23,7 +23,10 @@ info:
     name: prulights on GitHub
     url: https://github.com/evanofslack/prulights
 servers:
+  - url: /api/v1
+    description: This server
   - url: https://prulights.evanslack.dev/api/v1
+    description: prulights.evanslack.dev
 tags:
   - name: schedule
     description: The crown's colors by night.
@@ -332,7 +335,7 @@ components:
 
     MetaResponse:
       type: object
-      required: [tonight, timezone, rollover_hour, published_through, last_scrape, sources, attribution, version]
+      required: [tonight, timezone, rollover_hour, published_through, last_scrape, sources, attribution, version, dev]
       properties:
         tonight: { $ref: "#/components/schemas/Date" }
         timezone: { type: string, examples: [America/New_York] }
@@ -347,6 +350,7 @@ components:
           items: { $ref: "#/components/schemas/MetaSource" }
         attribution: { type: string }
         version: { type: string }
+        dev: { type: boolean, description: True when the server runs in dev mode. }
 
     Error:
       type: object

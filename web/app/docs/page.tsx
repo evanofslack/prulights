@@ -1,43 +1,44 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { Shell } from "@/components/Shell";
+import { useEffect, useRef, useState } from "react";
+import Script from "next/script";
 
-// Scalar renders the api reference from the spec the go server serves. It only
-// runs in the browser, so it's loaded on the client.
-const Reference = dynamic(() => import("@/components/ApiReference"), {
-    ssr: false,
-    loading: () => <p className="text-muted">Loading the API reference…</p>,
-});
+// The api reference: stock Swagger UI on its own page, reading the spec the go
+// server serves. Swagger's own prebuilt bundle is copied into public/swagger
+// at build time (npm run swagger) and loaded as is: bundling swagger-ui
+// through next breaks its OpenAPI 3.1 support.
+
+declare global {
+    interface Window {
+        SwaggerUIBundle?: (options: Record<string, unknown>) => unknown;
+    }
+}
 
 export default function DocsPage() {
+    const el = useRef<HTMLDivElement>(null);
+    const [ready, setReady] = useState(false);
+    useEffect(() => {
+        if (!ready || !el.current || !window.SwaggerUIBundle) return;
+        window.SwaggerUIBundle({
+            url: "/api/v1/openapi.json",
+            domNode: el.current,
+            docExpansion: "list",
+            defaultModelsExpandDepth: 0,
+            tryItOutEnabled: true,
+            deepLinking: true,
+        });
+    }, [ready]);
     return (
-        <Shell wide>
-            <div className="flex flex-col gap-4">
-                <div className="flex flex-col gap-2">
-                    <h1 className="text-3xl font-bold">API</h1>
-                    <p className="max-w-2xl text-lg text-muted">
-                        The Pru's lighting schedule, free to use with no key. Start with{" "}
-                        <code className="rounded bg-raised px-1.5 py-0.5">GET /api/v1/tonight</code>, or
-                        subscribe to{" "}
-                        <a className="underline" href="/api/v1/calendar.ics">
-                            the calendar feed
-                        </a>
-                        . The spec is at{" "}
-                        <a className="underline" href="/api/v1/openapi.json">
-                            openapi.json
-                        </a>{" "}
-                        and{" "}
-                        <a className="underline" href="/api/v1/openapi.yaml">
-                            openapi.yaml
-                        </a>
-                        .
-                    </p>
-                </div>
-                <div className="overflow-hidden rounded-xl bg-white">
-                    <Reference />
-                </div>
+        <div className="min-h-dvh bg-white" style={{ colorScheme: "light" }}>
+            <link rel="stylesheet" href="/swagger/swagger-ui.css" />
+            <Script
+                src="/swagger/swagger-ui-bundle.js"
+                strategy="afterInteractive"
+                onReady={() => setReady(true)}
+            />
+            <div ref={el}>
+                <p className="p-6 text-[#3b4151]">Loading the API reference…</p>
             </div>
-        </Shell>
+        </div>
     );
 }

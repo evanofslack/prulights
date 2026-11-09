@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { TonightResponse } from "@/interfaces/api";
 import { useApi } from "@/lib/api";
 import { colorNames, lightsOnTime, longDate, relativeName, shortDate, weekdayAbbr } from "@/lib/format";
@@ -17,12 +19,34 @@ export default function DisplayPage() {
     useWakeLock();
     const idle = useIdle(3000);
     const drift = useDrift();
+    const router = useRouter();
+
+    // Esc (or the Exit link) leaves the display, and fullscreen with it
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => e.key === "Escape" && router.push("/");
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [router]);
+    useEffect(
+        () => () => {
+            if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+        },
+        [],
+    );
 
     return (
         <main
             className={`fixed inset-0 overflow-hidden bg-[#05070d] text-[#eef1f8] ${idle ? "cursor-none" : ""}`}
             style={{ colorScheme: "dark" }}
         >
+            <Link
+                href="/"
+                className={`fixed top-4 left-4 z-10 rounded-md bg-white/10 px-3 py-1.5 text-sm text-[#eef1f8] transition-opacity duration-500 hover:bg-white/20 ${
+                    idle ? "pointer-events-none opacity-0" : "opacity-100"
+                }`}
+            >
+                ← Exit
+            </Link>
             <div
                 className="flex h-full w-full items-end justify-center gap-[4vw] px-[5vw] pb-[6vh] transition-transform duration-[60s] ease-linear"
                 style={{ transform: `translate(${drift.x}px, ${drift.y}px)` }}

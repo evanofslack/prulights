@@ -56,8 +56,11 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
 - Commits: short, lowercase, imperative, 3–5 words ("add scraper parsers").
 - PRs: 4–6 word titles, 1–2 sentence descriptions. Work goes up as a `gh stack`.
 - Credit prudentialcenter.com as the source; no Prudential logos or branding.
-- Web pages: `/` tonight, `/night?d=`, `/calendar?m=`, `/display` (always-on, no chrome), `/docs` (Scalar on
-  the spec). Data via `useApi` in `web/lib/api.ts`; dates are Boston calendar strings, formatted in
+- Web pages: `/` tonight, `/night?d=`, `/calendar?m=`, `/display` (always-on, no chrome; Esc leaves),
+  `/docs` (stock Swagger UI from `swagger-ui-dist`, copied to `public/swagger` by `npm run swagger` before
+  dev/build; don't bundle swagger-ui through next, its OpenAPI 3.1 support breaks), `/emulator` (frame
+  previews; only when `/meta` says `dev`, settings live in the url). Data via `useApi` in `web/lib/api.ts`; dates are Boston calendar strings, formatted in
   `web/lib/format.ts` at noon UTC so no time zone shifts them.
 - `just e2e` loads the scraper fixtures into a fresh db and runs `e2e/*.mjs` against :8099
   (`SHOTS=dir` for screenshots). Fixture dates: Dec 2026 is known (Dec 10 = Red, Dress for Success).
+- `render.Render` holds a lock: the cached font faces aren't safe to share between goroutines.
