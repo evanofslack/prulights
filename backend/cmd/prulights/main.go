@@ -68,7 +68,7 @@ func usage() {
 
 commands:
   serve      run the api, web app and scraper (default)
-  scrape     check the source pages once (-dry-run, -force, -json, -url U)
+  scrape     check the source pages once (-dry-run, -force, -json, -url U, -delay D)
   backfill   fetch and apply every source page, ignoring what's cached
   version    print the version`)
 }
@@ -132,6 +132,7 @@ func scrapeCmd(ctx context.Context, args []string, backfill bool) error {
 	asJSON := fs.Bool("json", false, "print the parsed pages as json")
 	var urls urlList
 	fs.Var(&urls, "url", "check only this page (repeatable)")
+	delay := fs.Duration("delay", scrape.CrawlDelay, "wait between pages (the site's robots.txt asks for 10s)")
 	fs.Parse(args)
 
 	cfg := config.Load()
@@ -141,7 +142,9 @@ func scrapeCmd(ctx context.Context, args []string, backfill bool) error {
 	}
 	defer st.Close()
 
-	res, err := scrape.New(st).Run(ctx, scrape.Options{Force: *force, DryRun: *dry, URLs: urls})
+	sc := scrape.New(st)
+	sc.Delay = *delay
+	res, err := sc.Run(ctx, scrape.Options{Force: *force, DryRun: *dry, URLs: urls})
 	if res == nil {
 		return err
 	}
