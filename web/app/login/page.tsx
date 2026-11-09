@@ -7,6 +7,13 @@ import { IconFingerprint } from "@tabler/icons-react";
 import { passkeyError, useAuth } from "@/lib/auth";
 import { Shell } from "@/components/Shell";
 
+// nextPath is where to go after signing in: ?next= when it's a path on this
+// site, else tonight.
+function nextPath(): string {
+    const next = new URLSearchParams(window.location.search).get("next") ?? "";
+    return next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : "/";
+}
+
 export default function LoginPage() {
     const { me, signIn } = useAuth();
     const router = useRouter();
@@ -18,7 +25,7 @@ export default function LoginPage() {
         setError(undefined);
         try {
             await signIn();
-            router.push("/");
+            router.push(nextPath());
         } catch (e) {
             setError(passkeyError(e));
         } finally {

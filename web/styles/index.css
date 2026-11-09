@@ -55,3 +55,43 @@
         color: var(--color-fg);
     }
 }
+
+/* the emulator's panel refresh: a Spectra 6 panel flashes through black,
+   white and its inks before settling on the new picture */
+@keyframes eink-refresh {
+    0% {
+        background: transparent;
+    }
+    8% {
+        background: #020202;
+    }
+    22% {
+        background: #bec8c8;
+    }
+    36% {
+        background: #87130060;
+    }
+    50% {
+        background: #020202;
+    }
+    64% {
+        background: #bec8c8;
+    }
+    82% {
+        background: #bec8c8a0;
+    }
+    100% {
+        background: transparent;
+    }
+}
+.eink-refresh {
+    animation-name: eink-refresh;
+    animation-timing-function: steps(1, end);
+    animation-fill-mode: both;
+}
+@media (prefers-reduced-motion: reduce) {
+    .eink-refresh {
+        animation: none;
+        background: #bec8c880;
+    }
+}

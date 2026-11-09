@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Badge, Button, MultiSelect, Skeleton, Table, TextInput } from "@mantine/core";
 import { IconRefresh, IconTrash } from "@tabler/icons-react";
-import type { OverrideInfo, PaletteResponse, ScrapeStatus, UserInfo } from "@/interfaces/api";
+import type { AdminDevice, OverrideInfo, PaletteResponse, ScrapeStatus, UserInfo } from "@/interfaces/api";
 import { api, useApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { colorNames, shortDate } from "@/lib/format";
@@ -13,7 +13,7 @@ import { InviteModal } from "@/components/InviteModal";
 import { Crown } from "@/components/Tower";
 import { Shell } from "@/components/Shell";
 
-// /admin: the people, corrections to the schedule, and the scraper.
+// /admin: the people, corrections to the schedule, the scraper, and frames.
 export default function AdminPage() {
     const { me } = useAuth();
     return (
@@ -28,6 +28,7 @@ export default function AdminPage() {
                     <People />
                     <Corrections />
                     <Scraper />
+                    <Frames />
                 </div>
             )}
         </Shell>
@@ -284,6 +285,84 @@ function Scraper() {
                                         }
                                     >
                                         {r.error || (r.warnings.length ? r.warnings.join("; ") : "none")}
+                                    </Table.Td>
+                                </Table.Tr>
+                            ))}
+                        </Table.Tbody>
+                    </Table>
+                </Table.ScrollContainer>
+            )}
+        </section>
+    );
+}
+
+function Frames() {
+    const { data, reload } = useApi<AdminDevice[]>("/admin/devices");
+    const [confirm, setConfirm] = useState<number>();
+    const remove = async (id: number) => {
+        await api(`/admin/devices/${id}`, { method: "DELETE" });
+        setConfirm(undefined);
+        reload();
+    };
+    return (
+        <section className="flex flex-col gap-3">
+            <h2 className="text-xl font-bold">Frames</h2>
+            <p className="text-muted">
+                Every frame that has registered, including emulators. Removing one makes it register again.
+            </p>
+            {!data ? (
+                <Skeleton height={80} />
+            ) : data.length === 0 ? (
+                <p className="text-muted">No frames yet.</p>
+            ) : (
+                <Table.ScrollContainer minWidth={640}>
+                    <Table verticalSpacing="sm" aria-label="Frames">
+                        <Table.Thead>
+                            <Table.Tr>
+                                <Table.Th>Frame</Table.Th>
+                                <Table.Th>Owner</Table.Th>
+                                <Table.Th>Last check-in</Table.Th>
+                                <Table.Th>Power</Table.Th>
+                                <Table.Th>Firmware</Table.Th>
+                                <Table.Th />
+                            </Table.Tr>
+                        </Table.Thead>
+                        <Table.Tbody>
+                            {data.map((d) => (
+                                <Table.Tr key={d.id}>
+                                    <Table.Td>
+                                        #{d.id} {d.name}
+                                    </Table.Td>
+                                    <Table.Td>
+                                        {d.owner || (
+                                            <span className="text-muted">waiting, code {d.claim_code}</span>
+                                        )}
+                                    </Table.Td>
+                                    <Table.Td>
+                                        {d.last_checkin_at ? fmtTime(d.last_checkin_at) : "never"}
+                                    </Table.Td>
+                                    <Table.Td>
+                                        {d.power === "battery" && d.battery_mv > 0
+                                            ? `${(d.battery_mv / 1000).toFixed(2)} V`
+                                            : d.power || "—"}
+                                    </Table.Td>
+                                    <Table.Td>{d.firmware || "—"}</Table.Td>
+                                    <Table.Td className="text-right">
+                                        {confirm === d.id ? (
+                                            <Button size="xs" color="red" onClick={() => remove(d.id)}>
+                                                Really remove
+                                            </Button>
+                                        ) : (
+                                            <Button
+                                                size="xs"
+                                                variant="subtle"
+                                                color="red"
+                                                leftSection={<IconTrash size={14} />}
+                                                onClick={() => setConfirm(d.id)}
+                                            >
+                                                Remove
+                                            </Button>
+                                        )}
                                     </Table.Td>
                                 </Table.Tr>
                             ))}

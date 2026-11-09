@@ -288,6 +288,31 @@ export interface AdminDevice extends DeviceInfo {
 }
 
 //////////
+// source: devrender.go
+
+/**
+ * DevInk is one of the panel's inks, for the emulator.
+ */
+export interface DevInk {
+  name: string;
+  code: number /* byte */;
+  measured: string; // #rrggbb
+  ideal: string;
+}
+/**
+ * DevInks is GET /dev/inks.
+ */
+export interface DevInks {
+  inks: DevInk[];
+  /**
+   * RotateClockwise: portrait (x, y) is panel (y, 479-x); otherwise (799-y, x).
+   */
+  rotate_clockwise: boolean;
+  panel_width: number /* int */;
+  panel_height: number /* int */;
+}
+
+//////////
 // source: sightingtypes.go
 
 /**

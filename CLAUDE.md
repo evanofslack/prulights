@@ -59,7 +59,8 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
 - Web pages: `/` tonight, `/night?d=`, `/calendar?m=`, `/display` (always-on, no chrome; Esc leaves),
   `/docs` (stock Swagger UI from `swagger-ui-dist`, copied to `public/swagger` by `npm run swagger` before
   dev/build; don't bundle swagger-ui through next, its OpenAPI 3.1 support breaks), `/emulator` (frame
-  previews; only when `/meta` says `dev`, settings live in the url). Data via `useApi` in `web/lib/api.ts`; dates are Boston calendar strings, formatted in
+  previews; only when `/meta` says `dev`, settings live in the url), `/claim?code=` (a frame's setup QR
+  lands here), `/settings` (your frames). `/login?next=` returns to a path after signing in. Data via `useApi` in `web/lib/api.ts`; dates are Boston calendar strings, formatted in
   `web/lib/format.ts` at noon UTC so no time zone shifts them.
 - `just e2e` loads the scraper fixtures into a fresh db and runs `e2e/*.mjs` against :8099
   (`SHOTS=dir` for screenshots). Fixture dates: Dec 2026 is known (Dec 10 = Red, Dress for Success).
@@ -88,3 +89,8 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   sha256. A `seen` event is `MarkSeen` for the owner inside `canLog` (keeps stars and notes). Claim codes
   are `XXX-XXX` (`NormalizeClaimCode`); `DELETE /me/devices/{id}` unclaims (back to setup), the admin
   delete forgets the token. `/api/device/compat/current.png?token=` is for the stock firmware.
+- Emulator device mode (`/emulator?mode=device`, `app/emulator/Device.tsx`, `lib/frame.ts`) is a virtual
+  frame on the real device api: it keeps its token in localStorage, decodes the `.bin.gz` pictures in
+  the browser with `/dev/inks` (inks, panel codes, rotation; `TestDevInksDecodeFrames` keeps that in
+  step with the png), and picks the picture by its own clock (`clock=` in the url, Boston wall time).
+  Battery numbers in `POWER` are guesses until the hardware is measured. e2e: `frame.mjs`.
