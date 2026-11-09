@@ -6,6 +6,7 @@ import { IconMaximize } from "@tabler/icons-react";
 import type { TonightResponse } from "@/interfaces/api";
 import { useApi } from "@/lib/api";
 import { Night, NightSkeleton, Upcoming } from "@/components/Night";
+import { SawIt } from "@/components/SawIt";
 import { ErrorNote, Shell } from "@/components/Shell";
 
 export default function TonightPage() {
@@ -21,7 +22,9 @@ export default function TonightPage() {
                         lighting={data.lighting}
                         tonight={data.date}
                         publishedThrough={data.published_through}
-                    />
+                    >
+                        <SawIt date={data.date} tonight={data.date} />
+                    </Night>
                     <section className="flex flex-col gap-3">
                         <h2 className="text-xl font-bold">Coming up</h2>
                         <Upcoming nights={data.upcoming} tonight={data.date} />

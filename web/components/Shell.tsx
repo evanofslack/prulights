@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMeta } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { Account } from "./Account";
 
 // Shell is the page frame: a slim header with the main places, the page, and
@@ -11,9 +12,11 @@ import { Account } from "./Account";
 export function Shell({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
     const path = usePathname();
     const meta = useMeta();
+    const { me } = useAuth();
     const links = [
         { href: "/", label: "Tonight", active: path === "/" || path === "/night" },
         { href: "/calendar", label: "Calendar", active: path.startsWith("/calendar") },
+        ...(me ? [{ href: "/log", label: "Log", active: path.startsWith("/log") }] : []),
         ...(meta?.dev || path.startsWith("/emulator")
             ? [{ href: "/emulator", label: "Emulator", active: path.startsWith("/emulator"), wide: true }]
             : []),

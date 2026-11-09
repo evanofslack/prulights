@@ -69,7 +69,13 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   that person (recovery). Session = random token in the HttpOnly `prulights_session` cookie, sha256 in
   `sessions`, 1 year, slid forward daily. Writes under `/api/v1` need an `Origin` in `RP_ORIGINS` and a
   json body (`sameOrigin`). `GET /api/v1/me` is 204 when signed out. Passkey prompts in flight
-  (ceremonies) live in memory for 5 minutes. Private routes (`/me`, `/auth`, `/admin`, `/devices`) stay
-  out of `openapi.yaml`.
+  (ceremonies) live in memory for 5 minutes. Private routes (`/me`, `/auth`, `/admin`, `/devices`, `/sightings`)
+  stay out of `openapi.yaml` (`isPrivateRoute` in `public_test.go`).
 - e2e `auth.mjs` uses Chrome's virtual authenticator (CDP `WebAuthn.addVirtualAuthenticator`); `just
   e2e` sets `BASE_URL=http://localhost:8099` so passkeys accept that origin, and `BIN` for invites.
+  The e2e scripts run in parallel against one db and names are unique, so each script signs up its own names.
+- Sightings (`server/sightings.go`): "I saw it" + 0–5 stars + a note, open for tonight and the 7 nights before
+  (`canLog`). `/me/stats` and `/me/sightings` both come from `myNights`. `GET /sightings/{date}` (names,
+  notes) is members only; the public sees only totals at `/lightings/{date}/stats`. Admin corrections
+  (`/admin/overrides`) beat the scraped schedule. Embedded response structs use `tstype:",extends"` so
+  tygo flattens them.

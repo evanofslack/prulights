@@ -61,3 +61,12 @@ type MetaResponse struct {
 type apiError struct {
 	Error string `json:"error"`
 }
+
+// NightStatsResponse is GET /api/v1/lightings/{date}/stats: how many people
+// said they saw a night, and how they rated it. No names.
+type NightStatsResponse struct {
+	Date    schedule.Date `json:"date"`
+	Seen    int           `json:"seen"`
+	Rated   int           `json:"rated"`
+	Average float64       `json:"average"`
+}

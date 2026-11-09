@@ -113,6 +113,10 @@ func serve(ctx context.Context) error {
 	s := server.New(cfg, st)
 	if cfg.ScrapeEnabled {
 		go scrape.New(st).Every(ctx, cfg.ScrapeInterval)
+		s.SetScraper(func(ctx context.Context) error {
+			_, err := scrape.New(st).Run(ctx, scrape.Options{})
+			return err
+		})
 	}
 	go cleanup(ctx, st)
 	select {

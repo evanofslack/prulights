@@ -102,6 +102,31 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
+  /lightings/{date}/stats:
+    get:
+      tags: [schedule]
+      operationId: getNightStats
+      summary: How many people saw a night, and how they rated it
+      description: |
+        Invited people can say they saw the crown on a night (tonight or the week before) and
+        rate it 1–5. This is the anonymous total; names and notes are only shown to them.
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/Date" }
+      responses:
+        "200":
+          description: The night's totals.
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NightStatsResponse" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
   /calendar.ics:
     get:
       tags: [schedule]
@@ -351,6 +376,15 @@ components:
         attribution: { type: string }
         version: { type: string }
         dev: { type: boolean, description: True when the server runs in dev mode. }
+
+    NightStatsResponse:
+      type: object
+      required: [date, seen, rated, average]
+      properties:
+        date: { $ref: "#/components/schemas/Date" }
+        seen: { type: integer, description: People who said they saw it. }
+        rated: { type: integer, description: Of those, how many gave it stars. }
+        average: { type: number, minimum: 0, maximum: 5, description: The average rating, 0 when nobody rated it. }
 
     Error:
       type: object

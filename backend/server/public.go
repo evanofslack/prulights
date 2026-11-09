@@ -41,6 +41,7 @@ func (s *Server) mountPublic(r chi.Router) {
 		r.Get("/tonight", s.getTonight)
 		r.Get("/lightings", s.getLightings)
 		r.Get("/lightings/{date}", s.getLighting)
+		r.Get("/lightings/{date}/stats", s.getNightStats)
 		r.Get("/palette", s.getPalette)
 		r.Get("/meta", s.getMeta)
 		r.Get("/calendar.ics", s.getCalendar)

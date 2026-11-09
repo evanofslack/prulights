@@ -37,6 +37,10 @@ type Server struct {
 
 	wa         *webauthn.WebAuthn
 	ceremonies ceremonies
+
+	// scrape checks the source pages now; scraping is set while it runs.
+	scrape   func(context.Context) error
+	scraping atomic.Bool
 }
 
 // New builds the server and its routes.

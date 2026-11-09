@@ -60,7 +60,7 @@ check("still signed in after a reload", (await signedInAs(evan)).includes("Evan"
 // evan invites mom from the menu
 await evan.click("[aria-label=Account]");
 await evan.click("text=Invite someone");
-await evan.click(btn("Make invite link"));
+await evan.click(btn("Make link"));
 const link = await evan.locator("[data-invite-url]").textContent();
 check("invite has a QR code", await evan.locator("[aria-label='Invite QR code']").isVisible());
 await shot(evan, "auth-invite");

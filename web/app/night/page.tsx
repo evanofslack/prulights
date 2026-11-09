@@ -10,6 +10,7 @@ import type { MetaResponse } from "@/interfaces/api";
 import { useApi } from "@/lib/api";
 import { addDays, shortDate } from "@/lib/format";
 import { Night, NightSkeleton } from "@/components/Night";
+import { SawIt } from "@/components/SawIt";
 import { ErrorNote, Shell } from "@/components/Shell";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -31,7 +32,9 @@ function NightPage() {
                     lighting={data}
                     tonight={meta.data?.tonight}
                     publishedThrough={meta.data?.published_through}
-                />
+                >
+                    <SawIt date={data.date} tonight={meta.data?.tonight} />
+                </Night>
             )}
             <nav className="flex justify-between gap-2">
                 <Button

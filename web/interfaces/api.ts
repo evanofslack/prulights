@@ -62,6 +62,16 @@ export interface MetaResponse {
    */
   dev: boolean;
 }
+/**
+ * NightStatsResponse is GET /api/v1/lightings/{date}/stats: how many people
+ * said they saw a night, and how they rated it. No names.
+ */
+export interface NightStatsResponse {
+  date: schedule.Date;
+  seen: number /* int */;
+  rated: number /* int */;
+  average: number /* float64 */;
+}
 
 //////////
 // source: authtypes.go
@@ -123,4 +133,134 @@ export interface CreateInvite {
 export interface InviteLink {
   url: string;
   expires_at: string;
+}
+
+//////////
+// source: sightingtypes.go
+
+/**
+ * SightingRequest is PUT /api/v1/me/sightings/{date}: "I saw it", with an
+ * optional 1–5 rating (0 for none) and a note of up to 280 characters.
+ */
+export interface SightingRequest {
+  rating: number /* int */;
+  note: string;
+}
+/**
+ * Sighting is one person's sighting of a night.
+ */
+export interface Sighting {
+  date: schedule.Date;
+  name: string;
+  mine: boolean;
+  rating: number /* int */;
+  note: string;
+  at: string;
+}
+/**
+ * NightSightings is GET /api/v1/sightings/{date}: everyone who saw a night.
+ */
+export interface NightSightings {
+  date: schedule.Date;
+  sightings: Sighting[];
+  /**
+   * CanLog is whether the night is still open for "I saw it": tonight and
+   * the week before.
+   */
+  can_log: boolean;
+}
+/**
+ * LoggedNight is one of your sightings with the night it was of.
+ */
+export interface LoggedNight extends Sighting {
+  lighting: schedule.Lighting;
+}
+/**
+ * MySightings is GET /api/v1/me/sightings: everything you've logged, newest first.
+ */
+export interface MySightings {
+  nights: LoggedNight[];
+}
+/**
+ * ColorCount is how many of your nights had a color.
+ */
+export interface ColorCount {
+  color: any /* schedule.ColorKey */;
+  count: number /* int */;
+}
+/**
+ * MyStats is GET /api/v1/me/stats.
+ */
+export interface MyStats {
+  seen: number /* int */;
+  rated: number /* int */;
+  average: number /* float64 */;
+  /**
+   * Streak is how many nights in a row you've seen, up to tonight (or last
+   * night, if tonight isn't logged yet).
+   */
+  streak: number /* int */;
+  /**
+   * Favorites are the colors on the most of your nights, most first.
+   */
+  favorites: ColorCount[];
+  /**
+   * LogFrom is the earliest night you can still log.
+   */
+  log_from: schedule.Date;
+  tonight: schedule.Date;
+}
+/**
+ * OverrideBody is PUT /api/v1/admin/overrides/{date}: a correction to a night.
+ */
+export interface OverrideBody {
+  colors: any /* schedule.ColorKey */[];
+  cause: string;
+  cause_url: string;
+  /**
+   * Kind is worked out from the cause when empty.
+   */
+  kind: any /* schedule.Kind */;
+  note: string;
+}
+/**
+ * OverrideInfo is a correction, as the admin page lists them.
+ */
+export interface OverrideInfo extends OverrideBody {
+  date: schedule.Date;
+  updated_at: string;
+}
+/**
+ * UserInfo is a person, as the admin page lists them.
+ */
+export interface UserInfo {
+  id: number /* int64 */;
+  name: string;
+  is_admin: boolean;
+  created_at: string;
+  sightings: number /* int */;
+}
+/**
+ * ScrapeRunInfo is one check of the source pages.
+ */
+export interface ScrapeRunInfo {
+  id: number /* int64 */;
+  started_at: string;
+  finished_at: string;
+  pages: number /* int */;
+  fetched: number /* int */;
+  items: number /* int */;
+  added: number /* int */;
+  changed: number /* int */;
+  removed: number /* int */;
+  warnings: string[];
+  error?: string;
+}
+/**
+ * ScrapeStatus is GET /api/v1/admin/scrape: recent runs, and whether one is
+ * going now.
+ */
+export interface ScrapeStatus {
+  running: boolean;
+  runs: ScrapeRunInfo[];
 }
