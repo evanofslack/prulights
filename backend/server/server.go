@@ -42,6 +42,9 @@ func New(cfg config.Config, st *store.Store) *Server {
 	s.router.Use(middleware.Recoverer)
 	s.router.Use(requestLog)
 	s.mountStatus()
+	if cfg.Dev {
+		s.mountDev()
+	}
 	s.router.Route("/api", func(r chi.Router) {
 		r.Route("/v1", s.mountPublic)
 		r.NotFound(func(w http.ResponseWriter, r *http.Request) {

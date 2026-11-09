@@ -38,7 +38,8 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
 - `backend/render`: pure-Go e-ink frames, 480×800 portrait in the panel's six inks (text solid,
   colors Bayer-dithered from `schedule.InkRecipe`). `Render(view, data)` → `Frame` with `PNG`
   (measured or ideal palette), `PanelBin` (gzipped 4bpp, rotated to 800×480) and `SHA256`.
-  Golden PNGs in `render/testdata/golden`; `just render`, `just golden-update`.
+  Golden PNGs in `render/testdata/golden`; `just render`, `just golden-update`. With `DEV=1` the
+  server draws frames from the real schedule at `/dev/render/{view}?date=&palette=&sample=1`.
 - `web/` is a static export (`output: 'export'`, App Router). No API routes, SSR or middleware.
   Pages that need a parameter take it in the query string (`/night?d=2026-12-12`), not the path.
 - API types: Go structs → `just types` (tygo) → `web/interfaces/*.ts`. CI fails if stale.
