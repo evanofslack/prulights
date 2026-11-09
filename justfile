@@ -44,6 +44,19 @@ lint:
 test *args:
     cd backend && go test -race {{ args }} ./...
 
+# draw a frame view from sample data to backend/tmp/render-<view>.png
+render view="tonight" date="2026-12-12" palette="measured":
+    mkdir -p backend/tmp
+    cd backend && go run ./cmd/prulights render -view {{ view }} -date {{ date }} -palette {{ palette }} -out tmp/render-{{ view }}.png
+
+# check the frame views against their golden pngs
+golden:
+    cd backend && go test ./render -run TestGolden
+
+# redraw the golden pngs (look at them before committing)
+golden-update:
+    cd backend && go test ./render -run TestGolden -update
+
 # generate the web's api types from the go code
 types:
     cd backend && go tool tygo generate
