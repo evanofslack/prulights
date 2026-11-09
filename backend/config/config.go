@@ -69,12 +69,12 @@ func Load() Config {
 			}
 		}
 	}
-	c.fill()
+	c.Fill()
 	return c
 }
 
-// fill derives the passkey settings from BASE_URL when they aren't set.
-func (c *Config) fill() {
+// Fill derives the passkey settings from BASE_URL when they aren't set.
+func (c *Config) Fill() {
 	if c.RPID == "" {
 		host := c.BaseURL
 		if i := strings.Index(host, "://"); i >= 0 {

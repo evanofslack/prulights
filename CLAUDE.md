@@ -64,3 +64,12 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
 - `just e2e` loads the scraper fixtures into a fresh db and runs `e2e/*.mjs` against :8099
   (`SHOTS=dir` for screenshots). Fixture dates: Dec 2026 is known (Dec 10 = Red, Dress for Success).
 - `render.Render` holds a lock: the cached font faces aren't safe to share between goroutines.
+- Sign-in (`server/auth.go`): passkeys only (go-webauthn, discoverable), invite only. `prulights invite
+  [-admin] [-for-user NAME]` / `just invite` makes a link + terminal QR; `-for-user` adds a passkey to
+  that person (recovery). Session = random token in the HttpOnly `prulights_session` cookie, sha256 in
+  `sessions`, 1 year, slid forward daily. Writes under `/api/v1` need an `Origin` in `RP_ORIGINS` and a
+  json body (`sameOrigin`). `GET /api/v1/me` is 204 when signed out. Passkey prompts in flight
+  (ceremonies) live in memory for 5 minutes. Private routes (`/me`, `/auth`, `/admin`, `/devices`) stay
+  out of `openapi.yaml`.
+- e2e `auth.mjs` uses Chrome's virtual authenticator (CDP `WebAuthn.addVirtualAuthenticator`); `just
+  e2e` sets `BASE_URL=http://localhost:8099` so passkeys accept that origin, and `BIN` for invites.

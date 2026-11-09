@@ -62,3 +62,65 @@ export interface MetaResponse {
    */
   dev: boolean;
 }
+
+//////////
+// source: authtypes.go
+
+/**
+ * MeResponse is GET /api/v1/me: who's signed in (204 when nobody is).
+ */
+export interface MeResponse {
+  id: number /* int64 */;
+  name: string;
+  is_admin: boolean;
+}
+/**
+ * InviteInfo is GET /api/v1/auth/invites/{token}: what an invite link is for.
+ */
+export interface InviteInfo {
+  /**
+   * ForUser names who a re-invite adds a passkey for; empty for a new person.
+   */
+  for_user?: string;
+  is_admin: boolean;
+  /**
+   * ExpiresAt is when the link stops working.
+   */
+  expires_at: string;
+}
+/**
+ * RegisterBegin is POST /api/v1/auth/register/begin.
+ */
+export interface RegisterBegin {
+  invite: string;
+  /**
+   * Name is the new person's display name; ignored for a re-invite.
+   */
+  name: string;
+}
+/**
+ * Ceremony is the reply to a register or login begin: the options to pass to
+ * the browser's passkey prompt, and an id to send back with the result
+ * (POST .../finish?ceremony=id).
+ */
+export interface Ceremony {
+  ceremony: string;
+  options: any;
+}
+/**
+ * CreateInvite is POST /api/v1/admin/invites.
+ */
+export interface CreateInvite {
+  is_admin: boolean;
+  /**
+   * ForUserID makes a re-invite: a link that adds a passkey to that person.
+   */
+  for_user_id?: number /* int64 */;
+}
+/**
+ * InviteLink is a new invite.
+ */
+export interface InviteLink {
+  url: string;
+  expires_at: string;
+}
