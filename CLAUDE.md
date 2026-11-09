@@ -79,3 +79,12 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   notes) is members only; the public sees only totals at `/lightings/{date}/stats`. Admin corrections
   (`/admin/overrides`) beat the scraped schedule. Embedded response structs use `tstype:",extends"` so
   tygo flattens them.
+- Frames (`server/devices.go`): `/api/device/v1/{register,state,bundle,images/{sha}.bin.gz,events}` with a
+  bearer token (no cookie, so no origin check); a 401 means "register again". `POST /events` is the
+  check-in and answers with the state. A bundle is every enabled view for tonight + 6 nights (plus
+  "goodnight" with quiet hours, and one `stale` picture for the night after); an unclaimed frame gets
+  only `setup`. Its version hashes the pictures' hashes, so it changes exactly when a picture would;
+  built bundles are cached in memory by the json of their inputs, pictures kept in `device_images` by
+  sha256. A `seen` event is `MarkSeen` for the owner inside `canLog` (keeps stars and notes). Claim codes
+  are `XXX-XXX` (`NormalizeClaimCode`); `DELETE /me/devices/{id}` unclaims (back to setup), the admin
+  delete forgets the token. `/api/device/compat/current.png?token=` is for the stock firmware.

@@ -41,6 +41,9 @@ type Server struct {
 	// scrape checks the source pages now; scraping is set while it runs.
 	scrape   func(context.Context) error
 	scraping atomic.Bool
+
+	// bundles caches what frames were last sent.
+	bundles bundles
 }
 
 // New builds the server and its routes.
@@ -64,6 +67,7 @@ func New(cfg config.Config, st *store.Store) *Server {
 			s.mountPublic(r)
 			s.mountAccount(r)
 		})
+		r.Route("/device", s.mountDevice)
 		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusNotFound, "not found")
 		})

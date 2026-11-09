@@ -69,11 +69,13 @@ func (s *Server) mountAccount(r chi.Router) {
 		})
 
 		s.mountSightings(r)
+		s.mountDevices(r)
 
 		r.Route("/admin", func(r chi.Router) {
 			r.Use(s.adminOnly)
 			r.Post("/invites", s.createInvite)
 			s.mountAdmin(r)
+			s.mountAdminDevices(r)
 		})
 	})
 }

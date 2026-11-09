@@ -7,7 +7,7 @@ packages:
       time.Time: "string"
   - path: "github.com/evanofslack/prulights/server"
     output_path: "../web/interfaces/api.ts"
-    include_files: [apitypes.go, authtypes.go, sightingtypes.go]
+    include_files: [apitypes.go, authtypes.go, sightingtypes.go, devicetypes.go]
     frontmatter: |
       import type * as schedule from "./schedule";
     type_mappings:

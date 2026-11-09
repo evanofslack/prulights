@@ -35,6 +35,19 @@ func (s *Store) SaveSighting(ctx context.Context, userID int64, date schedule.Da
 	return err
 }
 
+// MarkSeen records that a user saw a night, keeping any rating or note
+// they already gave it. It reports whether the sighting is new.
+func (s *Store) MarkSeen(ctx context.Context, userID int64, date schedule.Date, now time.Time) (bool, error) {
+	t := fmtTime(now)
+	res, err := s.DB.ExecContext(ctx, `insert into sightings (user_id, date, note, created_at, updated_at)
+		values (?, ?, '', ?, ?) on conflict (user_id, date) do nothing`, userID, date, t, t)
+	if err != nil {
+		return false, err
+	}
+	n, _ := res.RowsAffected()
+	return n > 0, nil
+}
+
 // DeleteSighting takes back a sighting.
 func (s *Store) DeleteSighting(ctx context.Context, userID int64, date schedule.Date) error {
 	_, err := s.DB.ExecContext(ctx, `delete from sightings where user_id = ? and date = ?`, userID, date)

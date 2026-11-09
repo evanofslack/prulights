@@ -266,12 +266,15 @@ func (s *Store) DeleteSession(ctx context.Context, token string) error {
 	return err
 }
 
-// DeleteExpired removes sessions and invites past their expiry.
+// DeleteExpired removes sessions and invites past their expiry, and old
+// device events and frames no bundle lists any more.
 func (s *Store) DeleteExpired(ctx context.Context, now time.Time) error {
 	t := fmtTime(now)
 	if _, err := s.DB.ExecContext(ctx, `DELETE FROM sessions WHERE expires_at <= ?`, t); err != nil {
 		return fmt.Errorf("sessions: %w", err)
 	}
-	_, err := s.DB.ExecContext(ctx, `DELETE FROM invites WHERE used_at IS NULL AND expires_at <= ?`, t)
-	return err
+	if _, err := s.DB.ExecContext(ctx, `DELETE FROM invites WHERE used_at IS NULL AND expires_at <= ?`, t); err != nil {
+		return fmt.Errorf("invites: %w", err)
+	}
+	return s.deleteOldDeviceData(ctx, now)
 }

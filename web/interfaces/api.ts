@@ -136,6 +136,158 @@ export interface InviteLink {
 }
 
 //////////
+// source: devicetypes.go
+
+/**
+ * DeviceSettings are what a frame's owner chooses. Views are render view
+ * names: tonight, week, month, log.
+ */
+export interface DeviceSettings {
+  /**
+   * DefaultView is what the frame shows after it syncs or redraws.
+   */
+  default_view: string;
+  /**
+   * Views are the ones the button cycles through, in order.
+   */
+  views: string[];
+  /**
+   * QuietStart and QuietEnd ("22:00", "07:00", Boston time) bound when the
+   * frame shows "good night" and doesn't redraw. Both empty for none.
+   */
+  quiet_start: string;
+  quiet_end: string;
+  /**
+   * Paused frames keep their picture and only check in once a day.
+   */
+  paused: boolean;
+}
+/**
+ * RegisterRequest is POST /api/device/v1/register.
+ */
+export interface RegisterRequest {
+  firmware: string;
+}
+/**
+ * RegisterResponse is a new frame's identity. The token is shown once; the
+ * frame sends it as "Authorization: Bearer <token>" from then on.
+ */
+export interface RegisterResponse {
+  device_id: number /* int64 */;
+  token: string;
+  claim_code: string;
+  claim_url: string;
+}
+/**
+ * DeviceState is GET /api/device/v1/state, and the answer to POST /events:
+ * what the frame should know each time it wakes up.
+ */
+export interface DeviceState {
+  claimed: boolean;
+  name: string;
+  /**
+   * ClaimCode and ClaimURL are set while nobody has claimed the frame.
+   */
+  claim_code?: string;
+  claim_url?: string;
+  /**
+   * BundleVersion changes whenever any of the frame's pictures would.
+   */
+  bundle_version: string;
+  /**
+   * NextCheckinS is how many seconds to sleep before checking in again.
+   */
+  next_checkin_s: number /* int */;
+  server_time: string;
+  tz: string;
+  tonight: schedule.Date;
+  settings: DeviceSettings;
+}
+/**
+ * BundleItem is one picture: a view of a night, as a gzipped framebuffer.
+ */
+export interface BundleItem {
+  date: schedule.Date;
+  view: string;
+  /**
+   * Stale marks the picture to show once the bundle has run out of nights:
+   * the night after the last one, with a banner saying the schedule is old.
+   */
+  stale?: boolean;
+  sha256: string;
+  size: number /* int */;
+  url: string;
+}
+/**
+ * Bundle is GET /api/device/v1/bundle: every picture for the next week. A
+ * frame downloads only the hashes it doesn't have.
+ */
+export interface Bundle {
+  version: string;
+  tonight: schedule.Date;
+  items: BundleItem[];
+}
+/**
+ * DeviceEventIn is something the frame noticed: short, long or double (button
+ * presses), seen (logged with a long press), boot, sync, redraw or error.
+ */
+export interface DeviceEventIn {
+  type: string;
+  at: string;
+  /**
+   * Date is the night a "seen" is for; tonight at At when empty.
+   */
+  date?: schedule.Date;
+  detail?: string;
+}
+/**
+ * EventsRequest is POST /api/device/v1/events: the frame's check-in, with
+ * whatever it queued while asleep or offline.
+ */
+export interface EventsRequest {
+  events: DeviceEventIn[];
+  battery_mv: number /* int */;
+  power: string; // usb | battery
+  firmware: string;
+}
+/**
+ * ClaimRequest is POST /api/v1/devices/claim: the code on a frame's setup
+ * screen, and what to call the frame.
+ */
+export interface ClaimRequest {
+  code: string;
+  name: string;
+}
+/**
+ * DeviceInfo is a frame, as its owner sees it.
+ */
+export interface DeviceInfo {
+  id: number /* int64 */;
+  name: string;
+  claimed_at: string;
+  last_checkin_at?: string;
+  battery_mv: number /* int */;
+  power: string;
+  firmware: string;
+  settings: DeviceSettings;
+}
+/**
+ * DeviceUpdate is PATCH /api/v1/me/devices/{id}. Fields left out stay.
+ */
+export interface DeviceUpdate {
+  name?: string;
+  settings?: DeviceSettings;
+}
+/**
+ * AdminDevice is a frame, as the admin page lists them.
+ */
+export interface AdminDevice extends DeviceInfo {
+  owner: string;
+  claim_code?: string;
+  created_at: string;
+}
+
+//////////
 // source: sightingtypes.go
 
 /**
