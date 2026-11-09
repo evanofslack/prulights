@@ -49,6 +49,8 @@ func main() {
 		err = scrapeCmd(ctx, args, false)
 	case "backfill":
 		err = scrapeCmd(ctx, args, true)
+	case "render":
+		err = renderCmd(ctx, args)
 	case "version", "--version":
 		fmt.Println(version)
 	case "help", "-h", "--help":
@@ -70,6 +72,7 @@ commands:
   serve      run the api, web app and scraper (default)
   scrape     check the source pages once (-dry-run, -force, -json, -url U)
   backfill   fetch and apply every source page, ignoring what's cached
+  render     draw a frame view to a png (-view, -date, -palette, -out)
   version    print the version`)
 }
 
