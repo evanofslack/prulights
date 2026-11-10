@@ -62,3 +62,436 @@ export interface MetaResponse {
    */
   dev: boolean;
 }
+/**
+ * NightStatsResponse is GET /api/v1/lightings/{date}/stats: how many people
+ * said they saw a night, and how they rated it. No names.
+ */
+export interface NightStatsResponse {
+  date: schedule.Date;
+  seen: number /* int */;
+  rated: number /* int */;
+  average: number /* float64 */;
+}
+
+//////////
+// source: authtypes.go
+
+/**
+ * MeResponse is GET /api/v1/me: who's signed in (204 when nobody is).
+ */
+export interface MeResponse {
+  id: number /* int64 */;
+  name: string;
+  is_admin: boolean;
+}
+/**
+ * InviteInfo is GET /api/v1/auth/invites/{token}: what an invite link is for.
+ */
+export interface InviteInfo {
+  /**
+   * ForUser names who a re-invite adds a passkey for; empty for a new person.
+   */
+  for_user?: string;
+  is_admin: boolean;
+  /**
+   * ExpiresAt is when the link stops working.
+   */
+  expires_at: string;
+}
+/**
+ * RegisterBegin is POST /api/v1/auth/register/begin.
+ */
+export interface RegisterBegin {
+  invite?: string;
+  /**
+   * ClaimCode is a frame marked for a new person: its code is the invite,
+   * and the new person gets the frame.
+   */
+  claim_code?: string;
+  /**
+   * Name is the new person's display name; ignored for a re-invite.
+   */
+  name: string;
+}
+/**
+ * Ceremony is the reply to a register or login begin: the options to pass to
+ * the browser's passkey prompt, and an id to send back with the result
+ * (POST .../finish?ceremony=id).
+ */
+export interface Ceremony {
+  ceremony: string;
+  options: any;
+}
+/**
+ * CreateInvite is POST /api/v1/admin/invites.
+ */
+export interface CreateInvite {
+  is_admin: boolean;
+  /**
+   * ForUserID makes a re-invite: a link that adds a passkey to that person.
+   */
+  for_user_id?: number /* int64 */;
+}
+/**
+ * InviteLink is a new invite.
+ */
+export interface InviteLink {
+  url: string;
+  expires_at: string;
+}
+
+//////////
+// source: devicetypes.go
+
+/**
+ * DeviceSettings are what a frame's owner chooses. Views are render view
+ * names: tonight, week, month, log.
+ */
+export interface DeviceSettings {
+  /**
+   * DefaultView is what the frame shows after it syncs or redraws.
+   */
+  default_view: string;
+  /**
+   * Views are the ones the button cycles through, in order.
+   */
+  views: string[];
+  /**
+   * QuietStart and QuietEnd ("22:00", "07:00", Boston time) bound when the
+   * frame shows "good night" and doesn't redraw. Both empty for none.
+   */
+  quiet_start: string;
+  quiet_end: string;
+  /**
+   * Paused frames keep their picture and only check in once a day.
+   */
+  paused: boolean;
+}
+/**
+ * RegisterRequest is POST /api/device/v1/register.
+ */
+export interface RegisterRequest {
+  firmware: string;
+  /**
+   * APSSID and APPassword are the frame's setup hotspot, drawn on its
+   * Wi-Fi screen. The server makes some up when they're left out.
+   */
+  ap_ssid?: string;
+  ap_password?: string;
+}
+/**
+ * RegisterResponse is a new frame's identity. The token is shown once; the
+ * frame sends it as "Authorization: Bearer <token>" from then on.
+ */
+export interface RegisterResponse {
+  device_id: number /* int64 */;
+  token: string;
+  claim_code: string;
+  claim_url: string;
+}
+/**
+ * DeviceState is GET /api/device/v1/state, and the answer to POST /events:
+ * what the frame should know each time it wakes up.
+ */
+export interface DeviceState {
+  claimed: boolean;
+  name: string;
+  /**
+   * ClaimCode and ClaimURL are set while nobody has claimed the frame.
+   */
+  claim_code?: string;
+  claim_url?: string;
+  /**
+   * BundleVersion changes whenever any of the frame's pictures would.
+   */
+  bundle_version: string;
+  /**
+   * NextCheckinS is how many seconds to sleep before checking in again.
+   */
+  next_checkin_s: number /* int */;
+  server_time: string;
+  tz: string;
+  tonight: schedule.Date;
+  settings: DeviceSettings;
+}
+/**
+ * BundleItem is one picture: a view of a night, as a gzipped framebuffer.
+ */
+export interface BundleItem {
+  date: schedule.Date;
+  view: string;
+  /**
+   * Stale marks the picture to show once the bundle has run out of nights:
+   * the night after the last one, with a banner saying the schedule is old.
+   */
+  stale?: boolean;
+  sha256: string;
+  size: number /* int */;
+  url: string;
+}
+/**
+ * Bundle is GET /api/device/v1/bundle: every picture for the next week. A
+ * frame downloads only the hashes it doesn't have.
+ */
+export interface Bundle {
+  version: string;
+  tonight: schedule.Date;
+  items: BundleItem[];
+}
+/**
+ * DeviceEventIn is something the frame noticed: short, long or double (button
+ * presses), seen (logged with a long press), boot, sync, redraw or error.
+ */
+export interface DeviceEventIn {
+  type: string;
+  at: string;
+  /**
+   * Date is the night a "seen" is for; tonight at At when empty.
+   */
+  date?: schedule.Date;
+  detail?: string;
+}
+/**
+ * EventsRequest is POST /api/device/v1/events: the frame's check-in, with
+ * whatever it queued while asleep or offline.
+ */
+export interface EventsRequest {
+  events: DeviceEventIn[];
+  battery_mv: number /* int */;
+  power: string; // usb | battery
+  firmware: string;
+  /**
+   * APSSID and APPassword update the frame's hotspot, after a reflash.
+   */
+  ap_ssid?: string;
+  ap_password?: string;
+}
+/**
+ * ClaimRequest is POST /api/v1/devices/claim: the code on a frame's setup
+ * screen, and what to call the frame.
+ */
+export interface ClaimRequest {
+  code: string;
+  name: string;
+}
+/**
+ * DeviceInfo is a frame, as its owner sees it.
+ */
+export interface DeviceInfo {
+  id: number /* int64 */;
+  name: string;
+  claimed_at: string;
+  last_checkin_at?: string;
+  battery_mv: number /* int */;
+  power: string;
+  firmware: string;
+  settings: DeviceSettings;
+}
+/**
+ * DeviceUpdate is PATCH /api/v1/me/devices/{id}. Fields left out stay.
+ */
+export interface DeviceUpdate {
+  name?: string;
+  settings?: DeviceSettings;
+}
+/**
+ * AdminDevice is a frame, as the admin page lists them.
+ */
+export interface AdminDevice extends DeviceInfo {
+  owner: string;
+  claim_code?: string;
+  created_at: string;
+  /**
+   * InviteUntil is set while the frame is marked for a new person.
+   */
+  invite_until?: string;
+}
+/**
+ * ClaimStatus is GET /api/v1/devices/claim/{code}: whether a frame is waiting
+ * for that code, and whether the code also makes an account.
+ */
+export interface ClaimStatus {
+  waiting: boolean;
+  invites: boolean;
+}
+/**
+ * PrepareFrame is POST /api/v1/admin/devices: make a frame's identity before
+ * flashing it. Invite marks it for a new person.
+ */
+export interface PrepareFrame {
+  invite: boolean;
+}
+/**
+ * FrameAP is a frame's own setup hotspot.
+ */
+export interface FrameAP {
+  ssid: string;
+  password: string;
+}
+/**
+ * FrameConfig is a prepared frame's identity (config version 1): what gets
+ * flashed onto it, along with Wi-Fi networks that never reach the server.
+ */
+export interface FrameConfig {
+  version: number /* int */;
+  server: string;
+  device_id: number /* int64 */;
+  token: string;
+  claim_code: string;
+  ap: FrameAP;
+}
+
+//////////
+// source: devrender.go
+
+/**
+ * DevInk is one of the panel's inks, for the emulator.
+ */
+export interface DevInk {
+  name: string;
+  code: number /* byte */;
+  measured: string; // #rrggbb
+  ideal: string;
+}
+/**
+ * DevInks is GET /dev/inks.
+ */
+export interface DevInks {
+  inks: DevInk[];
+  /**
+   * RotateClockwise: portrait (x, y) is panel (y, 479-x); otherwise (799-y, x).
+   */
+  rotate_clockwise: boolean;
+  panel_width: number /* int */;
+  panel_height: number /* int */;
+}
+
+//////////
+// source: sightingtypes.go
+
+/**
+ * SightingRequest is PUT /api/v1/me/sightings/{date}: "I saw it", with an
+ * optional 1–5 rating (0 for none) and a note of up to 280 characters.
+ */
+export interface SightingRequest {
+  rating: number /* int */;
+  note: string;
+}
+/**
+ * Sighting is one person's sighting of a night.
+ */
+export interface Sighting {
+  date: schedule.Date;
+  name: string;
+  mine: boolean;
+  rating: number /* int */;
+  note: string;
+  at: string;
+}
+/**
+ * NightSightings is GET /api/v1/sightings/{date}: everyone who saw a night.
+ */
+export interface NightSightings {
+  date: schedule.Date;
+  sightings: Sighting[];
+  /**
+   * CanLog is whether the night is still open for "I saw it": tonight and
+   * the week before.
+   */
+  can_log: boolean;
+}
+/**
+ * LoggedNight is one of your sightings with the night it was of.
+ */
+export interface LoggedNight extends Sighting {
+  lighting: schedule.Lighting;
+}
+/**
+ * MySightings is GET /api/v1/me/sightings: everything you've logged, newest first.
+ */
+export interface MySightings {
+  nights: LoggedNight[];
+}
+/**
+ * ColorCount is how many of your nights had a color.
+ */
+export interface ColorCount {
+  color: any /* schedule.ColorKey */;
+  count: number /* int */;
+}
+/**
+ * MyStats is GET /api/v1/me/stats.
+ */
+export interface MyStats {
+  seen: number /* int */;
+  rated: number /* int */;
+  average: number /* float64 */;
+  /**
+   * Streak is how many nights in a row you've seen, up to tonight (or last
+   * night, if tonight isn't logged yet).
+   */
+  streak: number /* int */;
+  /**
+   * Favorites are the colors on the most of your nights, most first.
+   */
+  favorites: ColorCount[];
+  /**
+   * LogFrom is the earliest night you can still log.
+   */
+  log_from: schedule.Date;
+  tonight: schedule.Date;
+}
+/**
+ * OverrideBody is PUT /api/v1/admin/overrides/{date}: a correction to a night.
+ */
+export interface OverrideBody {
+  colors: any /* schedule.ColorKey */[];
+  cause: string;
+  cause_url: string;
+  /**
+   * Kind is worked out from the cause when empty.
+   */
+  kind: any /* schedule.Kind */;
+  note: string;
+}
+/**
+ * OverrideInfo is a correction, as the admin page lists them.
+ */
+export interface OverrideInfo extends OverrideBody {
+  date: schedule.Date;
+  updated_at: string;
+}
+/**
+ * UserInfo is a person, as the admin page lists them.
+ */
+export interface UserInfo {
+  id: number /* int64 */;
+  name: string;
+  is_admin: boolean;
+  created_at: string;
+  sightings: number /* int */;
+}
+/**
+ * ScrapeRunInfo is one check of the source pages.
+ */
+export interface ScrapeRunInfo {
+  id: number /* int64 */;
+  started_at: string;
+  finished_at: string;
+  pages: number /* int */;
+  fetched: number /* int */;
+  items: number /* int */;
+  added: number /* int */;
+  changed: number /* int */;
+  removed: number /* int */;
+  warnings: string[];
+  error?: string;
+}
+/**
+ * ScrapeStatus is GET /api/v1/admin/scrape: recent runs, and whether one is
+ * going now.
+ */
+export interface ScrapeStatus {
+  running: boolean;
+  runs: ScrapeRunInfo[];
+}

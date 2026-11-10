@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"mime"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 	"github.com/evanofslack/prulights/store"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-webauthn/webauthn/webauthn"
 )
 
 // Server is the http server: the API under /api and the static web app
@@ -32,12 +34,27 @@ type Server struct {
 
 	// now is the clock, swapped in tests.
 	now func() time.Time
+
+	wa         *webauthn.WebAuthn
+	ceremonies ceremonies
+
+	// scrape checks the source pages now; scraping is set while it runs.
+	scrape   func(context.Context) error
+	scraping atomic.Bool
+
+	// bundles caches what frames were last sent.
+	bundles bundles
 }
 
 // New builds the server and its routes.
 func New(cfg config.Config, st *store.Store) *Server {
 	registerExtensions()
-	s := &Server{cfg: cfg, store: st, router: chi.NewRouter(), now: time.Now}
+	cfg.Fill()
+	wa, err := newWebAuthn(cfg.RPID, cfg.RPOrigins)
+	if err != nil {
+		panic(fmt.Sprintf("passkeys: bad RP_ID or RP_ORIGINS: %v", err))
+	}
+	s := &Server{cfg: cfg, store: st, router: chi.NewRouter(), now: time.Now, wa: wa}
 	s.router.Use(middleware.RequestID)
 	s.router.Use(middleware.Recoverer)
 	s.router.Use(requestLog)
@@ -46,7 +63,11 @@ func New(cfg config.Config, st *store.Store) *Server {
 		s.mountDev()
 	}
 	s.router.Route("/api", func(r chi.Router) {
-		r.Route("/v1", s.mountPublic)
+		r.Route("/v1", func(r chi.Router) {
+			s.mountPublic(r)
+			s.mountAccount(r)
+		})
+		r.Route("/device", s.mountDevice)
 		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusNotFound, "not found")
 		})

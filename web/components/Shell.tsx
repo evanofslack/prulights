@@ -2,26 +2,36 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMeta } from "@/lib/api";
+import type { DeviceInfo } from "@/interfaces/api";
+import { useApi, useMeta } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { Account } from "./Account";
 
 // Shell is the page frame: a slim header with the main places, the page, and
 // the credit to the source. The emulator shows up when the server is in dev
-// mode, since its previews only exist there.
+// mode, since its previews only exist there, and only on wider screens.
 export function Shell({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
     const path = usePathname();
     const meta = useMeta();
+    const { me } = useAuth();
+    const frames = useApi<DeviceInfo[]>(me ? "/me/devices" : null);
+    // wide links hide on phones (Frame is in the account menu there too)
     const links = [
         { href: "/", label: "Tonight", active: path === "/" || path === "/night" },
         { href: "/calendar", label: "Calendar", active: path.startsWith("/calendar") },
+        ...(me ? [{ href: "/log", label: "Log", active: path.startsWith("/log") }] : []),
+        ...(me && (frames.data?.length || path.startsWith("/settings"))
+            ? [{ href: "/settings", label: "Frame", active: path.startsWith("/settings"), wide: true }]
+            : []),
         ...(meta?.dev || path.startsWith("/emulator")
-            ? [{ href: "/emulator", label: "Emulator", active: path.startsWith("/emulator") }]
+            ? [{ href: "/emulator", label: "Emulator", active: path.startsWith("/emulator"), wide: true }]
             : []),
     ];
     const width = wide ? "max-w-6xl" : "max-w-3xl";
     return (
         <div className="flex min-h-dvh flex-col">
             <header className="border-b border-line">
-                <nav className={`mx-auto flex items-center gap-1 px-4 py-2 ${width}`}>
+                <nav className={`mx-auto flex items-center gap-0.5 px-3 py-2 sm:gap-1 sm:px-4 ${width}`}>
                     <Link href="/" className="mr-auto py-2 text-lg font-bold tracking-tight">
                         prulights
                     </Link>
@@ -30,11 +40,14 @@ export function Shell({ children, wide }: { children: React.ReactNode; wide?: bo
                             key={l.href}
                             href={l.href}
                             aria-current={l.active ? "page" : undefined}
-                            className={`rounded-md px-3 py-2 text-base ${l.active ? "bg-raised font-bold" : "text-muted hover:text-fg"}`}
+                            className={`rounded-md px-2.5 py-2 text-base sm:px-3 ${l.active ? "bg-raised font-bold" : "text-muted hover:text-fg"} ${
+                                "wide" in l ? "hidden sm:block" : ""
+                            }`}
                         >
                             {l.label}
                         </Link>
                     ))}
+                    <Account />
                 </nav>
             </header>
             <main className={`mx-auto w-full flex-1 px-4 py-6 ${width}`}>{children}</main>

@@ -26,6 +26,12 @@ var (
 	ScheduleNights = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "prulights_schedule_published_days_ahead", Help: "How many nights ahead the source has published.",
 	})
+	DeviceCheckins = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "prulights_device_checkins_total", Help: "Times a frame checked in.",
+	})
+	DeviceBundles = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "prulights_device_bundles_total", Help: "Frame bundles asked for, by whether they had to be drawn.",
+	}, []string{"result"})
 )
 
 func init() {
@@ -33,6 +39,7 @@ func init() {
 		collectors.NewGoCollector(),
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
 		ScrapeRuns, ScrapeFetches, ScrapeWarnings, ScrapeLastSuccess, ScheduleNights,
+		DeviceCheckins, DeviceBundles,
 	)
 	// start every series at 0 so rate() works before the first event
 	for _, r := range []string{"ok", "error"} {
@@ -40,5 +47,8 @@ func init() {
 	}
 	for _, o := range []string{"changed", "unchanged", "skipped", "error", "rejected"} {
 		ScrapeFetches.WithLabelValues(o)
+	}
+	for _, r := range []string{"cached", "rendered"} {
+		DeviceBundles.WithLabelValues(r)
 	}
 }

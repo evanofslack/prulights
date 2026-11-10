@@ -7,17 +7,19 @@ import { IconChevronLeft, IconChevronRight, IconExternalLink } from "@tabler/ico
 import { useMeta } from "@/lib/api";
 import { addDays, longDate } from "@/lib/format";
 import { Shell } from "@/components/Shell";
+import { Device, type DeviceParams } from "./Device";
 
-// /emulator previews the e-ink frame. For now it's "manual mode": pick a view,
-// a date and conditions, and see what the server draws for the 7.3" Spectra 6
-// panel. Device mode (register, claim, the button, sync, battery) comes with
-// the device api. Everything here lives in the url, so a preview can be
-// bookmarked or shared.
+// /emulator previews the e-ink frame. Manual mode: pick a view, a date and
+// conditions, and see what the server draws for the 7.3" Spectra 6 panel.
+// Device mode (Device.tsx) is a virtual frame on the device api: register,
+// claim, the button, syncs and battery. Everything but the device's token
+// lives in the url, so a preview can be bookmarked or shared.
 
 const VIEWS = ["tonight", "week", "month", "log", "setup", "goodnight"] as const;
 type View = (typeof VIEWS)[number];
 type Colors = "measured" | "ideal" | "both";
 type Size = "true" | "fit" | "2x" | "4x";
+type Mode = "manual" | "device";
 
 // The panel is 800×480 on a 7.3" diagonal: about 128 pixels per inch. A css
 // inch is 96px, so at true size the 480px-wide portrait frame is ~361 css px.
@@ -27,7 +29,8 @@ const WIDTHS: Record<Size, number> = { true: TRUE_WIDTH, fit: 480, "2x": 960, "4
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-interface Settings {
+interface Settings extends DeviceParams {
+    mode: Mode;
     view: View;
     date: string; // "" for the server's tonight
     colors: Colors;
@@ -42,7 +45,15 @@ function read(q: URLSearchParams): Settings {
     const colors = q.get("colors") as Colors;
     const size = q.get("size") as Size;
     const date = q.get("date") ?? "";
+    const mv = Number(q.get("mv"));
+    const clock = q.get("clock") ?? "";
     return {
+        mode: q.get("mode") === "device" ? "device" : "manual",
+        power: q.get("power") === "battery" ? "battery" : "usb",
+        mv: mv >= 3000 && mv <= 4300 ? mv : 3900,
+        offline: q.get("offline") === "1",
+        clock: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(clock) ? clock : "",
+        slow: q.get("slow") === "1",
         view: VIEWS.includes(view) ? view : "tonight",
         date: DATE.test(date) ? date : "",
         colors: ["measured", "ideal", "both"].includes(colors) ? colors : "measured",
@@ -55,6 +66,14 @@ function read(q: URLSearchParams): Settings {
 
 function write(s: Settings): string {
     const q = new URLSearchParams();
+    if (s.mode === "device") {
+        q.set("mode", "device");
+        if (s.power !== "usb") q.set("power", s.power);
+        if (s.power === "battery" && s.mv !== 3900) q.set("mv", String(s.mv));
+        if (s.offline) q.set("offline", "1");
+        if (s.clock) q.set("clock", s.clock);
+        if (s.slow) q.set("slow", "1");
+    }
     if (s.view !== "tonight") q.set("view", s.view);
     if (s.date) q.set("date", s.date);
     if (s.colors !== "measured") q.set("colors", s.colors);
@@ -101,6 +120,7 @@ function Emulator() {
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
             if (e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey || e.altKey || !date) return;
+            if (read(new URLSearchParams(window.location.search)).mode === "device") return;
             if (e.key === "ArrowLeft") set({ date: addDays(date, -1) });
             else if (e.key === "ArrowRight") set({ date: addDays(date, 1) });
             else if (/^[1-6]$/.test(e.key)) set({ view: VIEWS[Number(e.key) - 1] });
@@ -125,14 +145,75 @@ function Emulator() {
     }
 
     const palettes: ("measured" | "ideal")[] = s.colors === "both" ? ["measured", "ideal"] : [s.colors];
+    const modes = (
+        <SegmentedControl
+            size="sm"
+            value={s.mode}
+            onChange={(v) => set({ mode: v as Mode })}
+            data={[
+                { value: "manual", label: "Manual" },
+                { value: "device", label: "Device" },
+            ]}
+            aria-label="Mode"
+        />
+    );
+    if (s.mode === "device") {
+        return (
+            <div className="flex flex-col gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h1 className="text-xl font-bold">Frame emulator</h1>
+                        <p className="text-sm text-muted">
+                            A virtual frame on the device api, drawing the same pictures the real one
+                            downloads.
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <SegmentedControl
+                            size="sm"
+                            value={s.colors === "ideal" ? "ideal" : "measured"}
+                            onChange={(v) => set({ colors: v as Colors })}
+                            data={[
+                                { value: "measured", label: "Measured" },
+                                { value: "ideal", label: "Ideal" },
+                            ]}
+                            aria-label="Colors"
+                        />
+                        <SegmentedControl
+                            size="sm"
+                            value={s.size}
+                            onChange={(v) => set({ size: v as Size })}
+                            data={[
+                                { value: "true", label: "True size" },
+                                { value: "fit", label: "1:1 px" },
+                                { value: "2x", label: "2×" },
+                            ]}
+                            aria-label="Size"
+                        />
+                        {modes}
+                    </div>
+                </div>
+                <Device
+                    p={s}
+                    set={set}
+                    palette={s.colors === "ideal" ? "ideal" : "measured"}
+                    width={WIDTHS[s.size]}
+                />
+            </div>
+        );
+    }
     return (
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
             <aside className="flex w-full shrink-0 flex-col gap-5 rounded-xl bg-panel p-4 lg:sticky lg:top-4 lg:w-80">
-                <div>
-                    <h1 className="text-xl font-bold">Frame emulator</h1>
-                    <p className="text-sm text-muted">
-                        What the 7.3&quot; e-ink frame shows. Manual mode; the device itself comes later.
-                    </p>
+                <div className="flex flex-col gap-3">
+                    <div>
+                        <h1 className="text-xl font-bold">Frame emulator</h1>
+                        <p className="text-sm text-muted">
+                            What the 7.3&quot; e-ink frame shows, for any view and night. Device mode runs a
+                            virtual frame.
+                        </p>
+                    </div>
+                    {modes}
                 </div>
 
                 <Field label="View" hint="1–6">

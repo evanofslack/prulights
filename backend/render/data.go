@@ -18,10 +18,11 @@ const (
 	ViewLog       View = "log"
 	ViewSetup     View = "setup"
 	ViewGoodnight View = "goodnight"
+	ViewWifi      View = "wifi"
 )
 
 // Views lists every view, the ones the button cycles through first.
-var Views = []View{ViewTonight, ViewWeek, ViewMonth, ViewLog, ViewSetup, ViewGoodnight}
+var Views = []View{ViewTonight, ViewWeek, ViewMonth, ViewLog, ViewSetup, ViewGoodnight, ViewWifi}
 
 // Sighting is what the frame's owner logged for a night.
 type Sighting struct {
@@ -64,7 +65,12 @@ type Data struct {
 	BaseURL   string // for the QR code to a night's page
 	ClaimURL  string // setup view
 	ClaimCode string
-	UpdatedAt time.Time // shown small on the tonight view
+
+	// The frame's setup hotspot and its page, for the Wi-Fi view.
+	APSSID     string
+	APPassword string
+	PortalURL  string
+	UpdatedAt  time.Time // shown small on the tonight view
 
 	StaleSince schedule.Date // when set, a banner says the schedule is old
 	LowBattery bool
@@ -196,10 +202,13 @@ func SampleData(tonight schedule.Date) Data {
 				{Date: "2026-12-04", Colors: []schedule.ColorKey{schedule.Blue}, Cause: "Hanukkah", Rating: 3},
 			},
 		},
-		BaseURL:   "https://prulights.evanslack.dev",
-		ClaimURL:  "https://prulights.evanslack.dev/claim?code=PRU-4K7Q",
-		ClaimCode: "PRU-4K7Q",
-		UpdatedAt: time.Date(t.Year(), t.Month(), t.Day(), 12, 2, 0, 0, schedule.Boston),
+		BaseURL:    "https://prulights.evanslack.dev",
+		ClaimURL:   "https://prulights.evanslack.dev/claim?code=K7Q-9MX",
+		ClaimCode:  "K7Q-9MX",
+		APSSID:     "prulights-K7Q9",
+		APPassword: "mxq4ad7tph",
+		PortalURL:  "http://192.168.4.1",
+		UpdatedAt:  time.Date(t.Year(), t.Month(), t.Day(), 12, 2, 0, 0, schedule.Boston),
 	}
 }
 

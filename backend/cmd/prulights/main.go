@@ -3,6 +3,7 @@
 //	prulights [serve]                 run the api, web app and scraper
 //	prulights scrape [flags]          check the source pages once
 //	prulights backfill                fetch and apply every source page
+//	prulights frame new|config        prepare a frame for flashing
 package main
 
 import (
@@ -51,6 +52,10 @@ func main() {
 		err = scrapeCmd(ctx, args, true)
 	case "render":
 		err = renderCmd(ctx, args)
+	case "invite":
+		err = inviteCmd(ctx, args)
+	case "frame":
+		err = frameCmd(ctx, args)
 	case "version", "--version":
 		fmt.Println(version)
 	case "help", "-h", "--help":
@@ -73,6 +78,9 @@ commands:
   scrape     check the source pages once (-dry-run, -force, -json, -url U, -delay D)
   backfill   fetch and apply every source page, ignoring what's cached
   render     draw a frame view to a png (-view, -date, -palette, -out)
+  invite     make an invite link and QR code (-admin, -for-user NAME)
+  frame new  prepare a frame's identity for flashing (-invite, -out FILE)
+  frame config  the files to flash: -from FILE -wifi "SSID:password" … -out DIR
   version    print the version`)
 }
 
@@ -110,7 +118,12 @@ func serve(ctx context.Context) error {
 	s := server.New(cfg, st)
 	if cfg.ScrapeEnabled {
 		go scrape.New(st).Every(ctx, cfg.ScrapeInterval)
+		s.SetScraper(func(ctx context.Context) error {
+			_, err := scrape.New(st).Run(ctx, scrape.Options{})
+			return err
+		})
 	}
+	go cleanup(ctx, st)
 	select {
 	case err := <-s.Run():
 		return err
@@ -179,4 +192,20 @@ func scrapeCmd(ctx context.Context, args []string, backfill bool) error {
 		fmt.Println("(dry run: nothing written)")
 	}
 	return err
+}
+
+// cleanup deletes expired sessions and invites once a day.
+func cleanup(ctx context.Context, st *store.Store) {
+	t := time.NewTicker(24 * time.Hour)
+	defer t.Stop()
+	for {
+		if err := st.DeleteExpired(ctx, time.Now()); err != nil && ctx.Err() == nil {
+			slog.Error("cleanup", "error", err)
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+		}
+	}
 }

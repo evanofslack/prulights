@@ -52,6 +52,27 @@ func (f *Frame) PNG(p Palette) []byte {
 	return b.Bytes()
 }
 
+// PanelPNG is PNG turned to the panel's own 800×480, the way Packed lays it
+// out: for firmware that takes a picture and draws it as is.
+func (f *Frame) PanelPNG(p Palette) []byte {
+	pal := make(color.Palette, numInks)
+	for i := range pal {
+		pal[i] = p.Colors[i]
+	}
+	img := image.NewPaletted(image.Rect(0, 0, PanelWidth, PanelHeight), pal)
+	for y := 0; y < Height; y++ {
+		for x := 0; x < Width; x++ {
+			nx, ny := panelXY(x, y)
+			img.Pix[ny*PanelWidth+nx] = uint8(f.Pix[y*Width+x])
+		}
+	}
+	var b bytes.Buffer
+	if err := (&png.Encoder{CompressionLevel: png.BestCompression}).Encode(&b, img); err != nil {
+		panic(err)
+	}
+	return b.Bytes()
+}
+
 // Packed is the frame as the panel's framebuffer: rotated to 800×480,
 // row-major, two pixels a byte with the left pixel in the high nibble, each
 // nibble the ink's panel code.

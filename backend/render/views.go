@@ -55,6 +55,8 @@ func Render(v View, d Data) (*Frame, error) {
 		setupView(c, &d)
 	case ViewGoodnight:
 		goodnightView(c, &d)
+	case ViewWifi:
+		wifiView(c, &d)
 	default:
 		return nil, fmt.Errorf("render: unknown view %q", v)
 	}
@@ -259,19 +261,77 @@ func logView(c *canvas, d *Data) {
 
 // setupView: the QR code that links the frame to an account.
 func setupView(c *canvas, d *Data) {
-	c.text(margin, 74, style{w: bold, size: 40, ink: Black}, "Hello!")
-	y := 118
-	for _, line := range wrap(causeStyle, "Scan this with your phone to connect the frame.", Width-2*margin, 3) {
-		c.text(margin, y, causeStyle, line)
-		y += causeStyle.lineHeight()
-	}
-	const size = 320
-	box := qr(c, image.Pt((Width-size)/2, y+10), size, d.ClaimURL)
-	y = box.Max.Y + 50
+	l := d.night(d.Tonight)
+	drawTower(c, image.Rect(0, 0, Width, 300), l.Colors, true)
+	w := Width - 2*margin
+	c.text(margin, 340, labelStyle, strings.ToUpper("Tonight · "+dayLabel(d.Tonight)))
+	c.text(margin, 384, colorsStyle, fit(colorsStyle, colorNames(l.Colors), w))
+
+	c.textCenter(Width/2, 432, style{w: bold, size: 26, ink: Black}, "Scan to connect your phone")
+	const size = 250
+	box := qr(c, image.Pt((Width-size)/2, 446), size, d.ClaimURL)
 	if d.ClaimCode != "" {
-		c.textCenter(Width/2, y, bodyStyle, "or enter this code:")
-		c.textCenter(Width/2, y+52, style{w: bold, size: 40, ink: Black, spacing: 4}, d.ClaimCode)
+		y := box.Max.Y + 34
+		if host := hostOf(d.ClaimURL); host != "" {
+			c.textCenter(Width/2, y, smallStyle, "or enter this code at "+host+"/claim")
+		}
+		c.textCenter(Width/2, y+44, style{w: bold, size: 36, ink: Black, spacing: 4}, d.ClaimCode)
 	}
+}
+
+// hostOf is a url's host, for telling someone where to type a code.
+func hostOf(u string) string {
+	rest, ok := strings.CutPrefix(u, "https://")
+	if !ok {
+		rest, _ = strings.CutPrefix(u, "http://")
+	}
+	host, _, _ := strings.Cut(rest, "/")
+	return host
+}
+
+// wifiView: the frame can't reach any network it knows. Join its own
+// hotspot (scan, or type) and pick a network on its page. It's step 1; the
+// welcome screen's code is step 2.
+func wifiView(c *canvas, d *Data) {
+	w := Width - 2*margin
+	c.text(margin, 48, labelStyle, "STEP 1 OF 2")
+	y := 96
+	for _, line := range wrap(headStyle, "Connect the frame to Wi-Fi", w, 2) {
+		c.text(margin, y, headStyle, line)
+		y += headStyle.lineHeight()
+	}
+	for _, line := range wrap(bodyStyle, "Scan this with your phone's camera to join the frame's own network:", w, 2) {
+		c.text(margin, y+6, bodyStyle, line)
+		y += bodyStyle.lineHeight()
+	}
+	const size = 250
+	box := qr(c, image.Pt((Width-size)/2, y+18), size, wifiQR(d.APSSID, d.APPassword))
+	y = box.Max.Y + 44
+	c.text(margin, y, bodyStyle, "or join it by hand:")
+	y += 40
+	x := c.text(margin, y, bodyStyle, "Network ")
+	c.text(x+6, y, bodyBold, d.APSSID)
+	y += 34
+	x = c.text(margin, y, bodyStyle, "Password ")
+	c.text(x+6, y, bodyBold, d.APPassword)
+	y += 34
+	portal := d.PortalURL
+	if portal == "" {
+		portal = "http://192.168.4.1"
+	}
+	x = c.text(margin, y, bodyStyle, "then open ")
+	c.text(x+6, y, bodyBold, strings.TrimPrefix(portal, "http://"))
+	y += 48
+	for _, line := range wrap(smallStyle, "Pick your Wi-Fi there. Next, the frame shows a code to connect your phone.", w, 2) {
+		c.text(margin, y, smallStyle, line)
+		y += smallStyle.lineHeight()
+	}
+}
+
+// wifiQR is the text phone cameras read as "join this network".
+func wifiQR(ssid, password string) string {
+	esc := strings.NewReplacer(`\`, `\\`, `;`, `\;`, `,`, `\,`, `:`, `\:`, `"`, `\"`)
+	return "WIFI:T:WPA;S:" + esc.Replace(ssid) + ";P:" + esc.Replace(password) + ";;"
 }
 
 // goodnightView: quiet hours, a small tower and tonight's colors on black.

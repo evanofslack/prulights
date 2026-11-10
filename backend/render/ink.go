@@ -37,6 +37,14 @@ var panelCode = [numInks]byte{
 	Green:  0x6,
 }
 
+// PanelCode is the ink's 4-bit value in the panel's framebuffer.
+func (i Ink) PanelCode() byte { return panelCode[i] }
+
+// String is the ink's name.
+func (i Ink) String() string {
+	return [numInks]string{"black", "white", "yellow", "red", "blue", "green"}[i]
+}
+
 // Palette is how each ink is shown in a PNG.
 type Palette struct {
 	Name   string

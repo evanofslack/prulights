@@ -265,9 +265,9 @@ func TestSpecCoversRoutes(t *testing.T) {
 	}
 }
 
-// isPrivateRoute is for routes that need a login or a device token; they're
+// isPrivateRoute is for routes that need a sign-in or a device token; they're
 // not part of the public spec.
 func isPrivateRoute(p string) bool {
 	first, _, _ := strings.Cut(strings.TrimPrefix(p, "/"), "/")
-	return slices.Contains([]string{"me", "auth", "admin", "devices"}, first)
+	return slices.Contains([]string{"me", "auth", "admin", "devices", "sightings"}, first)
 }

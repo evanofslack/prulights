@@ -59,8 +59,46 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
 - Web pages: `/` tonight, `/night?d=`, `/calendar?m=`, `/display` (always-on, no chrome; Esc leaves),
   `/docs` (stock Swagger UI from `swagger-ui-dist`, copied to `public/swagger` by `npm run swagger` before
   dev/build; don't bundle swagger-ui through next, its OpenAPI 3.1 support breaks), `/emulator` (frame
-  previews; only when `/meta` says `dev`, settings live in the url). Data via `useApi` in `web/lib/api.ts`; dates are Boston calendar strings, formatted in
+  previews; only when `/meta` says `dev`, settings live in the url), `/claim?code=` (a frame's setup QR
+  lands here), `/settings` (your frames). `/login?next=` returns to a path after signing in. Data via `useApi` in `web/lib/api.ts`; dates are Boston calendar strings, formatted in
   `web/lib/format.ts` at noon UTC so no time zone shifts them.
 - `just e2e` loads the scraper fixtures into a fresh db and runs `e2e/*.mjs` against :8099
   (`SHOTS=dir` for screenshots). Fixture dates: Dec 2026 is known (Dec 10 = Red, Dress for Success).
 - `render.Render` holds a lock: the cached font faces aren't safe to share between goroutines.
+- Sign-in (`server/auth.go`): passkeys only (go-webauthn, discoverable), invite only. `prulights invite
+  [-admin] [-for-user NAME]` / `just invite` makes a link + terminal QR; `-for-user` adds a passkey to
+  that person (recovery). Session = random token in the HttpOnly `prulights_session` cookie, sha256 in
+  `sessions`, 1 year, slid forward daily. Writes under `/api/v1` need an `Origin` in `RP_ORIGINS` and a
+  json body (`sameOrigin`). `GET /api/v1/me` is 204 when signed out. Passkey prompts in flight
+  (ceremonies) live in memory for 5 minutes. Private routes (`/me`, `/auth`, `/admin`, `/devices`, `/sightings`)
+  stay out of `openapi.yaml` (`isPrivateRoute` in `public_test.go`).
+- e2e `auth.mjs` uses Chrome's virtual authenticator (CDP `WebAuthn.addVirtualAuthenticator`); `just
+  e2e` sets `BASE_URL=http://localhost:8099` so passkeys accept that origin, and `BIN` for invites.
+  The e2e scripts run in parallel against one db and names are unique, so each script signs up its own names.
+- Sightings (`server/sightings.go`): "I saw it" + 0–5 stars + a note, open for tonight and the 7 nights before
+  (`canLog`). `/me/stats` and `/me/sightings` both come from `myNights`. `GET /sightings/{date}` (names,
+  notes) is members only; the public sees only totals at `/lightings/{date}/stats`. Admin corrections
+  (`/admin/overrides`) beat the scraped schedule. Embedded response structs use `tstype:",extends"` so
+  tygo flattens them.
+- Frames (`server/devices.go`): `/api/device/v1/{register,state,bundle,images/{sha}.bin.gz,events}` with a
+  bearer token (no cookie, so no origin check); a 401 means "register again". `POST /events` is the
+  check-in and answers with the state. A bundle is every enabled view for tonight + 6 nights (plus
+  "goodnight" with quiet hours, and one `stale` picture for the night after); an unclaimed frame gets
+  only `setup`. Its version hashes the pictures' hashes, so it changes exactly when a picture would;
+  built bundles are cached in memory by the json of their inputs, pictures kept in `device_images` by
+  sha256. A `seen` event is `MarkSeen` for the owner inside `canLog` (keeps stars and notes). Claim codes
+  are `XXX-XXX` (`NormalizeClaimCode`); `DELETE /me/devices/{id}` unclaims (back to setup), the admin
+  delete forgets the token. `/api/device/compat/current.png?token=` is for the stock firmware.
+- Frame setup: an unclaimed frame's bundle is the welcome screen (`setup`, tonight + 6) plus `wifi`; a
+  claimed one adds `wifi` (empty date) to its views. A frame marked for a new person (`invite_until`,
+  30 days, `MarkForInvite`) lets `register/begin` take `claim_code` instead of `invite`: one passkey
+  makes the account and claims it (`RedeemFrame`). `GET /devices/claim/{code}` tells `/claim` which
+  case it is. Admins prepare frames (`POST /admin/devices`, or `prulights frame new`) as a config v1
+  json; `prulights frame config` / `just frame-config` adds Wi-Fi locally (never sent to the server)
+  and writes the SD card files. The frame's contract is `plans/firmware.md`.
+- Emulator device mode (`/emulator?mode=device`, `app/emulator/Device.tsx`, `lib/frame.ts`) is a virtual
+  frame on the real device api: it keeps its token, hotspot and known networks in localStorage (or loads a
+  prepared `frame-<id>.json`), decodes the `.bin.gz` pictures in
+  the browser with `/dev/inks` (inks, panel codes, rotation; `TestDevInksDecodeFrames` keeps that in
+  step with the png), and picks the picture by its own clock (`clock=` in the url, Boston wall time).
+  Battery numbers in `POWER` are guesses until the hardware is measured. e2e: `frame.mjs`.
