@@ -14,6 +14,7 @@ import {
     shortDate,
     weekdayAbbr,
 } from "@/lib/format";
+import { useSky } from "@/lib/sky";
 import { Crown, Tower } from "./Tower";
 
 interface NightProps {
@@ -30,14 +31,20 @@ export function Night({ lighting: l, tonight, publishedThrough, children }: Nigh
     const bands = bandsOf(l.colors, palette);
     const when = relativeName(l.date, tonight);
     const unannounced = !l.scheduled && publishedThrough !== undefined && l.date > publishedThrough;
+    const sky = useSky(l, tonight);
+    const lit = l.date === tonight && sky === "night";
     return (
-        <section className="flex flex-col items-center gap-6 sm:flex-row sm:items-end sm:gap-10">
-            <Tower
-                bands={bands}
-                className="h-[44dvh] max-h-[420px] min-h-[240px] w-auto shrink-0"
-                title={`The Prudential Tower, crown lit ${colorNames(l.colors, palette)}`}
-            />
-            <div className="flex w-full flex-col gap-3 pb-2 text-center sm:text-left">
+        <section className="flex flex-col gap-5 sm:flex-row sm:items-stretch sm:gap-10">
+            <div className="relative -mx-4 -mt-6 overflow-hidden sm:mx-0 sm:mt-0 sm:w-[46%] sm:shrink-0 sm:rounded-2xl">
+                <Tower
+                    bands={bands}
+                    sky={sky}
+                    className="block h-[64dvh] max-h-[640px] min-h-[400px] w-full"
+                    title={`The Prudential Tower, crown lit ${colorNames(l.colors, palette)}`}
+                />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-linear-to-b from-transparent to-surface sm:hidden" />
+            </div>
+            <div className="flex w-full flex-col justify-end gap-3 pb-2 text-center sm:text-left">
                 <p className="text-lg text-muted">
                     <span className="font-bold text-fg">{when}</span>
                     {when === "Tonight" || when === "Tomorrow" || when === "Last night"
@@ -80,7 +87,9 @@ export function Night({ lighting: l, tonight, publishedThrough, children }: Nigh
                 <div className="flex flex-wrap items-center justify-center gap-3 text-muted sm:justify-start">
                     <span className="inline-flex items-center gap-1.5 text-lg">
                         <IconClock size={20} aria-hidden />
-                        Lights on around {lightsOnTime(l.lights_on)}
+                        {lit ? "Lit since " : "Lights on "}
+                        {l.lights_on_source === "sunset" ? "around " : "at "}
+                        {lightsOnTime(l.lights_on)}
                         {l.lights_on_source === "sunset" ? " (sunset)" : ""}
                     </span>
                     {l.scheduled && (
@@ -97,8 +106,8 @@ export function Night({ lighting: l, tonight, publishedThrough, children }: Nigh
 
 export function NightSkeleton() {
     return (
-        <section className="flex flex-col items-center gap-6 sm:flex-row sm:items-end">
-            <Skeleton className="h-[44dvh] max-h-[420px] min-h-[240px] !w-[190px]" />
+        <section className="flex flex-col gap-5 sm:flex-row sm:items-end sm:gap-10">
+            <Skeleton className="h-[64dvh] max-h-[640px] min-h-[400px] sm:!w-[46%]" radius="lg" />
             <div className="flex w-full flex-col gap-3">
                 <Skeleton height={20} width="50%" />
                 <Skeleton height={44} width="80%" />
@@ -108,36 +117,54 @@ export function NightSkeleton() {
     );
 }
 
-// Upcoming lists nights as rows: swatch, day, colors and cause. Each opens
-// that night.
+// Upcoming lists nights as rows: crown, day, colors and cause. A run of plain
+// white nights is one row, so the special ones stand out. Each opens that
+// night.
 export function Upcoming({ nights, tonight }: { nights: Lighting[]; tonight?: string }) {
     const palette = usePalette();
+    const rows: Lighting[][] = [];
+    for (const l of nights) {
+        const last = rows[rows.length - 1];
+        if (!l.scheduled && last && !last[0].scheduled) last.push(l);
+        else rows.push([l]);
+    }
+    const dayName = (d: string) => (relativeName(d, tonight) === "Tomorrow" ? "Tomorrow" : weekdayAbbr(d));
     return (
         <ul className="flex flex-col divide-y divide-line overflow-hidden rounded-xl bg-panel">
-            {nights.map((l) => (
-                <li key={l.date}>
-                    <Link
-                        href={`/night?d=${l.date}`}
-                        className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-raised"
-                    >
-                        <Crown bands={bandsOf(l.colors, palette)} className="h-11 w-11" />
-                        <span className="w-24 shrink-0">
-                            <span className="block font-bold">
-                                {relativeName(l.date, tonight) === "Tomorrow"
-                                    ? "Tomorrow"
-                                    : weekdayAbbr(l.date)}
+            {rows.map((run) => {
+                const l = run[0];
+                const end = run[run.length - 1];
+                return (
+                    <li key={l.date}>
+                        <Link
+                            href={`/night?d=${l.date}`}
+                            className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-raised"
+                        >
+                            <Crown bands={bandsOf(l.colors, palette)} className="h-11 w-11" />
+                            <span className="w-28 shrink-0">
+                                <span className="block font-bold">
+                                    {run.length > 1
+                                        ? `${dayName(l.date)} – ${weekdayAbbr(end.date)}`
+                                        : dayName(l.date)}
+                                </span>
+                                <span className="block text-sm text-muted">
+                                    {run.length > 1
+                                        ? `${shortDate(l.date)} – ${shortDate(end.date)}`
+                                        : shortDate(l.date)}
+                                </span>
                             </span>
-                            <span className="block text-sm text-muted">{shortDate(l.date)}</span>
-                        </span>
-                        <span className="min-w-0 flex-1">
-                            <span className="block truncate text-lg">{colorNames(l.colors, palette)}</span>
-                            <span className="block truncate text-muted">
-                                {l.scheduled ? l.cause : "No special lighting"}
+                            <span className="min-w-0 flex-1">
+                                <span className="block truncate text-lg">
+                                    {colorNames(l.colors, palette)}
+                                </span>
+                                <span className="block truncate text-muted">
+                                    {l.scheduled ? l.cause : "No special lighting"}
+                                </span>
                             </span>
-                        </span>
-                    </Link>
-                </li>
-            ))}
+                        </Link>
+                    </li>
+                );
+            })}
         </ul>
     );
 }

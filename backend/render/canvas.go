@@ -20,10 +20,11 @@ const (
 type canvas struct {
 	w, h int
 	pix  []Ink
+	clip image.Rectangle // drawing stays inside it
 }
 
 func newCanvas(w, h int, bg Ink) *canvas {
-	c := &canvas{w: w, h: h, pix: make([]Ink, w*h)}
+	c := &canvas{w: w, h: h, pix: make([]Ink, w*h), clip: image.Rect(0, 0, w, h)}
 	for i := range c.pix {
 		c.pix[i] = bg
 	}
@@ -31,16 +32,23 @@ func newCanvas(w, h int, bg Ink) *canvas {
 }
 
 func (c *canvas) set(x, y int, ink Ink) {
-	if x >= 0 && y >= 0 && x < c.w && y < c.h {
+	if image.Pt(x, y).In(c.clip) {
 		c.pix[y*c.w+x] = ink
 	}
+}
+
+// clipTo limits drawing to r until the returned func puts it back.
+func (c *canvas) clipTo(r image.Rectangle) func() {
+	old := c.clip
+	c.clip = r.Intersect(old)
+	return func() { c.clip = old }
 }
 
 func (c *canvas) at(x, y int) Ink { return c.pix[y*c.w+x] }
 
 // fill paints a rectangle.
 func (c *canvas) fill(r image.Rectangle, p Paint) {
-	r = r.Intersect(image.Rect(0, 0, c.w, c.h))
+	r = r.Intersect(c.clip)
 	for y := r.Min.Y; y < r.Max.Y; y++ {
 		for x := r.Min.X; x < r.Max.X; x++ {
 			c.pix[y*c.w+x] = p.At(x, y)
@@ -59,7 +67,7 @@ func (c *canvas) outline(r image.Rectangle, t int, ink Ink) {
 // paintMask paints p wherever the mask (positioned at its own bounds) is at
 // least half covered.
 func (c *canvas) paintMask(m *image.Alpha, p Paint) {
-	b := m.Bounds().Intersect(image.Rect(0, 0, c.w, c.h))
+	b := m.Bounds().Intersect(c.clip)
 	for y := b.Min.Y; y < b.Max.Y; y++ {
 		for x := b.Min.X; x < b.Max.X; x++ {
 			if m.AlphaAt(x, y).A >= 128 {
@@ -153,4 +161,55 @@ func starPoints(o pt, r float64) []pt {
 func (c *canvas) check(at image.Point, size float64, ink Ink) {
 	x, y := float64(at.X), float64(at.Y)
 	c.polyline([]pt{{x + size*0.1, y + size*0.55}, {x + size*0.4, y + size*0.85}, {x + size*0.92, y + size*0.18}}, size*0.16, Solid(ink))
+}
+
+// pline draws a one-pixel line, pixel by pixel (Bresenham), for the art's
+// thin lattice and ribs.
+func (c *canvas) pline(x0, y0, x1, y1 int, p Paint) {
+	dx, dy := abs(x1-x0), -abs(y1-y0)
+	sx, sy := 1, 1
+	if x0 > x1 {
+		sx = -1
+	}
+	if y0 > y1 {
+		sy = -1
+	}
+	e := dx + dy
+	for {
+		c.set(x0, y0, p.At(x0, y0))
+		if x0 == x1 && y0 == y1 {
+			return
+		}
+		if e2 := 2 * e; e2 >= dy {
+			e += dy
+			x0 += sx
+		} else {
+			e += dx
+			y0 += sy
+		}
+	}
+}
+
+func abs(v int) int {
+	if v < 0 {
+		return -v
+	}
+	return v
+}
+
+// fade covers r with ink, from none of the pixels at its top to all of them
+// at its bottom (or the other way when up), as an ordered dither.
+func (c *canvas) fade(r image.Rectangle, ink Ink, up bool) {
+	r = r.Intersect(c.clip)
+	for y := r.Min.Y; y < r.Max.Y; y++ {
+		t := (float64(y-r.Min.Y) + 0.5) / float64(r.Dy())
+		if up {
+			t = 1 - t
+		}
+		for x := r.Min.X; x < r.Max.X; x++ {
+			if (float64(bayer8[y&7][x&7])+0.5)/64 < t {
+				c.pix[y*c.w+x] = ink
+			}
+		}
+	}
 }

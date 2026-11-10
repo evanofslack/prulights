@@ -75,6 +75,12 @@ type style struct {
 
 func (s style) face() font.Face { return face(s.w, s.size) }
 
+// on is the style in a theme's text ink.
+func (s style) on(th theme) style {
+	s.ink = th.fg
+	return s
+}
+
 // width is how wide text is set in a style.
 func (s style) width(text string) int {
 	f := s.face()

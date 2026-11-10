@@ -60,7 +60,13 @@ The server and the emulator (`/emulator?mode=device`) already speak this. Firmwa
    - else the current view for tonight (the default after a sync or rollover)
    - past the last night: the `stale` item
    - no network and nothing saved: `wifi`
-6. Sleep `next_checkin_s`, or until the 4am rollover, whichever is first.
+
+   A frame set to "dark at night" (`settings.theme` `auto`) gets each night's views twice: `theme`
+   `dark`, and `theme` `light` with `from` and `until` (sunrise to lights-on). Of the items for a
+   night and view, show the one whose window holds the time, else the one without a window. Redraw
+   when the window opens or closes: wake at `from` and `until` as well as at the 4am rollover.
+6. Sleep `next_checkin_s`, or until the 4am rollover (or a light picture's `from`/`until`),
+   whichever is first.
 
 "Tonight" rolls over at 04:00 America/New_York.
 

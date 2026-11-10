@@ -95,6 +95,7 @@ func (s *Server) getDevRender(w http.ResponseWriter, r *http.Request) {
 		data.StaleSince = date.AddDays(-3)
 	}
 	data.LowBattery = q.Get("low_battery") == "1"
+	data.Look = render.Look{Light: q.Get("light") == "1", Scene: render.Scene(q.Get("scene")), Words: render.Words(q.Get("words"))}
 
 	f, err := render.Render(view, data)
 	if err != nil {

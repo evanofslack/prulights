@@ -97,10 +97,23 @@ await showingStarts("tonight ");
 check("after syncing it shows the default view", true);
 await shot(fran, "frame-emulator");
 
-// settings: only tonight, so the bundle shrinks and the button stays put
+// settings: only tonight, so the bundle shrinks and the button stays put;
+// dark at night (so light by day), across the river
 await fran.goto(`${URL}/settings`);
 await fran.waitForSelector("form[aria-label='Frame Kitchen']");
 for (const label of ["The week ahead", "The month", "Your log"]) await fran.getByLabel(label).uncheck();
+await fran.click("label:has-text('Dark at night')");
+await fran.click("[role=radio]:has-text('Across the river')");
+await fran.waitForSelector("img[alt='Tonight on the frame, by day']");
+await fran.waitForFunction(() => [...document.querySelectorAll("form img")].every((i) => i.complete), null, {
+    timeout: 15000,
+});
+const previews = await fran.$$eval("form img", (imgs) => imgs.map((i) => i.naturalWidth));
+check(
+    "the settings preview the frame by day and at night",
+    previews.length === 5 && previews.every((w) => w === 480),
+    JSON.stringify(previews),
+);
 await fran.click(btn("Save"));
 await fran.waitForSelector("[role=status]:has-text('Saved')");
 check("settings save", true);
@@ -109,8 +122,26 @@ await shot(fran, "frame-settings");
 await fran.setViewportSize({ width: 1400, height: 1000 });
 
 await fran.goto(device);
-await fran.waitForFunction(() => document.querySelector("[data-items]")?.dataset.items === "9");
-check("one view: a week of tonight, the stale picture and the Wi-Fi screen", true);
+await fran.waitForFunction(() => document.querySelector("[data-items]")?.dataset.items === "16");
+check("one view, by day and at night: two weeks of tonight, the stale picture and the Wi-Fi screen", true);
+await showingStarts("tonight ");
+// the frame's clock picks the day or night picture
+const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(
+    Date.now() - 4 * 3_600_000,
+);
+for (const [at, theme] of [
+    ["12:00", "light"],
+    ["21:00", "dark"],
+]) {
+    await fran.goto(`${device}&clock=${today}T${at}`);
+    await fran.waitForFunction(
+        ([sel, t]) => document.querySelector(sel)?.dataset.showing?.endsWith(` ${t}`),
+        [frame, theme],
+    );
+    check(`at ${at} it shows the ${theme} picture`, true);
+    await shot(fran, `frame-${theme}`);
+}
+await fran.goto(device);
 await showingStarts("tonight ");
 await fran.click(btn("Short press"));
 await logHas("short press: tonight");

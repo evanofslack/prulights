@@ -38,8 +38,12 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
 - `backend/render`: pure-Go e-ink frames, 480×800 portrait in the panel's six inks (text solid,
   colors Bayer-dithered from `schedule.InkRecipe`). `Render(view, data)` → `Frame` with `PNG`
   (measured or ideal palette), `PanelBin` (gzipped 4bpp, rotated to 800×480) and `SHA256`.
-  Golden PNGs in `render/testdata/golden`; `just render`, `just golden-update`. With `DEV=1` the
-  server draws frames from the real schedule at `/dev/render/{view}?date=&palette=&sample=1`.
+  The tower is pixel art drawn in code at 1:1 (`art.go`: never scaled, so windows land on whole
+  pixels); the night's colors go on the crown's two rings, the setback and the spire. `Data.Look`
+  is the owner's choice: `Light` (paper) or the night sky, `Scene` (tower, skyline, river) and
+  `Words` (none, color, cause). Golden PNGs in `render/testdata/golden`; `just render` (with
+  `-light -scene -words`), `just golden-update`. With `DEV=1` the server draws frames from the real
+  schedule at `/dev/render/{view}?date=&palette=&sample=1&light=1&scene=&words=`.
 - `web/` is a static export (`output: 'export'`, App Router). No API routes, SSR or middleware.
   Pages that need a parameter take it in the query string (`/night?d=2026-12-12`), not the path.
 - API types: Go structs → `just types` (tygo) → `web/interfaces/*.ts`. CI fails if stale.
@@ -55,7 +59,9 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
 ## Conventions
 - Commits: short, lowercase, imperative, 3–5 words ("add scraper parsers").
 - PRs: 4–6 word titles, 1–2 sentence descriptions. Work goes up as a `gh stack`.
-- Credit prudentialcenter.com as the source; no Prudential logos or branding.
+- Credit prudentialcenter.com as the source; keep the "not affiliated" footer. The web tower
+  (`components/Tower.tsx`, same geometry as `render/art.go`) shows the PRUDENTIAL letters on the
+  crown as they are on the building; the frame leaves them out (too small). No Prudential logos.
 - Web pages: `/` tonight, `/night?d=`, `/calendar?m=`, `/display` (always-on, no chrome; Esc leaves),
   `/docs` (stock Swagger UI from `swagger-ui-dist`, copied to `public/swagger` by `npm run swagger` before
   dev/build; don't bundle swagger-ui through next, its OpenAPI 3.1 support breaks), `/emulator` (frame
@@ -88,7 +94,10 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   built bundles are cached in memory by the json of their inputs, pictures kept in `device_images` by
   sha256. A `seen` event is `MarkSeen` for the owner inside `canLog` (keeps stars and notes). Claim codes
   are `XXX-XXX` (`NormalizeClaimCode`); `DELETE /me/devices/{id}` unclaims (back to setup), the admin
-  delete forgets the token. `/api/device/compat/current.png?token=` is for the stock firmware.
+  delete forgets the token. Settings carry the look: `theme` (`dark` default, `auto`, `light`),
+  `scene`, `words` (`withDefaults` fills them for older settings). An `auto` frame's bundle has each
+  night twice, `dark` and `light` with `from`/`until` (sunrise to lights-on, `daylight`).
+  `/settings` draws its choices from `GET /me/devices/{id}/preview.png?view=&light=1&scene=&words=`. `/api/device/compat/current.png?token=` is for the stock firmware.
 - Frame setup: an unclaimed frame's bundle is the welcome screen (`setup`, tonight + 6) plus `wifi`; a
   claimed one adds `wifi` (empty date) to its views. A frame marked for a new person (`invite_until`,
   30 days, `MarkForInvite`) lets `register/begin` take `claim_code` instead of `invite`: one passkey

@@ -163,3 +163,27 @@ func expandBands(colors []schedule.ColorKey) []schedule.ColorKey {
 	}
 	return out
 }
+
+// Veil lays Ink over Amount of another paint's pixels, as an ordered dither:
+// a color seen through the dark, or in shadow.
+type Veil struct {
+	P      Paint
+	Ink    Ink
+	Amount float64
+}
+
+func (v Veil) At(x, y int) Ink {
+	if (float64(bayer8[y&7][x&7])+0.5)/64 < v.Amount {
+		return v.Ink
+	}
+	return v.P.At(x, y)
+}
+
+// noise is a fixed pseudo-random number in [0, 1) for a spot, so lit
+// windows and the river's ripples land the same way every time.
+func noise(x, y, seed int) float64 {
+	h := uint32(x)*374761393 + uint32(y)*668265263 + uint32(seed)*2246822519
+	h = (h ^ (h >> 13)) * 1274126177
+	h ^= h >> 16
+	return float64(h%10007) / 10007
+}

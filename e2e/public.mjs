@@ -15,9 +15,12 @@ for (const [kind, view] of Object.entries(views)) {
         await p.locator('svg[role=img][aria-label*="Prudential Tower"]').isVisible(),
     );
     check(`${kind}: tonight names its colors`, (await p.locator("h1").textContent()).length > 2);
+    // runs of plain white nights share a row ("Thu – Mon")
+    const rows = await p.locator("main ul li a[href^='/night?d=']").allTextContents();
     check(
-        `${kind}: seven nights coming up`,
-        (await p.locator("main ul li a[href^='/night?d=']").count()) === 7,
+        `${kind}: the next nights coming up, white runs grouped`,
+        rows.length >= 1 && rows.length <= 7 && /^Tomorrow/.test(rows[0]),
+        rows.join(" | "),
     );
     check(
         `${kind}: credits the source`,
@@ -30,7 +33,7 @@ for (const [kind, view] of Object.entries(views)) {
     await p.goto(`${URL}/night?d=2026-12-10`);
     await p.waitForSelector("text=Dress for Success");
     check(`${kind}: dec 10 is red`, (await p.locator("h1").textContent()) === "Red");
-    check(`${kind}: dec 10 lights on at 5pm`, await p.locator("text=Lights on around 5:00pm").isVisible());
+    check(`${kind}: dec 10 lights on at 5pm`, await p.locator("text=Lights on at 5:00pm").isVisible());
     await p.click("a[href='/night?d=2026-12-11']");
     await p.waitForURL(/d=2026-12-11/);
     await p.waitForSelector("text=Pawsitively 4Pink");

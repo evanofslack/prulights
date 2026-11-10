@@ -130,6 +130,26 @@ func TestSunset(t *testing.T) {
 	}
 }
 
+// Boston sunrises, from the same tables.
+func TestSunrise(t *testing.T) {
+	cases := []struct {
+		date       Date
+		hour, mins int
+	}{
+		{"2026-12-12", 7, 4},
+		{"2026-06-21", 5, 7},
+		{"2026-03-20", 6, 51},
+	}
+	for _, c := range cases {
+		day := c.date.Time()
+		got, ok := Sunrise(day.Year(), day.Month(), day.Day(), TowerLat, TowerLon)
+		want := boston(day.Year(), day.Month(), day.Day(), c.hour, c.mins)
+		if diff := got.Sub(want); !ok || diff < -3*time.Minute || diff > 3*time.Minute {
+			t.Errorf("%s: sunrise %s, want about %s", c.date, got.In(Boston).Format("15:04"), want.Format("15:04"))
+		}
+	}
+}
+
 func TestLightsOn(t *testing.T) {
 	at, src := LightsOn("2026-12-10", ProgramNights)
 	if src != LightsOnSource || !at.Equal(boston(2026, 12, 10, 17, 0)) {
