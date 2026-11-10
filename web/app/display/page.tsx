@@ -8,6 +8,7 @@ import { useApi } from "@/lib/api";
 import { colorNames, lightsOnTime, longDate, relativeName, shortDate, weekdayAbbr } from "@/lib/format";
 import { bandsOf, usePalette } from "@/lib/palette";
 import { Crown, Tower } from "@/components/Tower";
+import { useSky } from "@/lib/sky";
 
 // /display is for a spare screen left on: the lit tower, tonight, and the week
 // ahead. It re-checks every 5 minutes (and so rolls over at 4am), keeps the
@@ -19,6 +20,7 @@ export default function DisplayPage() {
     useWakeLock();
     const idle = useIdle(3000);
     const drift = useDrift();
+    const sky = useSkyOf(data);
     const router = useRouter();
 
     // Esc (or the Exit link) leaves the display, and fullscreen with it
@@ -48,15 +50,15 @@ export default function DisplayPage() {
                 ← Exit
             </Link>
             <div
-                className="flex h-full w-full items-end justify-center gap-[4vw] px-[5vw] pb-[6vh] transition-transform duration-[60s] ease-linear"
+                className="flex h-full w-full items-center justify-center gap-[5vw] px-[5vw] transition-transform duration-[60s] ease-linear"
                 style={{ transform: `translate(${drift.x}px, ${drift.y}px)` }}
             >
                 {data && (
                     <>
                         <Tower
                             bands={bandsOf(data.lighting.colors, palette)}
-                            glow={1}
-                            className="h-[86vh] w-auto shrink-0"
+                            sky={sky}
+                            className="h-[94vh] w-[38vw] max-w-[620px] shrink-0 rounded-[2vh]"
                         />
                         <div className="flex max-w-[48vw] min-w-0 flex-col gap-[3vh] pb-[2vh]">
                             <div>
@@ -73,7 +75,11 @@ export default function DisplayPage() {
                                         : "No special lighting tonight"}
                                 </p>
                                 <p className="mt-[1vh] text-[2.2vh] text-[#98a1b8]">
-                                    Lights on around {lightsOnTime(data.lighting.lights_on)}
+                                    {sky === "night" && data.lighting.date === data.date
+                                        ? "Lit since"
+                                        : "Lights on"}{" "}
+                                    {data.lighting.lights_on_source === "sunset" ? "around " : "at "}
+                                    {lightsOnTime(data.lighting.lights_on)}
                                 </p>
                             </div>
                             <ul className="flex flex-col gap-[1.2vh]">
@@ -155,4 +161,10 @@ function useDrift(): { x: number; y: number } {
     }, []);
     const angle = (step * Math.PI) / 15;
     return { x: Math.round(Math.cos(angle) * 12), y: Math.round(Math.sin(angle) * 8) };
+}
+
+// useSkyOf is the sky for the display's night, night until the data loads.
+function useSkyOf(data: TonightResponse | undefined) {
+    const placeholder = { date: "", lights_on: "" } as TonightResponse["lighting"];
+    return useSky(data?.lighting ?? placeholder, data?.date);
 }

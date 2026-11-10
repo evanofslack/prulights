@@ -59,7 +59,9 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
 ## Conventions
 - Commits: short, lowercase, imperative, 3–5 words ("add scraper parsers").
 - PRs: 4–6 word titles, 1–2 sentence descriptions. Work goes up as a `gh stack`.
-- Credit prudentialcenter.com as the source; no Prudential logos or branding.
+- Credit prudentialcenter.com as the source; keep the "not affiliated" footer. The web tower
+  (`components/Tower.tsx`, same geometry as `render/art.go`) shows the PRUDENTIAL letters on the
+  crown as they are on the building; the frame leaves them out (too small). No Prudential logos.
 - Web pages: `/` tonight, `/night?d=`, `/calendar?m=`, `/display` (always-on, no chrome; Esc leaves),
   `/docs` (stock Swagger UI from `swagger-ui-dist`, copied to `public/swagger` by `npm run swagger` before
   dev/build; don't bundle swagger-ui through next, its OpenAPI 3.1 support breaks), `/emulator` (frame
