@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 )
@@ -18,7 +19,7 @@ func TestDevices(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	d, token, err := s.CreateDevice(ctx, "0.1.0", now)
+	d, token, err := s.CreateDevice(ctx, "0.1.0", "", "", now)
 	if err != nil || token == "" || d.Claimed() {
 		t.Fatalf("create = %+v %q %v", d, token, err)
 	}
@@ -131,5 +132,66 @@ func TestMarkSeen(t *testing.T) {
 	xs, _ := s.UserSightings(ctx, mom.ID, "2026-12-01", "2026-12-31")
 	if len(xs) != 2 || xs[0].Rating != 4 || xs[0].Note != "pretty" {
 		t.Errorf("sightings = %+v", xs)
+	}
+}
+
+func TestFrameInvites(t *testing.T) {
+	ctx := context.Background()
+	s := newTest(t)
+	now := time.Date(2026, 12, 12, 23, 0, 0, 0, time.UTC)
+	inv, _ := s.CreateInvite(ctx, Invite{CreatedAt: now, ExpiresAt: now.Add(time.Hour)})
+	evan, _ := s.Redeem(ctx, inv, NewHandle(), "Evan", []byte("evan"), []byte(`{}`), now)
+
+	d, _, err := s.CreateDevice(ctx, "", "", "", now)
+	if err != nil || !strings.HasPrefix(d.APSSID, "prulights-") || len(d.APPassword) != 10 {
+		t.Fatalf("made-up hotspot = %+v %v", d, err)
+	}
+	own, _, _ := s.CreateDevice(ctx, "", "frame-1", "secret123", now)
+	if own.APSSID != "frame-1" || own.APPassword != "secret123" {
+		t.Errorf("the frame's own hotspot = %+v", own)
+	}
+
+	redeem := func(name string, at time.Time) (User, Device, error) {
+		return s.RedeemFrame(ctx, strings.ToLower(d.ClaimCode), NewHandle(), name, []byte(name), []byte(`{}`), at)
+	}
+	if _, _, err := redeem("Mom", now); !errors.Is(err, ErrNotFound) {
+		t.Errorf("not marked: %v", err)
+	}
+	if err := s.MarkForInvite(ctx, d.ID, evan.ID, now.Add(30*24*time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := s.DeviceByClaimCode(ctx, d.ClaimCode)
+	if !got.Invites(now) || got.Invites(now.Add(31*24*time.Hour)) {
+		t.Errorf("marked = %+v", got)
+	}
+	if _, _, err := redeem("Mom", now.Add(31*24*time.Hour)); !errors.Is(err, ErrNotFound) {
+		t.Errorf("mark ran out: %v", err)
+	}
+	if _, _, err := redeem("evan", now); !errors.Is(err, ErrNameTaken) {
+		t.Errorf("taken name: %v", err)
+	}
+	if got, _ := s.DeviceByID(ctx, d.ID); got.Claimed() {
+		t.Error("a taken name still claimed the frame")
+	}
+
+	mom, frame, err := redeem("Mom", now)
+	if err != nil || frame.UserID != mom.ID || frame.Owner != "Mom" || frame.ClaimCode != "" || !frame.InviteUntil.IsZero() {
+		t.Fatalf("redeem = %+v %+v %v", mom, frame, err)
+	}
+	if creds, _ := s.Credentials(ctx, mom.ID); len(creds) != 1 {
+		t.Errorf("mom has %d passkeys", len(creds))
+	}
+	if _, _, err := redeem("Someone", now); !errors.Is(err, ErrNotFound) {
+		t.Errorf("redeemed twice: %v", err)
+	}
+
+	// claiming a marked frame normally clears the mark
+	s.MarkForInvite(ctx, own.ID, evan.ID, now.Add(time.Hour))
+	claimed, err := s.Claim(ctx, own.ClaimCode, evan.ID, "Desk", now)
+	if err != nil || !claimed.InviteUntil.IsZero() {
+		t.Errorf("claim of a marked frame = %+v %v", claimed, err)
+	}
+	if err := s.MarkForInvite(ctx, own.ID, evan.ID, now.Add(time.Hour)); !errors.Is(err, ErrNotFound) {
+		t.Errorf("marking a claimed frame: %v", err)
 	}
 }

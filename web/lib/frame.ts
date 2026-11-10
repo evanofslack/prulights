@@ -88,8 +88,9 @@ export function cycle(s: DeviceSettings): string[] {
     return s.views.includes(s.default_view) ? s.views : [s.default_view, ...s.views];
 }
 
-// pick is the picture the frame shows: setup until claimed, "good night" in
-// quiet hours, else the view for tonight, else (the bundle ran out) the
+// pick is the picture the frame shows: the Wi-Fi screen when it can't get
+// online (or is being set up), the welcome screen until claimed, "good night"
+// in quiet hours, else the view for tonight, else (the bundle ran out) the
 // stale picture.
 export function pick(
     bundle: Bundle | undefined,
@@ -97,10 +98,15 @@ export function pick(
     settings: DeviceSettings | undefined,
     view: string,
     ms: number,
+    wifi = false,
 ): BundleItem | undefined {
     if (!bundle) return undefined;
-    if (!claimed || !settings) return bundle.items.find((i) => i.view === "setup");
+    if (wifi) return bundle.items.find((i) => i.view === "wifi");
     const night = tonightAt(ms);
+    if (!claimed || !settings) {
+        const setup = bundle.items.filter((i) => i.view === "setup");
+        return setup.find((i) => i.date === night) ?? setup[setup.length - 1];
+    }
     const day = (v: string) => bundle.items.find((i) => !i.stale && i.date === night && i.view === v);
     if (quietAt(ms, settings)) {
         const gn = day("goodnight");

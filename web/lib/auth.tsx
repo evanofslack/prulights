@@ -17,7 +17,9 @@ interface Auth {
     // undefined while loading, null when signed out
     me: MeResponse | null | undefined;
     signIn: () => Promise<MeResponse>;
-    register: (invite: string, name: string) => Promise<MeResponse>;
+    // register makes a passkey for someone new (or a re-invite), from an
+    // invite link or from the code of a frame marked for a new person.
+    register: (from: { invite: string } | { claim_code: string }, name: string) => Promise<MeResponse>;
     signOut: () => Promise<void>;
 }
 
@@ -45,8 +47,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return user;
     }, []);
 
-    const register = useCallback(async (invite: string, name: string) => {
-        const begin = await post<Ceremony>("/auth/register/begin", { invite, name });
+    const register = useCallback(async (from: { invite: string } | { claim_code: string }, name: string) => {
+        const begin = await post<Ceremony>("/auth/register/begin", { ...from, name });
         const response = await startRegistration({
             optionsJSON: begin.options as PublicKeyCredentialCreationOptionsJSON,
         });

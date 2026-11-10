@@ -1,10 +1,28 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button, NumberInput, SegmentedControl, Slider, Switch, TextInput } from "@mantine/core";
-import { IconCheck, IconExternalLink, IconPlugConnected, IconTrash } from "@tabler/icons-react";
+import {
+    Button,
+    FileButton,
+    NumberInput,
+    PasswordInput,
+    Radio,
+    SegmentedControl,
+    Slider,
+    Switch,
+    TextInput,
+} from "@mantine/core";
+import {
+    IconCheck,
+    IconExternalLink,
+    IconFileUpload,
+    IconPlugConnected,
+    IconTrash,
+    IconWifi,
+} from "@tabler/icons-react";
 import type {
     Bundle,
+    FrameConfig,
     DevInks,
     DeviceEventIn,
     DeviceSettings,
@@ -49,7 +67,13 @@ const SLOW_REFRESH_MS = 20_000;
 interface Creds {
     token: string;
     id: number;
+    ap: { ssid: string; password: string };
+    networks: string[]; // the Wi-Fi it knows, as flashed or added on its setup page
 }
+
+const MAX_NETWORKS = 5;
+const NEARBY = ["Home", "Cape House", "Linden-5G", "xfinitywifi"];
+const FAILS_BEFORE_SETUP = 2;
 
 interface Line {
     at: number;
@@ -59,7 +83,7 @@ interface Line {
 function loadCreds(): Creds | undefined {
     try {
         const v = JSON.parse(localStorage.getItem(STORE) ?? "null");
-        return v?.token ? v : undefined;
+        return v?.token ? { ap: newHotspot(), networks: ["Home"], ...v } : undefined;
     } catch {
         return undefined;
     }
@@ -70,6 +94,15 @@ function saveCreds(c: Creds | undefined) {
         if (c) localStorage.setItem(STORE, JSON.stringify(c));
         else localStorage.removeItem(STORE);
     } catch {}
+}
+
+const ALPHABET = "ACDEFGHJKMNPQRTUVWXY34679";
+const random = (n: number) =>
+    Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => ALPHABET[b % ALPHABET.length]).join("");
+
+// newHotspot is the frame's own setup network, as firmware would make it.
+function newHotspot() {
+    return { ssid: `prulights-${random(4)}`, password: random(10).toLowerCase() };
 }
 
 // bostonToMs reads a Boston wall time ("2026-12-12T19:00") as an instant.
@@ -158,6 +191,10 @@ export function Device({
     const [usage, setUsage] = useState({ syncs: 0, refreshes: 0, wakes: 0 });
     const [pressesPerDay, setPressesPerDay] = useState(4);
     const [frozen, setFrozen] = useState<number>(); // a paused frame's moment
+    // wifi: no known network answered ("lost"), or the button was held to
+    // add one ("setup"); either way the frame shows its Wi-Fi screen
+    const [wifi, setWifi] = useState<"lost" | "setup">();
+    const fails = useRef(0);
 
     const pics = useRef(new Map<string, Picture>());
     const canvas = useRef<HTMLCanvasElement>(null);
@@ -206,14 +243,20 @@ export function Device({
     }, []);
 
     const register = useCallback(async () => {
+        const ap = live.current.creds?.ap ?? newHotspot();
         const res = await fetch("/api/device/v1/register", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ firmware: FIRMWARE }),
+            body: JSON.stringify({ firmware: FIRMWARE, ap_ssid: ap.ssid, ap_password: ap.password }),
         });
         if (!res.ok) throw new Error(`register: ${res.status}`);
         const r: RegisterResponse = await res.json();
-        const c = { token: r.token, id: r.device_id };
+        const c: Creds = {
+            token: r.token,
+            id: r.device_id,
+            ap,
+            networks: live.current.creds?.networks ?? ["Home"],
+        };
         saveCreds(c);
         setCreds(c);
         live.current.creds = c;
@@ -235,9 +278,14 @@ export function Device({
             if (p.offline) {
                 setQueue(events);
                 setNextAt(clock() + RETRY_MS);
+                fails.current++;
                 note(
-                    `${reason}: offline, keeping ${events.length} event${events.length === 1 ? "" : "s"} for later`,
+                    `${reason}: no known network answers (${creds.networks.join(", ")}), keeping ${events.length} event${events.length === 1 ? "" : "s"} for later`,
                 );
+                if (fails.current >= FAILS_BEFORE_SETUP) {
+                    setWifi((w) => w ?? "lost");
+                    note(`showing the Wi-Fi screen; hotspot ${creds.ap.ssid} open for 10 min`);
+                }
                 return;
             }
             setSyncing(true);
@@ -250,9 +298,13 @@ export function Device({
                         battery_mv: p.power === "battery" ? p.mv : 0,
                         power: p.power,
                         firmware: FIRMWARE,
+                        ap_ssid: creds.ap.ssid,
+                        ap_password: creds.ap.password,
                     }),
                 });
                 const st: DeviceState = await res.json();
+                fails.current = 0;
+                setWifi((w) => (w === "lost" ? undefined : w));
                 setQueue([]);
                 setState(st);
                 setUsage((u) => ({ ...u, syncs: u.syncs + 1 }));
@@ -329,7 +381,7 @@ export function Device({
     const claimed = !!state?.claimed;
     // a paused frame keeps its picture until the button or a sync moves it
     const at = settings?.paused && frozen ? frozen : now;
-    const target = pick(bundle, claimed, settings, view, at);
+    const target = pick(bundle, claimed, settings, view, at, !!wifi);
 
     // redraw only when the picture changes, with a flash like the panel's
     useEffect(() => {
@@ -341,7 +393,7 @@ export function Device({
             setFlashing(false);
             setUsage((u) => ({ ...u, refreshes: u.refreshes + 1 }));
             note(
-                `redraw: ${target.stale ? "out-of-date " : ""}${target.view}${target.view === "setup" ? "" : ` for ${target.date}`}`,
+                `redraw: ${target.stale ? "out-of-date " : ""}${target.view}${target.date ? ` for ${target.date}` : ""}`,
             );
         }, ms);
         return () => clearTimeout(id);
@@ -379,6 +431,50 @@ export function Device({
         note("double press: sync now");
         sync("double press", [{ type: "double", at: stamp() }]);
     };
+    const hold = () => {
+        setUsage((u) => ({ ...u, wakes: u.wakes + 1 }));
+        setWifi("setup");
+        note(`held 8 s: Wi-Fi setup, hotspot ${creds?.ap.ssid} open`);
+    };
+    // join is the setup page's "Join": the frame learns the network and,
+    // since it answers, gets back online
+    const join = (ssid: string) => {
+        const c = live.current.creds;
+        if (!c) return;
+        const networks = [...c.networks.filter((n) => n !== ssid), ssid].slice(-MAX_NETWORKS);
+        const next = { ...c, networks };
+        saveCreds(next);
+        setCreds(next);
+        live.current.creds = next;
+        live.current.p = { ...live.current.p, offline: false };
+        set({ offline: false });
+        fails.current = 0;
+        setWifi(undefined);
+        note(`setup page: joined ${ssid}, hotspot closed`);
+        sync(`joined ${ssid}`);
+    };
+    // loadPrepared reads frame-<id>.json (or a flashed config.json): the
+    // emulator becomes that frame, as if flashed with it
+    const loadPrepared = async (file: File | null) => {
+        if (!file) return;
+        try {
+            const fc: FrameConfig & { wifi?: { ssid: string }[] } = JSON.parse(await file.text());
+            if (fc.version !== 1 || !fc.token || !fc.device_id) throw new Error("not a frame identity");
+            forget();
+            const c: Creds = {
+                token: fc.token,
+                id: fc.device_id,
+                ap: fc.ap?.ssid ? fc.ap : newHotspot(),
+                networks: fc.wifi?.length ? fc.wifi.map((w) => w.ssid) : ["Home"],
+            };
+            saveCreds(c);
+            setCreds(c);
+            live.current.creds = c;
+            note(`flashed with ${file.name}: frame #${fc.device_id}, code ${fc.claim_code}`);
+        } catch (e) {
+            note(`couldn't load ${file.name}: ${(e as Error).message}`);
+        }
+    };
     const forget = () => {
         saveCreds(undefined);
         setCreds(undefined);
@@ -387,6 +483,8 @@ export function Device({
         setShown(undefined);
         setQueue([]);
         setNextAt(undefined);
+        setWifi(undefined);
+        fails.current = 0;
         booted.current = false;
         pics.current.clear();
         note("forgot this frame (the server still lists it)");
@@ -404,12 +502,29 @@ export function Device({
             <aside className="flex w-full shrink-0 flex-col gap-5 rounded-xl bg-panel p-4 lg:sticky lg:top-4 lg:w-80">
                 <Field label="Frame">
                     {!creds ? (
-                        <Button
-                            leftSection={<IconPlugConnected size={18} />}
-                            onClick={() => register().catch((e) => note(String(e)))}
-                        >
-                            Register a frame
-                        </Button>
+                        <div className="flex flex-col gap-2">
+                            <Button
+                                leftSection={<IconPlugConnected size={18} />}
+                                onClick={() => register().catch((e) => note(String(e)))}
+                            >
+                                Register a frame
+                            </Button>
+                            <FileButton onChange={loadPrepared} accept="application/json,.json">
+                                {(props) => (
+                                    <Button
+                                        variant="default"
+                                        leftSection={<IconFileUpload size={18} />}
+                                        {...props}
+                                    >
+                                        Load a prepared frame
+                                    </Button>
+                                )}
+                            </FileButton>
+                            <p className="text-xs text-subtle">
+                                A prepared frame is <code>frame-&lt;id&gt;.json</code> from the admin page, or
+                                a flashed <code>config.json</code>.
+                            </p>
+                        </div>
                     ) : (
                         <div className="flex flex-col gap-2 text-sm" data-device={creds.id}>
                             <span>
@@ -512,8 +627,16 @@ export function Device({
                             />
                         </div>
                     )}
+                </Field>
+
+                <Field label="Wi-Fi">
+                    {creds && (
+                        <p className="text-sm text-muted">
+                            Knows {creds.networks.join(", ")} · hotspot {creds.ap.ssid}
+                        </p>
+                    )}
                     <Switch
-                        label="Offline"
+                        label="Out of range of its networks"
                         checked={p.offline}
                         onChange={(e) => set({ offline: e.currentTarget.checked })}
                     />
@@ -567,7 +690,13 @@ export function Device({
                             <Button variant="default" onClick={double} disabled={!creds} loading={syncing}>
                                 Double press
                             </Button>
+                            <Button variant="default" onClick={hold} disabled={!creds}>
+                                Hold 8 s
+                            </Button>
                         </div>
+                        {wifi && creds && (
+                            <SetupPage creds={creds} onJoin={join} onClose={() => setWifi(undefined)} />
+                        )}
                     </figure>
 
                     <div className="flex min-w-64 flex-1 flex-col gap-4">
@@ -582,7 +711,7 @@ export function Device({
                             <dt className="text-muted">Showing</dt>
                             <dd data-view={showing ? showing.view : ""}>
                                 {showing
-                                    ? `${showing.stale ? "out of date: " : ""}${showing.view}${showing.view === "setup" ? "" : `, ${showing.date}`}`
+                                    ? `${showing.stale ? "out of date: " : ""}${showing.view}${showing.date ? `, ${showing.date}` : ""}`
                                     : "nothing yet"}
                                 {flashing && " (refreshing…)"}
                                 {settings?.paused && " · paused"}
@@ -666,5 +795,61 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
             </div>
             {children}
         </div>
+    );
+}
+
+// SetupPage is the page a phone sees on the frame's hotspot (192.168.4.1):
+// pick a network, type its password, join.
+function SetupPage({
+    creds,
+    onJoin,
+    onClose,
+}: {
+    creds: Creds;
+    onJoin: (ssid: string) => void;
+    onClose: () => void;
+}) {
+    const [picked, setPicked] = useState(creds.networks[0] ?? NEARBY[0]);
+    const [other, setOther] = useState("");
+    const [password, setPassword] = useState("");
+    const ssid = picked === "other" ? other.trim() : picked;
+    return (
+        <section
+            aria-label="Setup page"
+            className="flex w-full max-w-sm flex-col gap-3 rounded-2xl border-4 border-[#16181d] bg-raised p-4"
+        >
+            <p className="flex items-center gap-2 text-xs text-muted">
+                <IconWifi size={14} /> Your phone, on {creds.ap.ssid} · 192.168.4.1
+            </p>
+            <h3 className="text-lg font-bold">Connect the frame to Wi-Fi</h3>
+            <Radio.Group value={picked} onChange={setPicked} label="Networks nearby">
+                <div className="mt-2 flex flex-col gap-2">
+                    {[...new Set([...NEARBY, ...creds.networks])].map((n) => (
+                        <Radio key={n} value={n} label={n} />
+                    ))}
+                    <Radio value="other" label="Another network" />
+                </div>
+            </Radio.Group>
+            {picked === "other" && (
+                <TextInput
+                    label="Network name"
+                    value={other}
+                    onChange={(e) => setOther(e.currentTarget.value)}
+                />
+            )}
+            <PasswordInput
+                label="Password"
+                value={password}
+                onChange={(e) => setPassword(e.currentTarget.value)}
+            />
+            <div className="flex gap-2">
+                <Button onClick={() => onJoin(ssid)} disabled={!ssid}>
+                    Join
+                </Button>
+                <Button variant="subtle" onClick={onClose}>
+                    Close
+                </Button>
+            </div>
+        </section>
     );
 }

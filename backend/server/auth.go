@@ -255,6 +255,7 @@ func (s *Server) loadUser(ctx context.Context, u store.User) (*waUser, error) {
 type ceremony struct {
 	session webauthn.SessionData
 	invite  string // registration: the invite being used
+	claim   string // or the code of a frame marked for a new person
 	name    string // registration of a new person
 	handle  []byte
 	forUser *int64 // registration for a re-invite
@@ -337,17 +338,32 @@ func (s *Server) registerBegin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx, now := r.Context(), s.now()
-	inv, err := s.store.InviteByToken(ctx, req.Invite, now)
-	if errors.Is(err, store.ErrNotFound) {
-		writeError(w, http.StatusGone, "this invite link has expired or was already used")
-		return
-	}
-	if err != nil {
-		s.internalError(w, err)
-		return
+	var inv store.Invite
+	cer := ceremony{invite: req.Invite, expires: now.Add(ceremonyTTL)}
+	if req.ClaimCode != "" {
+		d, err := s.store.DeviceByClaimCode(ctx, req.ClaimCode)
+		if err != nil && !errors.Is(err, store.ErrNotFound) {
+			s.internalError(w, err)
+			return
+		}
+		if err != nil || !d.Invites(now) {
+			writeError(w, http.StatusGone, "this frame isn't set up for someone new: ask the person who gave it to you")
+			return
+		}
+		cer.invite, cer.claim = "", req.ClaimCode
+	} else {
+		var err error
+		inv, err = s.store.InviteByToken(ctx, req.Invite, now)
+		if errors.Is(err, store.ErrNotFound) {
+			writeError(w, http.StatusGone, "this invite link has expired or was already used")
+			return
+		}
+		if err != nil {
+			s.internalError(w, err)
+			return
+		}
 	}
 
-	cer := ceremony{invite: req.Invite, expires: now.Add(ceremonyTTL)}
 	var user *waUser
 	if inv.ForUser != nil {
 		u, err := s.store.UserByID(ctx, *inv.ForUser)
@@ -417,8 +433,19 @@ func (s *Server) registerFinish(w http.ResponseWriter, r *http.Request) {
 		s.internalError(w, err)
 		return
 	}
-	u, err := s.store.Redeem(ctx, cer.invite, cer.handle, cer.name, cred.ID, data, now)
+	var u store.User
+	if cer.claim != "" {
+		var d store.Device
+		u, d, err = s.store.RedeemFrame(ctx, cer.claim, cer.handle, cer.name, cred.ID, data, now)
+		if err == nil {
+			slog.Info("frame claimed by a new person", "device", d.ID, "user", u.ID)
+		}
+	} else {
+		u, err = s.store.Redeem(ctx, cer.invite, cer.handle, cer.name, cred.ID, data, now)
+	}
 	switch {
+	case errors.Is(err, store.ErrNotFound) && cer.claim != "":
+		writeError(w, http.StatusGone, "this frame was set up meanwhile, or its invite ran out")
 	case errors.Is(err, store.ErrNotFound):
 		writeError(w, http.StatusGone, "this invite link has expired or was already used")
 	case errors.Is(err, store.ErrNameTaken):

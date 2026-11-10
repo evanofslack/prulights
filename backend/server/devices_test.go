@@ -83,7 +83,9 @@ func TestDeviceLifecycle(t *testing.T) {
 		t.Errorf("unclaimed state = %+v", st)
 	}
 	b := bundleOf(t, s, reg.Token)
-	if len(b.Items) != 1 || b.Items[0].View != "setup" || b.Version != st.BundleVersion {
+	// the welcome screen a night at a time, and the Wi-Fi screen
+	if len(b.Items) != 8 || b.Items[0].View != "setup" || b.Items[6].Date != "2026-12-18" ||
+		b.Items[7].View != "wifi" || b.Items[7].Date != "" || b.Version != st.BundleVersion {
 		t.Fatalf("unclaimed bundle = %+v", b)
 	}
 	if rec := dev(t, s, "GET", "/api/device/v1/bundle?have="+b.Version, "", reg.Token); rec.Code != http.StatusNotModified {
@@ -135,10 +137,13 @@ func TestDeviceLifecycle(t *testing.T) {
 		t.Errorf("claimed state = %+v", st)
 	}
 	b = bundleOf(t, s, reg.Token)
-	if len(b.Items) != 7*4+1 {
+	if len(b.Items) != 7*4+2 {
 		t.Fatalf("claimed bundle has %d items", len(b.Items))
 	}
-	last := b.Items[len(b.Items)-1]
+	if wifi := b.Items[len(b.Items)-1]; wifi.View != "wifi" {
+		t.Errorf("last item = %+v, want the Wi-Fi screen", wifi)
+	}
+	last := b.Items[len(b.Items)-2]
 	if b.Items[0].Date != "2026-12-12" || b.Items[0].View != "tonight" || !last.Stale || last.Date != "2026-12-19" {
 		t.Errorf("bundle items: first %+v, last %+v", b.Items[0], last)
 	}
@@ -199,7 +204,7 @@ func TestDeviceLifecycle(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("PATCH = %d %s", rec.Code, rec.Body.String())
 	}
-	if b := bundleOf(t, s, reg.Token); len(b.Items) != 7*2+1 {
+	if b := bundleOf(t, s, reg.Token); len(b.Items) != 7*2+2 {
 		t.Errorf("one view and good night: %d items", len(b.Items))
 	}
 	_, other := person(t, s, "Evan", false)
@@ -233,8 +238,8 @@ func TestCompatPNG(t *testing.T) {
 		t.Errorf("portrait = %+v %v", cfg, err)
 	}
 	// ideal colors by default, so the stock firmware's dithering leaves them be
-	if img, err := png.Decode(bytes.NewReader(rec.Body.Bytes())); err != nil || img.At(0, 0) != render.Ideal.Colors[render.White] {
-		t.Errorf("corner = %v, want the ideal white (%v)", img.At(0, 0), err)
+	if img, err := png.Decode(bytes.NewReader(rec.Body.Bytes())); err != nil || img.At(4, 796) != render.Ideal.Colors[render.White] {
+		t.Errorf("paper = %v, want the ideal white (%v)", img.At(4, 796), err)
 	}
 	etag := rec.Header().Get("ETag")
 	if rec := dev(t, s, "GET", "/api/device/compat/current.png", "", reg.Token, "If-None-Match", etag); rec.Code != http.StatusNotModified {
@@ -284,5 +289,101 @@ func TestQuietHours(t *testing.T) {
 		if got := c.set.quiet(c.t); got != c.want {
 			t.Errorf("%s–%s at %s = %v", c.set.QuietStart, c.set.QuietEnd, c.t.Format("15:04"), got)
 		}
+	}
+}
+
+func TestFrameInvite(t *testing.T) {
+	s := seeded(t)
+	_, admin := person(t, s, "Evan", true)
+	_, member := person(t, s, "Kim", false)
+
+	// an admin prepares a frame for someone new
+	if rec := call(t, s, "POST", "/api/v1/admin/devices", `{"invite":true}`, member); rec.Code != http.StatusForbidden {
+		t.Errorf("prepare as a member = %d", rec.Code)
+	}
+	rec := call(t, s, "POST", "/api/v1/admin/devices", `{"invite":true}`, admin)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("prepare = %d %s", rec.Code, rec.Body.String())
+	}
+	cfg := decodeAs[FrameConfig](t, rec.Body.Bytes())
+	if cfg.Version != 1 || cfg.Token == "" || cfg.Server != "http://localhost:8080" ||
+		!strings.HasPrefix(cfg.AP.SSID, "prulights-") || cfg.AP.Password == "" {
+		t.Fatalf("config = %+v", cfg)
+	}
+	// the prepared token works as the frame's, and it draws its hotspot
+	st := stateOf(t, s, cfg.Token)
+	if st.Claimed || st.ClaimCode != cfg.ClaimCode {
+		t.Errorf("prepared frame state = %+v", st)
+	}
+	list := decodeAs[[]AdminDevice](t, call(t, s, "GET", "/api/v1/admin/devices", "", admin).Body.Bytes())
+	if len(list) != 1 || list[0].InviteUntil == nil || !list[0].InviteUntil.Equal(s.now().Add(frameInviteTTL)) {
+		t.Errorf("admin list = %+v", list)
+	}
+
+	status := func(code string) ClaimStatus {
+		t.Helper()
+		return decodeAs[ClaimStatus](t, call(t, s, "GET", "/api/v1/devices/claim/"+code, "", "").Body.Bytes())
+	}
+	if got := status(strings.ToLower(cfg.ClaimCode)); got != (ClaimStatus{Waiting: true, Invites: true}) {
+		t.Errorf("marked status = %+v", got)
+	}
+	if got := status("ZZZ-ZZZ"); got != (ClaimStatus{}) {
+		t.Errorf("unknown code status = %+v", got)
+	}
+
+	// signed out, the code starts a passkey for a new person
+	begin := func(code string) int {
+		return call(t, s, "POST", "/api/v1/auth/register/begin", `{"claim_code":"`+code+`","name":"Mom"}`, "").Code
+	}
+	if c := begin(cfg.ClaimCode); c != http.StatusOK {
+		t.Errorf("register with a marked frame's code = %d", c)
+	}
+	if c := begin("ZZZ-ZZZ"); c != http.StatusGone {
+		t.Errorf("register with an unknown code = %d", c)
+	}
+
+	// unmarked, the code only claims for someone signed in
+	if rec := call(t, s, "DELETE", "/api/v1/admin/devices/"+itoa(cfg.DeviceID)+"/invite", "", admin); rec.Code != http.StatusNoContent {
+		t.Fatalf("unmark = %d", rec.Code)
+	}
+	if got := status(cfg.ClaimCode); got != (ClaimStatus{Waiting: true}) {
+		t.Errorf("unmarked status = %+v", got)
+	}
+	if c := begin(cfg.ClaimCode); c != http.StatusGone {
+		t.Errorf("register with an unmarked frame's code = %d", c)
+	}
+	if rec := call(t, s, "POST", "/api/v1/admin/devices/"+itoa(cfg.DeviceID)+"/invite", "", admin); rec.Code != http.StatusNoContent {
+		t.Fatalf("mark = %d", rec.Code)
+	}
+
+	// a member scanning a marked frame just claims it
+	if rec := call(t, s, "POST", "/api/v1/devices/claim", `{"code":"`+cfg.ClaimCode+`"}`, member); rec.Code != http.StatusOK {
+		t.Fatalf("member claim = %d", rec.Code)
+	}
+	if got := status(cfg.ClaimCode); got != (ClaimStatus{}) {
+		t.Errorf("claimed status = %+v", got)
+	}
+	if rec := call(t, s, "POST", "/api/v1/admin/devices/"+itoa(cfg.DeviceID)+"/invite", "", admin); rec.Code != http.StatusNotFound {
+		t.Errorf("marking a claimed frame = %d", rec.Code)
+	}
+}
+
+func TestHotspot(t *testing.T) {
+	s := seeded(t)
+	rec := dev(t, s, "POST", "/api/device/v1/register", `{"firmware":"x","ap_ssid":"frame-1","ap_password":"secret123"}`, "")
+	reg := decodeAs[RegisterResponse](t, rec.Body.Bytes())
+	d, _ := s.store.DeviceByID(t.Context(), reg.DeviceID)
+	if d.APSSID != "frame-1" || d.APPassword != "secret123" {
+		t.Errorf("hotspot from register = %q %q", d.APSSID, d.APPassword)
+	}
+	before := bundleOf(t, s, reg.Token)
+	dev(t, s, "POST", "/api/device/v1/events", `{"ap_ssid":"frame-2","ap_password":"another1"}`, reg.Token)
+	d, _ = s.store.DeviceByID(t.Context(), reg.DeviceID)
+	if d.APSSID != "frame-2" {
+		t.Errorf("hotspot after a reflash = %q", d.APSSID)
+	}
+	after := bundleOf(t, s, reg.Token)
+	if before.Items[7].SHA256 == after.Items[7].SHA256 || before.Items[0].SHA256 != after.Items[0].SHA256 {
+		t.Error("only the Wi-Fi screen should change with the hotspot")
 	}
 }

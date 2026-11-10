@@ -50,6 +50,13 @@ func goldenCases() []goldenCase {
 		}},
 		{"setup", ViewSetup, dec12},
 		{"goodnight", ViewGoodnight, dec12},
+		{"wifi", ViewWifi, dec12},
+	}
+}
+
+func TestWifiQR(t *testing.T) {
+	if got := wifiQR(`Cape; "House"`, `p:a,ss\`); got != `WIFI:T:WPA;S:Cape\; \"House\";P:p\:a\,ss\\;;` {
+		t.Errorf("wifiQR = %s", got)
 	}
 }
 

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMeta } from "@/lib/api";
+import type { DeviceInfo } from "@/interfaces/api";
+import { useApi, useMeta } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Account } from "./Account";
 
@@ -13,10 +14,15 @@ export function Shell({ children, wide }: { children: React.ReactNode; wide?: bo
     const path = usePathname();
     const meta = useMeta();
     const { me } = useAuth();
+    const frames = useApi<DeviceInfo[]>(me ? "/me/devices" : null);
+    // wide links hide on phones (Frame is in the account menu there too)
     const links = [
         { href: "/", label: "Tonight", active: path === "/" || path === "/night" },
         { href: "/calendar", label: "Calendar", active: path.startsWith("/calendar") },
         ...(me ? [{ href: "/log", label: "Log", active: path.startsWith("/log") }] : []),
+        ...(me && (frames.data?.length || path.startsWith("/settings"))
+            ? [{ href: "/settings", label: "Frame", active: path.startsWith("/settings"), wide: true }]
+            : []),
         ...(meta?.dev || path.startsWith("/emulator")
             ? [{ href: "/emulator", label: "Emulator", active: path.startsWith("/emulator"), wide: true }]
             : []),

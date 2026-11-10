@@ -84,7 +84,12 @@ func (s *Server) getDevRender(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		data = render.Data{Tonight: date, Nights: nights, UpdatedAt: s.now()}
+		// the setup and Wi-Fi screens need a frame: borrow the sample's
+		sample := render.SampleData(date)
+		data.ClaimCode, data.ClaimURL = sample.ClaimCode, sample.ClaimURL
+		data.APSSID, data.APPassword = sample.APSSID, sample.APPassword
 	}
+	data.PortalURL = portalURL
 	data.BaseURL = s.cfg.BaseURL
 	if q.Get("stale") == "1" {
 		data.StaleSince = date.AddDays(-3)

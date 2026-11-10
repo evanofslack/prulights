@@ -27,6 +27,10 @@ type DeviceSettings struct {
 // RegisterRequest is POST /api/device/v1/register.
 type RegisterRequest struct {
 	Firmware string `json:"firmware"`
+	// APSSID and APPassword are the frame's setup hotspot, drawn on its
+	// Wi-Fi screen. The server makes some up when they're left out.
+	APSSID     string `json:"ap_ssid,omitempty"`
+	APPassword string `json:"ap_password,omitempty"`
 }
 
 // RegisterResponse is a new frame's identity. The token is shown once; the
@@ -93,6 +97,9 @@ type EventsRequest struct {
 	BatteryMV int             `json:"battery_mv"`
 	Power     string          `json:"power"` // usb | battery
 	Firmware  string          `json:"firmware"`
+	// APSSID and APPassword update the frame's hotspot, after a reflash.
+	APSSID     string `json:"ap_ssid,omitempty"`
+	APPassword string `json:"ap_password,omitempty"`
 }
 
 // ClaimRequest is POST /api/v1/devices/claim: the code on a frame's setup
@@ -126,4 +133,36 @@ type AdminDevice struct {
 	Owner      string    `json:"owner"`
 	ClaimCode  string    `json:"claim_code,omitempty"`
 	CreatedAt  time.Time `json:"created_at"`
+	// InviteUntil is set while the frame is marked for a new person.
+	InviteUntil *time.Time `json:"invite_until,omitempty"`
+}
+
+// ClaimStatus is GET /api/v1/devices/claim/{code}: whether a frame is waiting
+// for that code, and whether the code also makes an account.
+type ClaimStatus struct {
+	Waiting bool `json:"waiting"`
+	Invites bool `json:"invites"`
+}
+
+// PrepareFrame is POST /api/v1/admin/devices: make a frame's identity before
+// flashing it. Invite marks it for a new person.
+type PrepareFrame struct {
+	Invite bool `json:"invite"`
+}
+
+// FrameAP is a frame's own setup hotspot.
+type FrameAP struct {
+	SSID     string `json:"ssid"`
+	Password string `json:"password"`
+}
+
+// FrameConfig is a prepared frame's identity (config version 1): what gets
+// flashed onto it, along with Wi-Fi networks that never reach the server.
+type FrameConfig struct {
+	Version   int     `json:"version"`
+	Server    string  `json:"server"`
+	DeviceID  int64   `json:"device_id"`
+	Token     string  `json:"token"`
+	ClaimCode string  `json:"claim_code"`
+	AP        FrameAP `json:"ap"`
 }

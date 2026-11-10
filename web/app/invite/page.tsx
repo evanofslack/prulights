@@ -36,7 +36,7 @@ function Invite() {
         setBusy(true);
         setError(undefined);
         try {
-            await register(token, name);
+            await register({ invite: token }, name);
             router.push("/");
         } catch (err) {
             setError(passkeyError(err));

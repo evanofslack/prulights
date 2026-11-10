@@ -102,7 +102,12 @@ export interface InviteInfo {
  * RegisterBegin is POST /api/v1/auth/register/begin.
  */
 export interface RegisterBegin {
-  invite: string;
+  invite?: string;
+  /**
+   * ClaimCode is a frame marked for a new person: its code is the invite,
+   * and the new person gets the frame.
+   */
+  claim_code?: string;
   /**
    * Name is the new person's display name; ignored for a re-invite.
    */
@@ -167,6 +172,12 @@ export interface DeviceSettings {
  */
 export interface RegisterRequest {
   firmware: string;
+  /**
+   * APSSID and APPassword are the frame's setup hotspot, drawn on its
+   * Wi-Fi screen. The server makes some up when they're left out.
+   */
+  ap_ssid?: string;
+  ap_password?: string;
 }
 /**
  * RegisterResponse is a new frame's identity. The token is shown once; the
@@ -249,6 +260,11 @@ export interface EventsRequest {
   battery_mv: number /* int */;
   power: string; // usb | battery
   firmware: string;
+  /**
+   * APSSID and APPassword update the frame's hotspot, after a reflash.
+   */
+  ap_ssid?: string;
+  ap_password?: string;
 }
 /**
  * ClaimRequest is POST /api/v1/devices/claim: the code on a frame's setup
@@ -285,6 +301,44 @@ export interface AdminDevice extends DeviceInfo {
   owner: string;
   claim_code?: string;
   created_at: string;
+  /**
+   * InviteUntil is set while the frame is marked for a new person.
+   */
+  invite_until?: string;
+}
+/**
+ * ClaimStatus is GET /api/v1/devices/claim/{code}: whether a frame is waiting
+ * for that code, and whether the code also makes an account.
+ */
+export interface ClaimStatus {
+  waiting: boolean;
+  invites: boolean;
+}
+/**
+ * PrepareFrame is POST /api/v1/admin/devices: make a frame's identity before
+ * flashing it. Invite marks it for a new person.
+ */
+export interface PrepareFrame {
+  invite: boolean;
+}
+/**
+ * FrameAP is a frame's own setup hotspot.
+ */
+export interface FrameAP {
+  ssid: string;
+  password: string;
+}
+/**
+ * FrameConfig is a prepared frame's identity (config version 1): what gets
+ * flashed onto it, along with Wi-Fi networks that never reach the server.
+ */
+export interface FrameConfig {
+  version: number /* int */;
+  server: string;
+  device_id: number /* int64 */;
+  token: string;
+  claim_code: string;
+  ap: FrameAP;
 }
 
 //////////

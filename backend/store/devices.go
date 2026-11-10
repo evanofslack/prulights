@@ -26,6 +26,17 @@ type Device struct {
 	BatteryMV int
 	Power     string // usb | battery
 	Firmware  string
+	// InviteUntil is set while the frame is marked for a new person: until
+	// then, its code makes an account as well as claiming it.
+	InviteUntil time.Time
+	// APSSID and APPassword are the frame's own setup hotspot.
+	APSSID     string
+	APPassword string
+}
+
+// Invites is whether the frame's code makes an account right now.
+func (d Device) Invites(now time.Time) bool {
+	return !d.Claimed() && !d.InviteUntil.IsZero() && now.Before(d.InviteUntil)
 }
 
 // Claimed is whether someone has claimed the frame.
@@ -44,13 +55,24 @@ type DeviceEvent struct {
 // 2/Z, 5/S, 8/B), since someone may type the code off the frame.
 const claimAlphabet = "ACDEFGHJKMNPQRTUVWXY34679"
 
-func newClaimCode() string {
-	b := make([]byte, 6)
+func randomFrom(alphabet string, n int) string {
+	b := make([]byte, n)
 	rand.Read(b)
 	for i := range b {
-		b[i] = claimAlphabet[int(b[i])%len(claimAlphabet)]
+		b[i] = alphabet[int(b[i])%len(alphabet)]
 	}
-	return string(b[:3]) + "-" + string(b[3:])
+	return string(b)
+}
+
+func newClaimCode() string {
+	s := randomFrom(claimAlphabet, 6)
+	return s[:3] + "-" + s[3:]
+}
+
+// NewHotspot makes a frame's setup hotspot: a name to tell frames apart and a
+// password someone can type off the screen.
+func NewHotspot() (ssid, password string) {
+	return "prulights-" + randomFrom(claimAlphabet, 4), strings.ToLower(randomFrom(claimAlphabet, 10))
 }
 
 // NormalizeClaimCode reads a code as typed: any case, with or without the
@@ -70,13 +92,17 @@ func NormalizeClaimCode(code string) string {
 }
 
 // CreateDevice registers a new, unclaimed frame. The token is returned once;
-// only its hash is kept.
-func (s *Store) CreateDevice(ctx context.Context, firmware string, now time.Time) (Device, string, error) {
+// only its hash is kept. Without hotspot details, it makes some.
+func (s *Store) CreateDevice(ctx context.Context, firmware, apSSID, apPassword string, now time.Time) (Device, string, error) {
 	token, hash := NewToken()
+	if apSSID == "" || apPassword == "" {
+		apSSID, apPassword = NewHotspot()
+	}
 	for range 5 {
-		d := Device{ClaimCode: newClaimCode(), Settings: []byte("{}"), CreatedAt: now, Firmware: firmware}
-		res, err := s.DB.ExecContext(ctx, `insert into devices (token_hash, claim_code, created_at, fw_version) values (?, ?, ?, ?)`,
-			hash, d.ClaimCode, fmtTime(now), firmware)
+		d := Device{ClaimCode: newClaimCode(), Settings: []byte("{}"), CreatedAt: now, Firmware: firmware,
+			APSSID: apSSID, APPassword: apPassword}
+		res, err := s.DB.ExecContext(ctx, `insert into devices (token_hash, claim_code, created_at, fw_version, ap_ssid, ap_password)
+			values (?, ?, ?, ?, ?, ?)`, hash, d.ClaimCode, fmtTime(now), firmware, apSSID, apPassword)
 		if err != nil {
 			if strings.Contains(err.Error(), "UNIQUE") {
 				continue // the claim code was taken; draw another
@@ -90,14 +116,15 @@ func (s *Store) CreateDevice(ctx context.Context, firmware string, now time.Time
 }
 
 const deviceCols = `d.id, coalesce(d.user_id, 0), coalesce(u.name, ''), d.name, coalesce(d.claim_code, ''), d.settings,
-	d.created_at, coalesce(d.claimed_at, ''), coalesce(d.last_checkin_at, ''), d.battery_mv, d.power, d.fw_version
+	d.created_at, coalesce(d.claimed_at, ''), coalesce(d.last_checkin_at, ''), d.battery_mv, d.power, d.fw_version,
+	coalesce(d.invite_until, ''), d.ap_ssid, d.ap_password
 	from devices d left join users u on u.id = d.user_id`
 
 func scanDevice(row interface{ Scan(...any) error }) (Device, error) {
 	var d Device
-	var settings, created, claimed, checkin string
+	var settings, created, claimed, checkin, invite string
 	err := row.Scan(&d.ID, &d.UserID, &d.Owner, &d.Name, &d.ClaimCode, &settings, &created, &claimed, &checkin,
-		&d.BatteryMV, &d.Power, &d.Firmware)
+		&d.BatteryMV, &d.Power, &d.Firmware, &invite, &d.APSSID, &d.APPassword)
 	if errors.Is(err, sql.ErrNoRows) {
 		return d, ErrNotFound
 	}
@@ -108,6 +135,9 @@ func scanDevice(row interface{ Scan(...any) error }) (Device, error) {
 	}
 	if checkin != "" {
 		d.CheckinAt = parseTime(checkin)
+	}
+	if invite != "" {
+		d.InviteUntil = parseTime(invite)
 	}
 	return d, err
 }
@@ -139,6 +169,13 @@ func (s *Store) DeviceByID(ctx context.Context, id int64) (Device, error) {
 	return scanDevice(s.DB.QueryRowContext(ctx, `select `+deviceCols+` where d.id = ?`, id))
 }
 
+// DeviceByClaimCode finds a frame waiting to be claimed by its code, typed
+// loosely.
+func (s *Store) DeviceByClaimCode(ctx context.Context, code string) (Device, error) {
+	return scanDevice(s.DB.QueryRowContext(ctx, `select `+deviceCols+` where d.claim_code = ? and d.user_id is null`,
+		NormalizeClaimCode(code)))
+}
+
 // UserDevices lists the frames someone has claimed, oldest first.
 func (s *Store) UserDevices(ctx context.Context, userID int64) ([]Device, error) {
 	return s.devices(ctx, `where d.user_id = ? order by d.id`, userID)
@@ -153,8 +190,8 @@ func (s *Store) Devices(ctx context.Context) ([]Device, error) {
 // claimed is ErrNotFound.
 func (s *Store) Claim(ctx context.Context, code string, userID int64, name string, now time.Time) (Device, error) {
 	var id int64
-	err := s.DB.QueryRowContext(ctx, `update devices set user_id = ?, name = ?, claimed_at = ?, claim_code = null
-		where claim_code = ? and user_id is null returning id`,
+	err := s.DB.QueryRowContext(ctx, `update devices set user_id = ?, name = ?, claimed_at = ?, claim_code = null,
+		invite_until = null where claim_code = ? and user_id is null returning id`,
 		userID, name, fmtTime(now), NormalizeClaimCode(code)).Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Device{}, ErrNotFound
@@ -163,6 +200,73 @@ func (s *Store) Claim(ctx context.Context, code string, userID int64, name strin
 		return Device{}, err
 	}
 	return s.DeviceByID(ctx, id)
+}
+
+// MarkForInvite lets a frame's code make an account until a time, for
+// someone new to set it up. Only unclaimed frames can be marked. byUserID is
+// the admin who marked it, 0 from the command line.
+func (s *Store) MarkForInvite(ctx context.Context, id, byUserID int64, until time.Time) error {
+	by := sql.NullInt64{Int64: byUserID, Valid: byUserID != 0} // 0: the command line
+	res, err := s.DB.ExecContext(ctx, `update devices set invite_until = ?, invited_by = ? where id = ? and user_id is null`,
+		fmtTime(until), by, id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// UnmarkInvite stops a frame's code from making accounts.
+func (s *Store) UnmarkInvite(ctx context.Context, id int64) error {
+	res, err := s.DB.ExecContext(ctx, `update devices set invite_until = null, invited_by = null where id = ?`, id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// RedeemFrame uses a marked frame's code as an invite: it makes a new user
+// with this passkey and gives them the frame, all at once. A frame that isn't
+// marked (or whose mark ran out, or that was claimed meanwhile) is
+// ErrNotFound; a taken name is ErrNameTaken, and nothing changes.
+func (s *Store) RedeemFrame(ctx context.Context, code string, handle []byte, name string, credID, credData []byte, now time.Time) (User, Device, error) {
+	var u User
+	var id int64
+	err := s.Tx(ctx, func(tx *sql.Tx) error {
+		err := tx.QueryRowContext(ctx, `select id from devices where claim_code = ? and user_id is null and invite_until > ?`,
+			NormalizeClaimCode(code), fmtTime(now)).Scan(&id)
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
+		if err != nil {
+			return err
+		}
+		if u, err = createUser(ctx, tx, handle, name, false, now); err != nil {
+			return err
+		}
+		if err := addCredential(ctx, tx, u.ID, credID, credData, now); err != nil {
+			return err
+		}
+		_, err = tx.ExecContext(ctx, `update devices set user_id = ?, name = 'Frame', claimed_at = ?, claim_code = null,
+			invite_until = null where id = ?`, u.ID, fmtTime(now), id)
+		return err
+	})
+	if err != nil {
+		return User{}, Device{}, err
+	}
+	d, err := s.DeviceByID(ctx, id)
+	return u, d, err
+}
+
+// SetHotspot records a frame's setup hotspot, when it says.
+func (s *Store) SetHotspot(ctx context.Context, id int64, ssid, password string) error {
+	_, err := s.DB.ExecContext(ctx, `update devices set ap_ssid = ?, ap_password = ? where id = ?`, ssid, password, id)
+	return err
 }
 
 // UpdateDevice renames a frame and replaces its settings. Only its owner can.
@@ -183,7 +287,7 @@ func (s *Store) UpdateDevice(ctx context.Context, id, userID int64, name string,
 func (s *Store) Unclaim(ctx context.Context, id, userID int64) error {
 	for range 5 {
 		res, err := s.DB.ExecContext(ctx, `update devices set user_id = null, claimed_at = null, name = '', settings = '{}',
-			claim_code = ? where id = ? and user_id = ?`, newClaimCode(), id, userID)
+			invite_until = null, claim_code = ? where id = ? and user_id = ?`, newClaimCode(), id, userID)
 		if err != nil {
 			if strings.Contains(err.Error(), "UNIQUE") {
 				continue

@@ -89,8 +89,16 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   sha256. A `seen` event is `MarkSeen` for the owner inside `canLog` (keeps stars and notes). Claim codes
   are `XXX-XXX` (`NormalizeClaimCode`); `DELETE /me/devices/{id}` unclaims (back to setup), the admin
   delete forgets the token. `/api/device/compat/current.png?token=` is for the stock firmware.
+- Frame setup: an unclaimed frame's bundle is the welcome screen (`setup`, tonight + 6) plus `wifi`; a
+  claimed one adds `wifi` (empty date) to its views. A frame marked for a new person (`invite_until`,
+  30 days, `MarkForInvite`) lets `register/begin` take `claim_code` instead of `invite`: one passkey
+  makes the account and claims it (`RedeemFrame`). `GET /devices/claim/{code}` tells `/claim` which
+  case it is. Admins prepare frames (`POST /admin/devices`, or `prulights frame new`) as a config v1
+  json; `prulights frame config` / `just frame-config` adds Wi-Fi locally (never sent to the server)
+  and writes the SD card files. The frame's contract is `plans/firmware.md`.
 - Emulator device mode (`/emulator?mode=device`, `app/emulator/Device.tsx`, `lib/frame.ts`) is a virtual
-  frame on the real device api: it keeps its token in localStorage, decodes the `.bin.gz` pictures in
+  frame on the real device api: it keeps its token, hotspot and known networks in localStorage (or loads a
+  prepared `frame-<id>.json`), decodes the `.bin.gz` pictures in
   the browser with `/dev/inks` (inks, panel codes, rotation; `TestDevInksDecodeFrames` keeps that in
   step with the png), and picks the picture by its own clock (`clock=` in the url, Boston wall time).
   Battery numbers in `POWER` are guesses until the hardware is measured. e2e: `frame.mjs`.

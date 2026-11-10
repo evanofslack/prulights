@@ -23,7 +23,10 @@ type InviteInfo struct {
 
 // RegisterBegin is POST /api/v1/auth/register/begin.
 type RegisterBegin struct {
-	Invite string `json:"invite"`
+	Invite string `json:"invite,omitempty"`
+	// ClaimCode is a frame marked for a new person: its code is the invite,
+	// and the new person gets the frame.
+	ClaimCode string `json:"claim_code,omitempty"`
 	// Name is the new person's display name; ignored for a re-invite.
 	Name string `json:"name"`
 }

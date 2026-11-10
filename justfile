@@ -97,6 +97,19 @@ scrape-snapshot:
 invite *args:
     cd backend && go run ./cmd/prulights invite {{ args }}
 
+# prepare a frame's identity (in prod: docker compose exec prulights prulights frame new -out frame.json)
+frame-new *args:
+    cd backend && go run ./cmd/prulights frame new {{ args }}
+
+# the files to flash, with Wi-Fi that never reaches the server (plans/firmware.md):
+#   just frame-config -from frame.json -wifi "Home:password" -wifi "Cape:password" -out sd
+frame-config *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    bin="$(mktemp -d)/prulights"
+    (cd backend && go build -o "$bin" ./cmd/prulights)
+    "$bin" frame config {{ args }}
+
 # open sqlite on the dev database
 db:
     sqlite3 backend/${DATABASE_PATH:-prulights.db}

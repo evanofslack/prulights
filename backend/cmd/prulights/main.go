@@ -3,6 +3,7 @@
 //	prulights [serve]                 run the api, web app and scraper
 //	prulights scrape [flags]          check the source pages once
 //	prulights backfill                fetch and apply every source page
+//	prulights frame new|config        prepare a frame for flashing
 package main
 
 import (
@@ -53,6 +54,8 @@ func main() {
 		err = renderCmd(ctx, args)
 	case "invite":
 		err = inviteCmd(ctx, args)
+	case "frame":
+		err = frameCmd(ctx, args)
 	case "version", "--version":
 		fmt.Println(version)
 	case "help", "-h", "--help":
@@ -76,6 +79,8 @@ commands:
   backfill   fetch and apply every source page, ignoring what's cached
   render     draw a frame view to a png (-view, -date, -palette, -out)
   invite     make an invite link and QR code (-admin, -for-user NAME)
+  frame new  prepare a frame's identity for flashing (-invite, -out FILE)
+  frame config  the files to flash: -from FILE -wifi "SSID:password" … -out DIR
   version    print the version`)
 }
 
