@@ -92,7 +92,10 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   built bundles are cached in memory by the json of their inputs, pictures kept in `device_images` by
   sha256. A `seen` event is `MarkSeen` for the owner inside `canLog` (keeps stars and notes). Claim codes
   are `XXX-XXX` (`NormalizeClaimCode`); `DELETE /me/devices/{id}` unclaims (back to setup), the admin
-  delete forgets the token. `/api/device/compat/current.png?token=` is for the stock firmware.
+  delete forgets the token. Settings carry the look: `theme` (`dark` default, `auto`, `light`),
+  `scene`, `words` (`withDefaults` fills them for older settings). An `auto` frame's bundle has each
+  night twice, `dark` and `light` with `from`/`until` (sunrise to lights-on, `daylight`).
+  `/settings` draws its choices from `GET /me/devices/{id}/preview.png?view=&light=1&scene=&words=`. `/api/device/compat/current.png?token=` is for the stock firmware.
 - Frame setup: an unclaimed frame's bundle is the welcome screen (`setup`, tonight + 6) plus `wifi`; a
   claimed one adds `wifi` (empty date) to its views. A frame marked for a new person (`invite_until`,
   30 days, `MarkForInvite`) lets `register/begin` take `claim_code` instead of `invite`: one passkey

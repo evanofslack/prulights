@@ -12,6 +12,30 @@ import { Shell } from "@/components/Shell";
 // /settings is for your frames: what each shows, quiet hours, pause, and
 // letting one go.
 
+const THEMES = [
+    { value: "dark", label: "Dark" },
+    { value: "auto", label: "Dark at night" },
+    { value: "light", label: "Light" },
+];
+
+const THEME_NOTES: Record<string, string> = {
+    dark: "The night sky, all day.",
+    auto: "Light by day. Dark from when the crown lights up until sunrise.",
+    light: "Black on white, all day.",
+};
+
+const SCENES = [
+    { value: "tower", label: "Just the tower" },
+    { value: "skyline", label: "With the skyline" },
+    { value: "river", label: "Across the river" },
+];
+
+const WORDS = [
+    { value: "none", label: "Picture only" },
+    { value: "color", label: "Colors" },
+    { value: "cause", label: "And cause" },
+];
+
 const VIEWS = [
     { value: "tonight", label: "Tonight", long: "Tonight's colors" },
     { value: "week", label: "Week", long: "The week ahead" },
@@ -156,6 +180,8 @@ function FrameCard({ device, onChange }: { device: DeviceInfo; onChange: () => v
                 <p className="text-muted">{status(device)}</p>
             </div>
 
+            <Looks device={device} s={s} change={change} />
+
             <Checkbox.Group
                 label="The button steps through"
                 size="md"
@@ -263,5 +289,131 @@ function FrameCard({ device, onChange }: { device: DeviceInfo; onChange: () => v
                 )}
             </div>
         </form>
+    );
+}
+
+// preview is the frame's picture with choices that may not be saved yet.
+function preview(id: number, s: DeviceSettings, o: { light: boolean; scene?: string; words?: string }) {
+    const q = new URLSearchParams({
+        view: "tonight",
+        scene: o.scene ?? s.scene,
+        words: o.words ?? s.words,
+        ...(o.light ? { light: "1" } : {}),
+    });
+    return `/api/v1/me/devices/${id}/preview.png?${q}`;
+}
+
+// Looks: how tonight's picture is drawn, chosen by looking at it.
+function Looks({
+    device,
+    s,
+    change,
+}: {
+    device: DeviceInfo;
+    s: DeviceSettings;
+    change: (c: Partial<DeviceSettings>) => void;
+}) {
+    // the picture the choices are drawn on: dark, unless it's always light
+    const light = s.theme === "light";
+    return (
+        <fieldset className="flex flex-col gap-5">
+            <legend className="mb-3 text-xl font-bold">How it looks</legend>
+
+            <div className="flex flex-col gap-2">
+                <span className="font-bold" id={`theme-${device.id}`}>
+                    Colors
+                </span>
+                <SegmentedControl
+                    size="md"
+                    value={s.theme}
+                    onChange={(v) => change({ theme: v })}
+                    data={THEMES}
+                    fullWidth
+                    aria-labelledby={`theme-${device.id}`}
+                />
+                <p className="text-sm text-muted">{THEME_NOTES[s.theme]}</p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+                <span className="font-bold" id={`scene-${device.id}`}>
+                    Picture
+                </span>
+                <div
+                    role="radiogroup"
+                    aria-labelledby={`scene-${device.id}`}
+                    className="grid grid-cols-3 gap-3"
+                >
+                    {SCENES.map((o) => {
+                        const on = s.scene === o.value;
+                        return (
+                            <button
+                                key={o.value}
+                                type="button"
+                                role="radio"
+                                aria-checked={on}
+                                onClick={() => change({ scene: o.value })}
+                                className={`flex flex-col items-center gap-2 rounded-lg p-2 text-center transition-colors ${
+                                    on ? "bg-raised ring-2 ring-accent" : "hover:bg-raised"
+                                }`}
+                            >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                    src={preview(device.id, s, { light, scene: o.value, words: "none" })}
+                                    alt=""
+                                    width={480}
+                                    height={800}
+                                    className="aspect-[3/5] w-full rounded-sm bg-black"
+                                />
+                                <span className={on ? "font-bold" : ""}>{o.label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+                <span className="font-bold" id={`words-${device.id}`}>
+                    Words under the tower
+                </span>
+                <SegmentedControl
+                    size="md"
+                    value={s.words}
+                    onChange={(v) => change({ words: v })}
+                    data={WORDS}
+                    fullWidth
+                    aria-labelledby={`words-${device.id}`}
+                />
+                <p className="text-sm text-muted">
+                    {s.words === "none"
+                        ? "Just the tower."
+                        : s.words === "color"
+                          ? "The date and tonight's colors."
+                          : "The date, tonight's colors, and what they're for."}
+                </p>
+            </div>
+
+            <figure className="flex flex-col gap-2">
+                <div className="flex gap-4">
+                    {(s.theme === "auto" ? [true, false] : [light]).map((l) => (
+                        <div key={String(l)} className="flex flex-1 flex-col items-center gap-2 sm:flex-none">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                                src={preview(device.id, s, { light: l })}
+                                alt={`Tonight on the frame${s.theme === "auto" ? (l ? ", by day" : ", at night") : ""}`}
+                                width={480}
+                                height={800}
+                                className="aspect-[3/5] w-full max-w-[240px] rounded-md border-[10px] border-[#1b1d22] bg-black shadow-lg"
+                            />
+                            {s.theme === "auto" && (
+                                <span className="text-sm text-muted">{l ? "By day" : "At night"}</span>
+                            )}
+                        </div>
+                    ))}
+                </div>
+                <figcaption className="text-sm text-muted">
+                    Tonight, as the frame will show it once you save.
+                </figcaption>
+            </figure>
+        </fieldset>
     );
 }

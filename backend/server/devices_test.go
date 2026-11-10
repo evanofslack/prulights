@@ -195,6 +195,9 @@ func TestDeviceLifecycle(t *testing.T) {
 		`{"settings":{"default_view":"tonight","views":["tonight"],"quiet_start":"22:00"}}`:                     400,
 		`{"settings":{"default_view":"tonight","views":["tonight"],"quiet_start":"25:00","quiet_end":"07:00"}}`: 400,
 		`{"name":""}`: 400,
+		`{"settings":{"default_view":"tonight","views":["tonight"],"theme":"sepia"}}`:  400,
+		`{"settings":{"default_view":"tonight","views":["tonight"],"scene":"harbor"}}`: 400,
+		`{"settings":{"default_view":"tonight","views":["tonight"],"words":"lots"}}`:   400,
 	} {
 		if rec := call(t, s, "PATCH", devPath, body, session); rec.Code != want {
 			t.Errorf("PATCH %.60s = %d, want %d", body, rec.Code, want)
@@ -207,7 +210,45 @@ func TestDeviceLifecycle(t *testing.T) {
 	if b := bundleOf(t, s, reg.Token); len(b.Items) != 7*2+2 {
 		t.Errorf("one view and good night: %d items", len(b.Items))
 	}
+	if list := decodeAs[[]DeviceInfo](t, call(t, s, "GET", "/api/v1/me/devices", "", session).Body.Bytes()); list[0].Settings.Theme != "dark" ||
+		list[0].Settings.Scene != "skyline" || list[0].Settings.Words != "cause" {
+		t.Errorf("left-out choices = %+v, want the defaults", list[0].Settings)
+	}
+
+	// dark at night, paper by day: each night's view twice, the paper one
+	// from sunrise to lights-on; good night and the Wi-Fi screen only dark
+	rec = call(t, s, "PATCH", devPath, `{"settings":{"default_view":"tonight","views":["tonight"],"quiet_start":"22:00","quiet_end":"07:00","theme":"auto","scene":"river","words":"none"}}`, session)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("PATCH auto = %d %s", rec.Code, rec.Body.String())
+	}
+	b = bundleOf(t, s, reg.Token)
+	themes := map[string]int{}
+	for _, it := range b.Items {
+		themes[it.View+" "+it.Theme]++
+		if (it.Theme == "light") != (it.From != nil && it.Until != nil) {
+			t.Errorf("%s %s %s: window %v–%v", it.View, it.Date, it.Theme, it.From, it.Until)
+		}
+		// sunrise around 7; lights on at 5pm (listed) or sunset around 4:12
+		if it.From != nil && (it.From.In(schedule.Boston).Hour() != 7 || it.Until.In(schedule.Boston).Hour() < 16 || it.Until.In(schedule.Boston).Hour() > 17) {
+			t.Errorf("december daylight %s: %s–%s", it.Date, it.From.In(schedule.Boston), it.Until.In(schedule.Boston))
+		}
+	}
+	if themes["tonight dark"] != 8 || themes["tonight light"] != 7 || themes["goodnight dark"] != 7 ||
+		themes["goodnight light"] != 0 || themes["wifi dark"] != 1 {
+		t.Errorf("auto bundle = %v", themes)
+	}
+	for q, want := range map[string]int{"": 200, "?view=month&light=1&scene=tower&words=color": 200,
+		"?view=goodnight": 200, "?view=setup": 400, "?scene=harbor": 400} {
+		rec := call(t, s, "GET", devPath+"/preview.png"+q, "", session)
+		if rec.Code != want || (want == 200 && rec.Header().Get("Content-Type") != "image/png") {
+			t.Errorf("preview%s = %d %s", q, rec.Code, rec.Header().Get("Content-Type"))
+		}
+	}
+
 	_, other := person(t, s, "Evan", false)
+	if rec := call(t, s, "GET", devPath+"/preview.png", "", other); rec.Code != http.StatusNotFound {
+		t.Errorf("someone else's preview = %d", rec.Code)
+	}
 	if rec := call(t, s, "PATCH", devPath, `{"name":"Mine"}`, other); rec.Code != http.StatusNotFound {
 		t.Errorf("someone else's frame = %d", rec.Code)
 	}

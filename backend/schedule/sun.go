@@ -15,6 +15,16 @@ const (
 // using NOAA's solar position equations (good to about a minute at Boston's
 // latitude). ok is false when the sun doesn't set that day.
 func Sunset(year int, month time.Month, day int, lat, lon float64) (t time.Time, ok bool) {
+	return sunEvent(year, month, day, lat, lon, 1)
+}
+
+// Sunrise is Sunset's morning twin.
+func Sunrise(year int, month time.Month, day int, lat, lon float64) (t time.Time, ok bool) {
+	return sunEvent(year, month, day, lat, lon, -1)
+}
+
+// sunEvent is sunset (sign 1) or sunrise (sign -1).
+func sunEvent(year int, month time.Month, day int, lat, lon float64, sign float64) (t time.Time, ok bool) {
 	// work from solar noon in UTC on that date
 	jd := julianDay(year, month, day)
 	// two passes: compute at noon, then refine at the first estimate
@@ -27,7 +37,7 @@ func Sunset(year int, month time.Month, day int, lat, lon float64) (t time.Time,
 		if !okHA {
 			return time.Time{}, false
 		}
-		minutes = 720 - 4*(lon-ha) - eqTime
+		minutes = 720 - 4*(lon-sign*ha) - eqTime
 	}
 	base := time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
 	return base.Add(time.Duration(minutes * float64(time.Minute))).Round(time.Minute), true

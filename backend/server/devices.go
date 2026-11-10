@@ -49,9 +49,38 @@ const (
 // through the ones its owner picks.
 var dayViews = []render.View{render.ViewTonight, render.ViewWeek, render.ViewMonth, render.ViewLog}
 
+// Themes: dark is the default.
+const (
+	themeDark  = "dark"
+	themeAuto  = "auto"
+	themeLight = "light"
+)
+
 func defaultSettings() DeviceSettings {
 	return DeviceSettings{DefaultView: string(render.ViewTonight),
-		Views: []string{string(render.ViewTonight), string(render.ViewWeek), string(render.ViewMonth), string(render.ViewLog)}}
+		Views: []string{string(render.ViewTonight), string(render.ViewWeek), string(render.ViewMonth), string(render.ViewLog)},
+		Theme: themeDark, Scene: string(render.SceneSkyline), Words: string(render.WordsCause)}
+}
+
+// withDefaults fills in the choices that were left out (older settings, or
+// a client that doesn't know them).
+func (set DeviceSettings) withDefaults() DeviceSettings {
+	def := defaultSettings()
+	if set.Theme == "" {
+		set.Theme = def.Theme
+	}
+	if set.Scene == "" {
+		set.Scene = def.Scene
+	}
+	if set.Words == "" {
+		set.Words = def.Words
+	}
+	return set
+}
+
+// look is how the settings draw, by day (light) or by night.
+func (set DeviceSettings) look(light bool) render.Look {
+	return render.Look{Light: light, Scene: render.Scene(set.Scene), Words: render.Words(set.Words)}
 }
 
 // settingsOf reads stored settings, filling in what's missing.
@@ -66,8 +95,9 @@ func settingsOf(raw []byte) DeviceSettings {
 			set.Views = got.Views
 		}
 		set.QuietStart, set.QuietEnd, set.Paused = got.QuietStart, got.QuietEnd, got.Paused
+		set.Theme, set.Scene, set.Words = got.Theme, got.Scene, got.Words
 	}
-	return set
+	return set.withDefaults()
 }
 
 var clockRE = regexp.MustCompile(`^([01][0-9]|2[0-3]):[0-5][0-9]$`)
@@ -86,6 +116,16 @@ func validSettings(set DeviceSettings) string {
 	}
 	if !slices.Contains(dayViews, render.View(set.DefaultView)) {
 		return "unknown default view"
+	}
+	set = set.withDefaults()
+	if !slices.Contains([]string{themeDark, themeAuto, themeLight}, set.Theme) {
+		return "theme is dark, auto or light"
+	}
+	if !slices.Contains(render.Scenes, render.Scene(set.Scene)) {
+		return "scene is tower, skyline or river"
+	}
+	if !slices.Contains(render.WordsList, render.Words(set.Words)) {
+		return "words is none, color or cause"
 	}
 	if (set.QuietStart == "") != (set.QuietEnd == "") {
 		return "quiet hours need a start and an end"
@@ -106,6 +146,35 @@ func (set DeviceSettings) quiet(t time.Time) bool {
 		return now >= set.QuietStart && now < set.QuietEnd
 	}
 	return now >= set.QuietStart || now < set.QuietEnd // overnight
+}
+
+// daylight is when a night's "light" pictures apply, for theme "auto":
+// from sunrise until the crown lights up.
+func daylight(nights []schedule.Lighting, day schedule.Date) (from, until time.Time) {
+	t := day.Time()
+	from = t.Add(7 * time.Hour)
+	if rise, ok := schedule.Sunrise(t.Year(), t.Month(), t.Day(), schedule.TowerLat, schedule.TowerLon); ok {
+		from = rise
+	}
+	until, _ = schedule.LightsOn(day, schedule.ProgramUnlisted)
+	for _, l := range nights {
+		if l.Date == day && !l.LightsOn.IsZero() {
+			until = l.LightsOn
+		}
+	}
+	return from, until
+}
+
+// lightAt is whether the frame draws on paper at a moment.
+func (set DeviceSettings) lightAt(now time.Time, nights []schedule.Lighting, tonight schedule.Date) bool {
+	switch set.Theme {
+	case themeLight:
+		return true
+	case themeAuto:
+		from, until := daylight(nights, tonight)
+		return !now.Before(from) && now.Before(until)
+	}
+	return false
 }
 
 // mountDevice adds the frames' api under /api/device. Frames authenticate
@@ -137,6 +206,7 @@ func (s *Server) mountDevices(r chi.Router) {
 	r.Get("/me/devices", s.requireUser(s.getMyDevices))
 	r.Patch("/me/devices/{id}", s.requireUser(s.patchDevice))
 	r.Delete("/me/devices/{id}", s.requireUser(s.unclaimDevice))
+	r.Get("/me/devices/{id}/preview.png", s.requireUser(s.getDevicePreview))
 }
 
 func (s *Server) mountAdminDevices(r chi.Router) {
@@ -383,6 +453,7 @@ func (s *Server) getCompatPNG(w http.ResponseWriter, r *http.Request) {
 	case set.quiet(now):
 		view = render.ViewGoodnight
 	}
+	data.Look = set.look(set.lightAt(now, data.Nights, tonight) && view != render.ViewGoodnight)
 	f, err := render.Render(view, data)
 	if err != nil {
 		s.internalError(w, err)
@@ -449,6 +520,10 @@ func (s *Server) frameData(r *http.Request, d store.Device, tonight schedule.Dat
 	for _, n := range logged {
 		if n.Date >= from {
 			data.Sightings[n.Date] = render.Sighting{Seen: true, Rating: n.Rating}
+		}
+		if len(stats.Nights) < 8 {
+			stats.Nights = append(stats.Nights, render.RatedNight{Date: n.Date, Colors: n.Lighting.Colors,
+				Cause: n.Lighting.Cause, Rating: n.Rating})
 		}
 		if n.Rating > 0 && len(stats.Recent) < 4 {
 			stats.Recent = append(stats.Recent, render.RatedNight{Date: n.Date, Colors: n.Lighting.Colors,
@@ -520,10 +595,11 @@ func (s *Server) bundleFor(r *http.Request, d store.Device) (*Bundle, error) {
 	set := settingsOf(d.Settings)
 	views := bundleViews(set)
 	in, err := json.Marshal(struct {
-		Data    render.Data
-		Views   []render.View
-		Claimed bool
-	}{data, views, d.Claimed()})
+		Data     render.Data
+		Views    []render.View
+		Settings DeviceSettings
+		Claimed  bool
+	}{data, views, set, d.Claimed()})
 	if err != nil {
 		return nil, err
 	}
@@ -534,10 +610,13 @@ func (s *Server) bundleFor(r *http.Request, d store.Device) (*Bundle, error) {
 		return b, nil
 	}
 
+	// a picture for a view of a night, in a theme: "" for frames that
+	// don't change with the daylight
 	b := &Bundle{Tonight: tonight, Items: []BundleItem{}}
-	add := func(v render.View, day schedule.Date, stale bool) error {
+	add := func(v render.View, day schedule.Date, stale bool, theme string) error {
 		dd := data
 		dd.Tonight = day
+		dd.Look = set.look(theme == themeLight || (theme == "" && set.Theme == themeLight))
 		if stale {
 			dd.StaleSince = tonight
 		}
@@ -549,37 +628,62 @@ func (s *Server) bundleFor(r *http.Request, d store.Device) (*Bundle, error) {
 		if err := s.store.SaveImage(r.Context(), sha, bin, s.now()); err != nil {
 			return err
 		}
-		b.Items = append(b.Items, BundleItem{Date: day, View: string(v), Stale: stale, SHA256: sha, Size: len(bin),
-			URL: "/api/device/v1/images/" + sha + ".bin.gz"})
+		it := BundleItem{Date: day, View: string(v), Stale: stale, SHA256: sha, Size: len(bin),
+			URL: "/api/device/v1/images/" + sha + ".bin.gz", Theme: theme}
+		if theme == themeLight {
+			from, until := daylight(data.Nights, day)
+			it.From, it.Until = &from, &until
+		}
+		b.Items = append(b.Items, it)
 		return nil
+	}
+	// a night's view: twice for "auto" frames, by night and by day
+	addNight := func(v render.View, day schedule.Date, stale bool) error {
+		if set.Theme != themeAuto {
+			return add(v, day, stale, "")
+		}
+		if err := add(v, day, stale, themeDark); err != nil {
+			return err
+		}
+		if v == render.ViewGoodnight || stale { // quiet hours are night; so is running out
+			return nil
+		}
+		return add(v, day, stale, themeLight)
 	}
 	if !d.Claimed() {
 		// the welcome screen, a night at a time, until someone claims it
 		for i := range bundleNights {
-			if err := add(render.ViewSetup, tonight.AddDays(i), false); err != nil {
+			if err := add(render.ViewSetup, tonight.AddDays(i), false, ""); err != nil {
 				return nil, err
 			}
 		}
 	} else {
 		for i := range bundleNights {
 			for _, v := range views {
-				if err := add(v, tonight.AddDays(i), false); err != nil {
+				if err := addNight(v, tonight.AddDays(i), false); err != nil {
 					return nil, err
 				}
 			}
 		}
-		if err := add(render.View(set.DefaultView), tonight.AddDays(bundleNights), true); err != nil {
+		if err := addNight(render.View(set.DefaultView), tonight.AddDays(bundleNights), true); err != nil {
 			return nil, err
 		}
 	}
 	// the Wi-Fi screen, for when no network answers: it has no night
-	if err := add(render.ViewWifi, tonight, false); err != nil {
+	wifiTheme := ""
+	if set.Theme == themeAuto {
+		wifiTheme = themeDark
+	}
+	if err := add(render.ViewWifi, tonight, false, wifiTheme); err != nil {
 		return nil, err
 	}
 	b.Items[len(b.Items)-1].Date = ""
 	h := sha256.New()
 	for _, it := range b.Items {
-		h.Write([]byte(string(it.Date) + " " + it.View + " " + strconv.FormatBool(it.Stale) + " " + it.SHA256 + "\n"))
+		h.Write([]byte(string(it.Date) + " " + it.View + " " + strconv.FormatBool(it.Stale) + " " + it.Theme + " " + it.SHA256 + "\n"))
+		if it.From != nil {
+			h.Write([]byte(it.From.UTC().Format(time.RFC3339) + " " + it.Until.UTC().Format(time.RFC3339) + "\n"))
+		}
 	}
 	b.Version = hex.EncodeToString(h.Sum(nil))[:16]
 	s.bundles.put(key, b)
@@ -695,7 +799,7 @@ func (s *Server) patchDevice(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, msg)
 			return
 		}
-		set = *req.Settings
+		set = req.Settings.withDefaults()
 	}
 	raw, _ := json.Marshal(set)
 	if err := s.store.UpdateDevice(r.Context(), d.ID, d.UserID, name, raw); err != nil {
@@ -704,6 +808,50 @@ func (s *Server) patchDevice(w http.ResponseWriter, r *http.Request) {
 	}
 	d.Name, d.Settings = name, raw
 	writeJSON(w, http.StatusOK, deviceInfoOf(d))
+}
+
+// getDevicePreview draws one of the frame's views, as the panel would show
+// it, with choices that may not be saved yet: ?view=tonight&light=1
+// &scene=river&words=color. The settings page shows it as you choose.
+func (s *Server) getDevicePreview(w http.ResponseWriter, r *http.Request) {
+	d, ok := s.myDevice(w, r)
+	if !ok {
+		return
+	}
+	q := r.URL.Query()
+	view := render.View(q.Get("view"))
+	if view == "" {
+		view = render.ViewTonight
+	}
+	if !slices.Contains(dayViews, view) && view != render.ViewGoodnight {
+		writeError(w, http.StatusBadRequest, "unknown view")
+		return
+	}
+	set := settingsOf(d.Settings)
+	if v := q.Get("scene"); v != "" {
+		set.Scene = v
+	}
+	if v := q.Get("words"); v != "" {
+		set.Words = v
+	}
+	if msg := validSettings(set); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
+	data, err := s.frameData(r, d, schedule.Tonight(s.now()))
+	if err != nil {
+		s.internalError(w, err)
+		return
+	}
+	data.Look = set.look(q.Get("light") == "1")
+	f, err := render.Render(view, data)
+	if err != nil {
+		s.internalError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "image/png")
+	w.Header().Set("Cache-Control", "private, max-age=300")
+	w.Write(f.PNG(render.Measured))
 }
 
 // unclaimDevice lets go of a frame. It goes back to its setup screen on its

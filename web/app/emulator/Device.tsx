@@ -659,7 +659,7 @@ export function Device({
                                 aria-label="The frame"
                                 data-showing={
                                     showing
-                                        ? `${showing.view} ${showing.date}${showing.stale ? " stale" : ""}`
+                                        ? `${showing.view} ${showing.date}${showing.theme ? ` ${showing.theme}` : ""}${showing.stale ? " stale" : ""}`
                                         : ""
                                 }
                                 className="block h-auto max-w-none bg-[#bec8c8]"
@@ -711,7 +711,7 @@ export function Device({
                             <dt className="text-muted">Showing</dt>
                             <dd data-view={showing ? showing.view : ""}>
                                 {showing
-                                    ? `${showing.stale ? "out of date: " : ""}${showing.view}${showing.date ? `, ${showing.date}` : ""}`
+                                    ? `${showing.stale ? "out of date: " : ""}${showing.view}${showing.date ? `, ${showing.date}` : ""}${showing.theme ? ` (${showing.theme === "light" ? "by day" : "at night"})` : ""}`
                                     : "nothing yet"}
                                 {flashing && " (refreshing…)"}
                                 {settings?.paused && " · paused"}

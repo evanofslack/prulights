@@ -166,6 +166,20 @@ export interface DeviceSettings {
    * Paused frames keep their picture and only check in once a day.
    */
   paused: boolean;
+  /**
+   * Theme is "dark" (the night sky, always), "auto" (paper by day, the
+   * night sky from lights-on until sunrise) or "light" (paper, always).
+   */
+  theme: string;
+  /**
+   * Scene is what's drawn around the tower: "tower", "skyline" or "river".
+   */
+  scene: string;
+  /**
+   * Words is how much tonight's picture says: "none", "color" (the date
+   * and colors) or "cause" (and what they're for).
+   */
+  words: string;
 }
 /**
  * RegisterRequest is POST /api/device/v1/register.
@@ -228,6 +242,18 @@ export interface BundleItem {
   sha256: string;
   size: number /* int */;
   url: string;
+  /**
+   * Theme is set only for frames that change with the daylight (theme
+   * "auto"): each of their nights comes twice, "dark" and "light".
+   */
+  theme?: string;
+  /**
+   * From and Until bound when a picture applies; the "light" pictures
+   * carry them (sunrise to lights-on). Show the picture whose window holds
+   * the time, else the one without a window.
+   */
+  from?: string;
+  until?: string;
 }
 /**
  * Bundle is GET /api/device/v1/bundle: every picture for the next week. A

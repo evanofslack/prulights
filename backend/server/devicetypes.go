@@ -22,6 +22,14 @@ type DeviceSettings struct {
 	QuietEnd   string `json:"quiet_end"`
 	// Paused frames keep their picture and only check in once a day.
 	Paused bool `json:"paused"`
+	// Theme is "dark" (the night sky, always), "auto" (paper by day, the
+	// night sky from lights-on until sunrise) or "light" (paper, always).
+	Theme string `json:"theme"`
+	// Scene is what's drawn around the tower: "tower", "skyline" or "river".
+	Scene string `json:"scene"`
+	// Words is how much tonight's picture says: "none", "color" (the date
+	// and colors) or "cause" (and what they're for).
+	Words string `json:"words"`
 }
 
 // RegisterRequest is POST /api/device/v1/register.
@@ -70,6 +78,14 @@ type BundleItem struct {
 	SHA256 string `json:"sha256"`
 	Size   int    `json:"size"`
 	URL    string `json:"url"`
+	// Theme is set only for frames that change with the daylight (theme
+	// "auto"): each of their nights comes twice, "dark" and "light".
+	Theme string `json:"theme,omitempty"`
+	// From and Until bound when a picture applies; the "light" pictures
+	// carry them (sunrise to lights-on). Show the picture whose window holds
+	// the time, else the one without a window.
+	From  *time.Time `json:"from,omitempty"`
+	Until *time.Time `json:"until,omitempty"`
 }
 
 // Bundle is GET /api/device/v1/bundle: every picture for the next week. A

@@ -90,8 +90,9 @@ export function cycle(s: DeviceSettings): string[] {
 
 // pick is the picture the frame shows: the Wi-Fi screen when it can't get
 // online (or is being set up), the welcome screen until claimed, "good night"
-// in quiet hours, else the view for tonight, else (the bundle ran out) the
-// stale picture.
+// in quiet hours, else the view for tonight (by day or by night, for a frame
+// that changes with the daylight), else (the bundle ran out) the stale
+// picture.
 export function pick(
     bundle: Bundle | undefined,
     claimed: boolean,
@@ -107,7 +108,15 @@ export function pick(
         const setup = bundle.items.filter((i) => i.view === "setup");
         return setup.find((i) => i.date === night) ?? setup[setup.length - 1];
     }
-    const day = (v: string) => bundle.items.find((i) => !i.stale && i.date === night && i.view === v);
+    // a night's view; a frame that changes with the daylight has two, and the
+    // one whose window holds the time wins over the one without a window
+    const day = (v: string) => {
+        const all = bundle.items.filter((i) => !i.stale && i.date === night && i.view === v);
+        return (
+            all.find((i) => i.from && i.until && ms >= Date.parse(i.from) && ms < Date.parse(i.until)) ??
+            all.find((i) => !i.from)
+        );
+    };
     if (quietAt(ms, settings)) {
         const gn = day("goodnight");
         if (gn) return gn;
