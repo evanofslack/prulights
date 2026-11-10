@@ -45,9 +45,9 @@ test *args:
     cd backend && go test -race {{ args }} ./...
 
 # draw a frame view from sample data to backend/tmp/render-<view>.png
-render view="tonight" date="2026-12-12" palette="measured":
+render view="tonight" date="2026-12-12" palette="measured" *args="":
     mkdir -p backend/tmp
-    cd backend && go run ./cmd/prulights render -view {{ view }} -date {{ date }} -palette {{ palette }} -out tmp/render-{{ view }}.png
+    cd backend && go run ./cmd/prulights render -view {{ view }} -date {{ date }} -palette {{ palette }} {{ args }} -out tmp/render-{{ view }}.png
 
 # check the frame views against their golden pngs
 golden:

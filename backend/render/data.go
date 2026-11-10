@@ -1,7 +1,6 @@
 package render
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -50,7 +49,8 @@ type Stats struct {
 	Rated     int
 	AvgRating float64
 	Favorites []ColorCount // most seen first
-	Recent    []RatedNight // newest first
+	Recent    []RatedNight // rated nights, newest first
+	Nights    []RatedNight // seen nights (rated or not), newest first
 }
 
 // Data is everything a view draws from. Nights should cover what the views
@@ -74,6 +74,8 @@ type Data struct {
 
 	StaleSince schedule.Date // when set, a banner says the schedule is old
 	LowBattery bool
+
+	Look Look // how the owner likes it drawn
 }
 
 // night returns the lighting for d, white when it's not in Nights.
@@ -124,17 +126,9 @@ func colorNames(colors []schedule.ColorKey) string {
 // causeText is what a night is for, with a line for plain white nights.
 func causeText(l schedule.Lighting) string {
 	if !l.Scheduled || l.Cause == "" {
-		return "Nothing special listed tonight, so the crown shows its usual white."
+		return "No special lighting tonight"
 	}
-	return l.Cause
-}
-
-// shortCause is a night's cause for a one-line list.
-func shortCause(l schedule.Lighting) string {
-	if !l.Scheduled || l.Cause == "" {
-		return "White, nothing listed"
-	}
-	return l.Cause
+	return "For " + l.Cause
 }
 
 // SampleData is a fixed week of real 31 Nights of Light colors around date,
@@ -201,6 +195,16 @@ func SampleData(tonight schedule.Date) Data {
 				{Date: "2026-12-07", Colors: []schedule.ColorKey{schedule.Blue, schedule.Gold}, Cause: "Angel Flight", Rating: 5},
 				{Date: "2026-12-04", Colors: []schedule.ColorKey{schedule.Blue}, Cause: "Hanukkah", Rating: 3},
 			},
+			Nights: []RatedNight{
+				{Date: "2026-12-11", Colors: []schedule.ColorKey{schedule.White, schedule.Pink, schedule.Maroon}, Rating: 5},
+				{Date: "2026-12-10", Colors: []schedule.ColorKey{schedule.Red}, Rating: 4},
+				{Date: "2026-12-08", Colors: []schedule.ColorKey{schedule.Blue, schedule.Teal, schedule.White}},
+				{Date: "2026-12-07", Colors: []schedule.ColorKey{schedule.Blue, schedule.Gold}, Rating: 5},
+				{Date: "2026-12-05", Colors: []schedule.ColorKey{schedule.Blue, schedule.Green}},
+				{Date: "2026-12-04", Colors: []schedule.ColorKey{schedule.Blue}, Rating: 3},
+				{Date: "2026-12-01", Colors: []schedule.ColorKey{schedule.Gold, schedule.Maroon}, Rating: 4},
+				{Date: "2026-11-26", Colors: []schedule.ColorKey{schedule.Orange, schedule.Gold}, Rating: 5},
+			},
 		},
 		BaseURL:    "https://prulights.evanslack.dev",
 		ClaimURL:   "https://prulights.evanslack.dev/claim?code=K7Q-9MX",
@@ -221,8 +225,3 @@ func sample(d schedule.Date, cause string, colors ...schedule.ColorKey) schedule
 
 // dayLabel is "Thu Dec 10".
 func dayLabel(d schedule.Date) string { return d.Time().Format("Mon Jan 2") }
-
-// shortDay is "Fri 11".
-func shortDay(d schedule.Date) string { return d.Time().Format("Mon 2") }
-
-func ratingText(r int) string { return fmt.Sprintf("%d of 5", r) }

@@ -238,8 +238,8 @@ func TestCompatPNG(t *testing.T) {
 		t.Errorf("portrait = %+v %v", cfg, err)
 	}
 	// ideal colors by default, so the stock firmware's dithering leaves them be
-	if img, err := png.Decode(bytes.NewReader(rec.Body.Bytes())); err != nil || img.At(4, 796) != render.Ideal.Colors[render.White] {
-		t.Errorf("paper = %v, want the ideal white (%v)", img.At(4, 796), err)
+	if img, err := png.Decode(bytes.NewReader(rec.Body.Bytes())); err != nil || img.At(4, 796) != render.Ideal.Colors[render.Black] {
+		t.Errorf("night = %v, want the ideal black (%v)", img.At(4, 796), err)
 	}
 	etag := rec.Header().Get("ETag")
 	if rec := dev(t, s, "GET", "/api/device/compat/current.png", "", reg.Token, "If-None-Match", etag); rec.Code != http.StatusNotModified {

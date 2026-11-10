@@ -21,6 +21,9 @@ func renderCmd(_ context.Context, args []string) error {
 	bin := fs.String("bin", "", "also write the gzipped panel framebuffer here")
 	stale := fs.String("stale", "", "draw the stale-schedule banner, as of this date")
 	lowBattery := fs.Bool("low-battery", false, "draw the low-battery mark")
+	light := fs.Bool("light", false, "paper instead of the night sky")
+	scene := fs.String("scene", "skyline", "around the tower: tower, skyline or river")
+	words := fs.String("words", "cause", "under tonight's picture: none, color or cause")
 	fs.Parse(args)
 
 	d, err := schedule.ParseDate(*date)
@@ -34,6 +37,7 @@ func renderCmd(_ context.Context, args []string) error {
 		}
 	}
 	data.LowBattery = *lowBattery
+	data.Look = render.Look{Light: *light, Scene: render.Scene(*scene), Words: render.Words(*words)}
 	f, err := render.Render(render.View(*view), data)
 	if err != nil {
 		return err

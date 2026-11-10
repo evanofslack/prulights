@@ -40,9 +40,29 @@ func goldenCases() []goldenCase {
 			d.LowBattery = true
 			return d
 		}},
+		{"tonight-river-light", ViewTonight, func() Data {
+			d := dec12()
+			d.Look = Look{Light: true, Scene: SceneRiver, Words: WordsColor}
+			return d
+		}},
+		{"tonight-tower-none", ViewTonight, func() Data {
+			d := dec12()
+			d.Look = Look{Scene: SceneTower, Words: WordsNone}
+			return d
+		}},
 		{"week", ViewWeek, dec12},
+		{"week-light", ViewWeek, func() Data {
+			d := dec12()
+			d.Look = Look{Light: true}
+			return d
+		}},
 		{"month", ViewMonth, dec12},
 		{"log", ViewLog, dec12},
+		{"log-light", ViewLog, func() Data {
+			d := dec12()
+			d.Look = Look{Light: true}
+			return d
+		}},
 		{"log-empty", ViewLog, func() Data {
 			d := dec12()
 			d.Stats = nil
@@ -259,16 +279,6 @@ func TestColorNames(t *testing.T) {
 		if got := colorNames(colors); got != want {
 			t.Errorf("colorNames(%v) = %q, want %q", colors, got, want)
 		}
-	}
-}
-
-func TestLightsOnText(t *testing.T) {
-	d := SampleData("2026-12-12")
-	if got := lightsOnText(d.night("2026-12-12")); got != "Lights on at 5 pm" {
-		t.Errorf("31 nights = %q", got)
-	}
-	if got := lightsOnText(d.night("2026-11-20")); !strings.HasPrefix(got, "Lights on around 4:") {
-		t.Errorf("unlisted november night = %q", got)
 	}
 }
 

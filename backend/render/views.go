@@ -10,23 +10,22 @@ import (
 	"github.com/evanofslack/prulights/schedule"
 )
 
-// margin is the paper's edge.
-const margin = 24
+// margin is the page's edge.
+const margin = 28
 
 // The type scale. Everything is large: the frame is read at arm's length
-// by someone who may not have their glasses on.
+// by someone who may not have their glasses on. Styles carry black; views
+// put them in the theme's ink with on().
 var (
-	labelStyle   = style{w: bold, size: 20, ink: Black, spacing: 1.5}
-	colorsStyle  = style{w: bold, size: 36, ink: Black}
-	causeStyle   = style{w: regular, size: 28, ink: Black}
-	bodyStyle    = style{w: regular, size: 21, ink: Black}
-	bodyBold     = style{w: bold, size: 21, ink: Black}
-	smallStyle   = style{w: regular, size: 18, ink: Black}
-	headStyle    = style{w: bold, size: 32, ink: Black}
-	bigNumber    = style{w: bold, size: 72, ink: Black}
-	nightHead    = style{w: bold, size: 44, ink: White}
-	nightBody    = style{w: regular, size: 24, ink: White}
-	nightBodyDim = style{w: regular, size: 20, ink: White}
+	labelStyle  = style{w: bold, size: 18, spacing: 2}
+	colorsStyle = style{w: bold, size: 40}
+	causeStyle  = style{w: regular, size: 25}
+	bodyStyle   = style{w: regular, size: 21}
+	bodyBold    = style{w: bold, size: 22}
+	smallStyle  = style{w: regular, size: 18}
+	headStyle   = style{w: bold, size: 32}
+	bigNumber   = style{w: bold, size: 72}
+	nightHead   = style{w: bold, size: 46}
 )
 
 // renderMu runs one render at a time. The cached font faces aren't safe to
@@ -41,241 +40,256 @@ func Render(v View, d Data) (*Frame, error) {
 	}
 	renderMu.Lock()
 	defer renderMu.Unlock()
-	c := newCanvas(Width, Height, White)
+	th := themeOf(d.Look)
+	c := newCanvas(Width, Height, th.bg)
 	switch v {
 	case ViewTonight:
-		tonightView(c, &d)
+		tonightView(c, &d, th)
 	case ViewWeek:
-		weekView(c, &d)
+		weekView(c, &d, th)
 	case ViewMonth:
-		monthView(c, &d)
+		monthView(c, &d, th)
 	case ViewLog:
-		logView(c, &d)
+		logView(c, &d, th)
 	case ViewSetup:
-		setupView(c, &d)
+		setupView(c, &d, th)
 	case ViewGoodnight:
-		goodnightView(c, &d)
+		goodnightView(c, &d, th)
 	case ViewWifi:
-		wifiView(c, &d)
+		wifiView(c, &d, th)
 	default:
 		return nil, fmt.Errorf("render: unknown view %q", v)
 	}
-	overlays(c, &d, v)
+	overlays(c, &d, v, th)
 	return &Frame{View: v, Pix: c.pix}, nil
 }
 
-// tonightView: the tower in tonight's colors over what they're for, the next
-// three nights, and a QR code to rate tonight.
-func tonightView(c *canvas, d *Data) {
+// tonightView: the tower, as large as the page allows, lit in tonight's
+// colors. Under it, as the owner likes: nothing, the date and colors, or
+// those and what they're for.
+func tonightView(c *canvas, d *Data, th theme) {
 	l := d.night(d.Tonight)
-	drawTower(c, image.Rect(0, 0, Width, 430), l.Colors, true)
-
+	words := d.Look.words()
 	w := Width - 2*margin
-	y := 430 + 44
-	c.text(margin, y, labelStyle, strings.ToUpper("Tonight · "+dayLabel(d.Tonight)))
-	y += 46
-	for _, line := range wrap(colorsStyle, colorNames(l.Colors), w, 2) {
-		c.text(margin, y, colorsStyle, line)
-		y += colorsStyle.lineHeight()
-	}
-	y -= colorsStyle.lineHeight() - 38
-	lines := wrap(causeStyle, causeText(l), w, 2)
-	for _, line := range lines {
-		c.text(margin, y, causeStyle, line)
-		y += causeStyle.lineHeight()
-	}
+	label, colorsSt, causeSt := labelStyle.on(th), colorsStyle.on(th), causeStyle.on(th)
 
-	// the next three nights, with the QR code beside them, sit at the bottom
-	const qrSize = 120
-	top := Height - 16 - 3*38 - 8
-
-	if s := d.sighting(d.Tonight); s.Seen || s.Rating > 0 {
-		y += 4
-		c.check(image.Pt(margin, y-24), 26, Black)
-		x := c.text(margin+34, y, bodyBold, "Seen")
-		if s.Rating > 0 {
-			stars(c, x+20, y-9, 12, s.Rating)
+	var names, cause []string
+	h := 0
+	if words != WordsNone {
+		names = wrap(colorsSt, colorNames(l.Colors), w, 2)
+		h = 30 + 14 + len(names)*colorsSt.lineHeight()
+		if words == WordsCause {
+			cause = wrap(causeSt, causeText(l), w, 2)
+			h += len(cause) * causeSt.lineHeight()
 		}
-		y += 36
+		h += 18
 	}
-	if y+6 <= top-20 && !l.LightsOn.IsZero() {
-		c.text(margin, y+4, bodyStyle, lightsOnText(l))
-		y += 36
+	bottom := Height - h
+	drawScene(c, newScene(d.Look, th, l.Colors, bottom))
+	if words == WordsNone {
+		return
 	}
-	if y+6 > top {
-		top = y + 6
-	}
-	c.fill(image.Rect(margin, top-14, Width-margin, top-12), Solid(Black))
-	rowW := Width - 2*margin - qrSize - 12
-	for i := 1; i <= 3; i++ {
-		n := d.night(d.Tonight.AddDays(i))
-		ry := top + (i-1)*38
-		swatch(c, image.Rect(margin, ry+6, margin+40, ry+30), n.Colors)
-		x := c.text(margin+52, ry+26, bodyBold, n.Date.Time().Format("Mon"))
-		c.text(x+10, ry+26, bodyStyle, ellipsize(bodyStyle, shortCause(n), margin+rowW-x-10))
-	}
-	qr(c, image.Pt(Width-margin-qrSize+6, top-6), qrSize, d.nightURL(d.Tonight))
-}
 
-// lightsOnText is "Lights on at 5 pm" (the source says so) or "Lights on
-// around 4:12 pm" (sunset).
-func lightsOnText(l schedule.Lighting) string {
-	t := l.LightsOn.In(schedule.Boston)
-	clock := t.Format("3:04 pm")
-	if t.Minute() == 0 {
-		clock = t.Format("3 pm")
+	y := bottom + 30
+	c.text(margin, y, label, strings.ToUpper("Tonight · "+dayLabel(d.Tonight)))
+	if s := d.sighting(d.Tonight); s.Seen || s.Rating > 0 {
+		x := Width - margin
+		if s.Rating > 0 {
+			x = Width - margin - 5*(2*9+6)
+			stars(c, x, y-7, 9, s.Rating, th.fg)
+		}
+		c.check(image.Pt(x-30, y-20), 22, th.fg)
 	}
-	if l.LightsOnSource == schedule.LightsOnSource {
-		return "Lights on at " + clock
+	y += 14 + int(colorsSt.size*0.82)
+	for _, line := range names {
+		c.text(margin, y, colorsSt, line)
+		y += colorsSt.lineHeight()
 	}
-	return "Lights on around " + clock
+	y -= colorsSt.lineHeight() - causeSt.lineHeight() - 4
+	for _, line := range cause {
+		c.text(margin, y, causeSt, line)
+		y += causeSt.lineHeight()
+	}
 }
 
 // stars draws five stars centered on cy starting at x, the first rating
 // filled, and returns where they end.
-func stars(c *canvas, x, cy int, r float64, rating int) int {
+func stars(c *canvas, x, cy int, r float64, rating int, ink Ink) int {
 	for i := range 5 {
 		cx := float64(x) + r + float64(i)*(2*r+6)
-		c.star(pt{cx, float64(cy)}, r, Black, i >= rating)
+		c.star(pt{cx, float64(cy)}, r, ink, i >= rating)
 	}
 	return x + int(5*(2*r+6))
 }
 
-// weekView: seven nights from tonight, a row each.
-func weekView(c *canvas, d *Data) {
+// weekView: seven nights from tonight, each a small lit crown and its words.
+func weekView(c *canvas, d *Data, th theme) {
 	end := d.Tonight.AddDays(6)
-	c.text(margin, 48, labelStyle, "THE WEEK AHEAD")
-	c.text(margin, 88, headStyle, d.Tonight.Time().Format("Jan 2")+" – "+end.Time().Format("Jan 2"))
+	c.text(margin, 48, labelStyle.on(th), "THE WEEK AHEAD")
+	span := d.Tonight.Time().Format("Jan 2") + " – " + end.Time().Format("Jan 2")
+	if d.Tonight.Time().Month() == end.Time().Month() {
+		span = d.Tonight.Time().Format("Jan 2") + " – " + end.Time().Format("2")
+	}
+	c.text(margin, 90, headStyle.on(th), span)
 	const top, rowH = 112, 96
-	textX := margin + 104
+	textX := margin + 92
 	textW := Width - margin - textX
+	head, body, small := bodyBold.on(th), bodyStyle.on(th), smallStyle.on(th)
 	for i := range 7 {
 		day := d.Tonight.AddDays(i)
 		n := d.night(day)
 		y := top + i*rowH
-		c.fill(image.Rect(margin, y, Width-margin, y+2), Solid(Black))
-		swatch(c, image.Rect(margin, y+14, margin+88, y+rowH-14), n.Colors)
-		head := dayLabel(day)
+		c.fill(image.Rect(margin, y, Width-margin, y+1), th.rule)
+		crownIcon(c, image.Rect(margin+4, y+12, margin+68, y+rowH-10), n.Colors, th)
+		name := dayLabel(day)
 		if i == 0 {
-			head = "Tonight, " + head
+			name = "Tonight"
 		}
-		x := c.text(textX, y+32, bodyBold, head)
+		x := c.text(textX, y+32, head, name)
 		if s := d.sighting(day); s.Seen {
-			c.check(image.Pt(x+10, y+12), 22, Black)
+			c.check(image.Pt(x+10, y+12), 22, th.fg)
 		}
-		c.text(textX, y+58, bodyStyle, ellipsize(bodyStyle, colorNames(n.Colors), textW))
-		c.text(textX, y+84, smallStyle, ellipsize(smallStyle, shortCause(n), textW))
+		c.text(textX, y+59, body, ellipsize(body, colorNames(n.Colors), textW))
+		if n.Scheduled && n.Cause != "" {
+			c.text(textX, y+84, small, ellipsize(small, n.Cause, textW))
+		}
 	}
 }
 
-// monthView: tonight's month as a calendar, each day filled with its colors.
-func monthView(c *canvas, d *Data) {
+// monthView: tonight's month as a calendar, a small crown on each night.
+func monthView(c *canvas, d *Data, th theme) {
 	t := d.Tonight.Time()
 	first := time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, schedule.Boston)
 	days := first.AddDate(0, 1, -1).Day()
 	lead := int(first.Weekday())
 	rows := (lead + days + 6) / 7
 
-	c.text(margin, 52, headStyle, strings.ToUpper(t.Format("January 2006")))
-	const gx, top = 12, 106
+	c.text(margin, 52, style{w: bold, size: 30, spacing: 2}.on(th), strings.ToUpper(t.Format("January 2006")))
+	const gx, top = 12, 104
 	cellW := (Width - 2*gx) / 7
-	cellH := (Height - 12 - top) / rows
-	for i, wd := range []string{"S", "M", "T", "W", "T", "F", "S"} {
-		c.textCenter(gx+i*cellW+cellW/2, 92, style{w: bold, size: 18, ink: Black}, wd)
+	cellH := (Height - 10 - top) / rows
+	wd := style{w: bold, size: 16, spacing: 1}.on(th)
+	for i, name := range []string{"S", "M", "T", "W", "T", "F", "S"} {
+		c.textCenter(gx+i*cellW+cellW/2, 90, wd, name)
 	}
-	numStyle := style{w: bold, size: 18, ink: Black}
+	num := style{w: bold, size: 18}.on(th)
 	for day := 1; day <= days; day++ {
 		pos := lead + day - 1
 		col, row := pos%7, pos/7
 		cell := image.Rect(gx+col*cellW, top+row*cellH, gx+(col+1)*cellW, top+(row+1)*cellH)
 		date := schedule.DateOf(time.Date(t.Year(), t.Month(), day, 12, 0, 0, 0, schedule.Boston))
 		n := d.night(date)
-		inner := cell.Inset(3)
-		swatch(c, image.Rect(inner.Min.X, inner.Min.Y+24, inner.Max.X, inner.Max.Y), n.Colors)
+		iw := cellW - 16
+		ih := cellH - 40
+		icx := (cell.Min.X + cell.Max.X) / 2
+		crownIcon(c, image.Rect(icx-iw/2, cell.Min.Y+30, icx+iw/2, cell.Min.Y+30+ih), n.Colors, th)
 		label := fmt.Sprint(day)
 		if date == d.Tonight {
-			c.outline(cell, 4, Black)
-			c.fill(image.Rect(inner.Min.X, inner.Min.Y, inner.Max.X, inner.Min.Y+24), Solid(Black))
-			c.text(inner.Min.X+5, inner.Min.Y+19, style{w: bold, size: 18, ink: White}, label)
+			c.outline(cell.Inset(1), 3, th.fg)
+			c.fill(image.Rect(cell.Min.X+1, cell.Min.Y+1, cell.Min.X+8+num.width(label)+6, cell.Min.Y+26), Solid(th.fg))
+			c.text(cell.Min.X+7, cell.Min.Y+21, style{w: bold, size: 18, ink: th.bg}, label)
 		} else {
-			c.text(inner.Min.X+3, inner.Min.Y+19, numStyle, label)
+			c.text(cell.Min.X+6, cell.Min.Y+21, num, label)
 		}
 		if s := d.sighting(date); s.Seen {
-			c.check(image.Pt(inner.Max.X-20, inner.Min.Y+3), 17, Black)
+			c.check(image.Pt(cell.Max.X-22, cell.Min.Y+5), 16, th.fg)
 		}
 	}
 }
 
-// logView: what she's seen and how she rated it.
-func logView(c *canvas, d *Data) {
-	c.text(margin, 48, labelStyle, "YOUR PRU LOG")
+// logView: how many nights she's seen, her average, her colors, and the
+// nights themselves as a row of small crowns; a code to rate tonight.
+func logView(c *canvas, d *Data, th theme) {
+	label, body, small := labelStyle.on(th), bodyStyle.on(th), smallStyle.on(th)
+	c.text(margin, 48, label, "YOUR PRU LOG")
 	st := d.Stats
 	if st == nil || st.Seen == 0 {
-		lines := wrap(causeStyle, "No nights logged yet. Hold the button when you see the crown lit to log it.", Width-2*margin, 4)
+		lines := wrap(causeStyle.on(th), "No nights logged yet. Hold the button when you see the crown lit to log it.", Width-2*margin, 4)
 		for i, line := range lines {
-			c.text(margin, 120+i*causeStyle.lineHeight(), causeStyle, line)
+			c.text(margin, 120+i*causeStyle.lineHeight(), causeStyle.on(th), line)
 		}
+		rateTonight(c, d, th)
 		return
 	}
-	// two big numbers
-	c.text(margin, 140, bigNumber, fmt.Sprint(st.Seen))
-	c.text(margin, 176, bodyStyle, "nights seen")
+	c.text(margin, 140, bigNumber.on(th), fmt.Sprint(st.Seen))
+	c.text(margin, 176, body, "nights seen")
 	if st.Rated > 0 {
 		x := Width/2 + 10
-		end := c.text(x, 140, bigNumber, fmt.Sprintf("%.1f", st.AvgRating))
-		c.star(pt{float64(end + 22), 112}, 18, Black, false)
-		c.text(x, 176, bodyStyle, fmt.Sprintf("average of %d", st.Rated))
+		end := c.text(x, 140, bigNumber.on(th), fmt.Sprintf("%.1f", st.AvgRating))
+		c.star(pt{float64(end + 22), 112}, 18, th.fg, false)
+		c.text(x, 176, body, fmt.Sprintf("average of %d", st.Rated))
 	}
 
-	y := 232
+	y := 230
 	if len(st.Favorites) > 0 {
-		c.text(margin, y, labelStyle, "FAVORITE COLORS")
-		y += 14
-		for i, f := range st.Favorites {
-			if i == 4 {
+		c.text(margin, y, label, "FAVORITE COLORS")
+		y += 18
+		n := min(4, len(st.Favorites))
+		colW := (Width - 2*margin) / 4
+		for i, f := range st.Favorites[:n] {
+			x := margin + i*colW
+			colorBar(c, image.Rect(x, y, x+colW-14, y+14), []schedule.ColorKey{f.Color}, th)
+			c.text(x, y+40, bodyBold.on(th), ellipsize(bodyBold, colorNames([]schedule.ColorKey{f.Color}), colW-8))
+			c.text(x, y+64, small, fmt.Sprintf("%d nights", f.Count))
+		}
+		y += 112
+	}
+	if len(st.Nights) > 0 {
+		c.text(margin, y, label, "LATELY")
+		y += 16
+		colW := (Width - 2*margin) / 4
+		for i, n := range st.Nights {
+			if i == 8 {
 				break
 			}
-			swatch(c, image.Rect(margin, y+8, margin+56, y+36), []schedule.ColorKey{f.Color})
-			name := colorNames([]schedule.ColorKey{f.Color})
-			c.text(margin+72, y+30, bodyBold, name)
-			c.textRight(Width-margin, y+30, bodyStyle, fmt.Sprintf("%d nights", f.Count))
-			y += 42
-		}
-		y += 40
-	}
-	if len(st.Recent) > 0 {
-		c.text(margin, y, labelStyle, "RECENT RATINGS")
-		y += 14
-		for i, r := range st.Recent {
-			if i == 4 || y+60 > Height {
-				break
+			x := margin + (i%4)*colW
+			ry := y + (i/4)*124
+			crownIcon(c, image.Rect(x+12, ry+4, x+colW-22, ry+66), n.Colors, th)
+			c.text(x+4, ry+90, small, n.Date.Time().Format("Jan 2"))
+			if n.Rating > 0 {
+				stars(c, x+2, ry+106, 6, n.Rating, th.fg)
 			}
-			swatch(c, image.Rect(margin, y+10, margin+56, y+44), r.Colors)
-			c.text(margin+72, y+30, bodyBold, dayLabel(r.Date))
-			stars(c, Width-margin-5*(2*11+6), y+22, 11, r.Rating)
-			c.text(margin+72, y+54, smallStyle, ellipsize(smallStyle, r.Cause, Width-2*margin-72))
-			y += 66
 		}
 	}
+	rateTonight(c, d, th)
 }
 
-// setupView: the QR code that links the frame to an account.
-func setupView(c *canvas, d *Data) {
-	l := d.night(d.Tonight)
-	drawTower(c, image.Rect(0, 0, Width, 300), l.Colors, true)
-	w := Width - 2*margin
-	c.text(margin, 340, labelStyle, strings.ToUpper("Tonight · "+dayLabel(d.Tonight)))
-	c.text(margin, 384, colorsStyle, fit(colorsStyle, colorNames(l.Colors), w))
+// rateTonight is a QR code to tonight's page, in the log's bottom corner.
+func rateTonight(c *canvas, d *Data, th theme) {
+	const size = 96
+	at := image.Pt(Width-margin-size, Height-margin-size+8)
+	box := qrCard(c, at, size, d.nightURL(d.Tonight), th)
+	s := smallStyle.on(th)
+	c.textRight(box.Min.X-16, box.Max.Y-34, s, "Scan to rate")
+	c.textRight(box.Min.X-16, box.Max.Y-10, s, "tonight")
+}
 
-	c.textCenter(Width/2, 432, style{w: bold, size: 26, ink: Black}, "Scan to connect your phone")
-	const size = 250
-	box := qr(c, image.Pt((Width-size)/2, 446), size, d.ClaimURL)
+// qrCard is a QR code that phones can read on either theme: always black on
+// white, with a white margin on the night.
+func qrCard(c *canvas, at image.Point, size int, text string, th theme) image.Rectangle {
+	if !th.light {
+		c.fill(image.Rect(at.X-8, at.Y-8, at.X+size+8, at.Y+size+8), Solid(White))
+	}
+	return qr(c, at, size, text)
+}
+
+// setupView: the QR code that links the frame to an account, under the top
+// of the tower in tonight's colors.
+func setupView(c *canvas, d *Data, th theme) {
+	l := d.night(d.Tonight)
+	s := newScene(Look{Light: th.light, Scene: SceneTower}, th, l.Colors, 330)
+	drawScene(c, s)
+	c.fade(image.Rect(0, 230, Width, 330), th.bg, false)
+
+	c.textCenter(Width/2, 372, style{w: bold, size: 28}.on(th), "Scan to connect your phone")
+	const size = 240
+	box := qrCard(c, image.Pt((Width-size)/2, 400), size, d.ClaimURL, th)
 	if d.ClaimCode != "" {
-		y := box.Max.Y + 34
+		y := box.Max.Y + 44
 		if host := hostOf(d.ClaimURL); host != "" {
-			c.textCenter(Width/2, y, smallStyle, "or enter this code at "+host+"/claim")
+			c.textCenter(Width/2, y, smallStyle.on(th), "or enter this code at "+host+"/claim")
 		}
-		c.textCenter(Width/2, y+44, style{w: bold, size: 36, ink: Black, spacing: 4}, d.ClaimCode)
+		c.textCenter(Width/2, y+48, style{w: bold, size: 38, spacing: 4}.on(th), d.ClaimCode)
 	}
 }
 
@@ -292,39 +306,40 @@ func hostOf(u string) string {
 // wifiView: the frame can't reach any network it knows. Join its own
 // hotspot (scan, or type) and pick a network on its page. It's step 1; the
 // welcome screen's code is step 2.
-func wifiView(c *canvas, d *Data) {
+func wifiView(c *canvas, d *Data, th theme) {
 	w := Width - 2*margin
-	c.text(margin, 48, labelStyle, "STEP 1 OF 2")
+	head, body, bodyB, small := headStyle.on(th), bodyStyle.on(th), bodyBold.on(th), smallStyle.on(th)
+	c.text(margin, 48, labelStyle.on(th), "STEP 1 OF 2")
 	y := 96
-	for _, line := range wrap(headStyle, "Connect the frame to Wi-Fi", w, 2) {
-		c.text(margin, y, headStyle, line)
-		y += headStyle.lineHeight()
+	for _, line := range wrap(head, "Connect the frame to Wi-Fi", w, 2) {
+		c.text(margin, y, head, line)
+		y += head.lineHeight()
 	}
-	for _, line := range wrap(bodyStyle, "Scan this with your phone's camera to join the frame's own network:", w, 2) {
-		c.text(margin, y+6, bodyStyle, line)
-		y += bodyStyle.lineHeight()
+	for _, line := range wrap(body, "Scan this with your phone's camera to join the frame's own network:", w, 2) {
+		c.text(margin, y+6, body, line)
+		y += body.lineHeight()
 	}
-	const size = 250
-	box := qr(c, image.Pt((Width-size)/2, y+18), size, wifiQR(d.APSSID, d.APPassword))
-	y = box.Max.Y + 44
-	c.text(margin, y, bodyStyle, "or join it by hand:")
+	const size = 240
+	box := qrCard(c, image.Pt((Width-size)/2, y+24), size, wifiQR(d.APSSID, d.APPassword), th)
+	y = box.Max.Y + 50
+	c.text(margin, y, body, "or join it by hand:")
 	y += 40
-	x := c.text(margin, y, bodyStyle, "Network ")
-	c.text(x+6, y, bodyBold, d.APSSID)
+	x := c.text(margin, y, body, "Network ")
+	c.text(x+6, y, bodyB, d.APSSID)
 	y += 34
-	x = c.text(margin, y, bodyStyle, "Password ")
-	c.text(x+6, y, bodyBold, d.APPassword)
+	x = c.text(margin, y, body, "Password ")
+	c.text(x+6, y, bodyB, d.APPassword)
 	y += 34
 	portal := d.PortalURL
 	if portal == "" {
 		portal = "http://192.168.4.1"
 	}
-	x = c.text(margin, y, bodyStyle, "then open ")
-	c.text(x+6, y, bodyBold, strings.TrimPrefix(portal, "http://"))
-	y += 48
-	for _, line := range wrap(smallStyle, "Pick your Wi-Fi there. Next, the frame shows a code to connect your phone.", w, 2) {
-		c.text(margin, y, smallStyle, line)
-		y += smallStyle.lineHeight()
+	x = c.text(margin, y, body, "then open ")
+	c.text(x+6, y, bodyB, strings.TrimPrefix(portal, "http://"))
+	y += 46
+	for _, line := range wrap(small, "Pick your Wi-Fi there. Next, the frame shows a code to connect your phone.", w, 2) {
+		c.text(margin, y, small, line)
+		y += small.lineHeight()
 	}
 }
 
@@ -334,28 +349,25 @@ func wifiQR(ssid, password string) string {
 	return "WIFI:T:WPA;S:" + esc.Replace(ssid) + ";P:" + esc.Replace(password) + ";;"
 }
 
-// goodnightView: quiet hours, a small tower and tonight's colors on black.
-func goodnightView(c *canvas, d *Data) {
-	c.fill(image.Rect(0, 0, Width, Height), Solid(Black))
+// goodnightView: quiet hours. Just the top of the tower, still lit, fading
+// into the dark, and a line about tonight.
+func goodnightView(c *canvas, d *Data, th theme) {
 	l := d.night(d.Tonight)
-	drawTower(c, image.Rect(90, 40, 390, 480), l.Colors, true)
-	c.fill(image.Rect(0, 480, Width, Height), Solid(Black))
-	c.textCenter(Width/2, 560, nightHead, "Good night")
+	s := newScene(Look{Light: th.light, Scene: SceneTower}, th, l.Colors, 470)
+	s.top = 96
+	drawScene(c, s)
+	c.fade(image.Rect(0, 330, Width, 470), th.bg, false)
+	c.textCenter(Width/2, 560, nightHead.on(th), "Good night")
+	body := style{w: regular, size: 24}.on(th)
 	y := 612
-	for _, line := range wrap(nightBody, "Tonight was "+colorNames(l.Colors)+".", Width-2*margin, 2) {
-		c.textCenter(Width/2, y, nightBody, line)
-		y += nightBody.lineHeight()
-	}
-	if l.Scheduled && l.Cause != "" {
-		for _, line := range wrap(nightBodyDim, "For "+l.Cause+".", Width-2*margin, 2) {
-			c.textCenter(Width/2, y, nightBodyDim, line)
-			y += nightBodyDim.lineHeight()
-		}
+	for _, line := range wrap(body, "Tonight was "+colorNames(l.Colors)+".", Width-2*margin, 2) {
+		c.textCenter(Width/2, y, body, line)
+		y += body.lineHeight()
 	}
 }
 
 // overlays: the stale-schedule banner and the low-battery mark.
-func overlays(c *canvas, d *Data, v View) {
+func overlays(c *canvas, d *Data, v View, th theme) {
 	if d.StaleSince != "" && v != ViewSetup {
 		c.fill(image.Rect(0, 0, Width, 34), Solid(Yellow))
 		c.fill(image.Rect(0, 34, Width, 36), Solid(Black))
