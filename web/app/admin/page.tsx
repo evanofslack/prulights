@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Badge, Button, MultiSelect, Skeleton, Switch, Table, TextInput } from "@mantine/core";
+import { Badge, Button, MultiSelect, Select, Skeleton, Table, TextInput } from "@mantine/core";
 import { IconRefresh, IconTrash } from "@tabler/icons-react";
 import type {
     AdminDevice,
@@ -305,8 +305,10 @@ function Scraper() {
 
 function Frames() {
     const { data, reload } = useApi<AdminDevice[]>("/admin/devices");
+    const { data: users } = useApi<UserInfo[]>("/admin/users");
+    const people = (users ?? []).map((u) => ({ value: String(u.id), label: u.name }));
     const [confirm, setConfirm] = useState<number>();
-    const [forNew, setForNew] = useState(true);
+    const [forUser, setForUser] = useState<string | null>(null);
     const [prepared, setPrepared] = useState<FrameConfig>();
     const [error, setError] = useState<string>();
     const remove = async (id: number) => {
@@ -314,8 +316,18 @@ function Frames() {
         setConfirm(undefined);
         reload();
     };
-    const mark = async (id: number, on: boolean) => {
-        await api(`/admin/devices/${id}/invite`, { method: on ? "POST" : "DELETE" });
+    // give hands a frame to someone (it picks up their pictures at its next
+    // check-in); null sends it back to its setup screen.
+    const give = async (id: number, userID: string | null) => {
+        setError(undefined);
+        try {
+            await api(`/admin/devices/${id}/owner`, {
+                method: userID ? "PUT" : "DELETE",
+                body: userID ? JSON.stringify({ user_id: Number(userID) }) : undefined,
+            });
+        } catch (e) {
+            setError((e as Error).message);
+        }
         reload();
     };
     // prepare makes a frame's identity and hands it over as a file: the
@@ -325,7 +337,7 @@ function Frames() {
         try {
             const fc = await api<FrameConfig>("/admin/devices", {
                 method: "POST",
-                body: JSON.stringify({ invite: forNew }),
+                body: JSON.stringify(forUser ? { for_user_id: Number(forUser) } : {}),
             });
             const url = URL.createObjectURL(
                 new Blob([JSON.stringify(fc, null, 2) + "\n"], { type: "application/json" }),
@@ -345,25 +357,38 @@ function Frames() {
         <section className="flex flex-col gap-3">
             <h2 className="text-xl font-bold">Frames</h2>
             <p className="text-muted">
-                Every frame that has registered, including emulators. Removing one makes it register again. A
-                frame marked for a new person lets whoever scans its code make an account and get the frame in
-                one step, for 30 days.
+                Every frame that has registered, including emulators. Give a frame to someone and it shows
+                their nights at its next check-in; a frame with no one waits for whoever scans its code.
+                Removing one makes it register again.
             </p>
             <div className="flex flex-col gap-3 rounded-xl bg-panel p-4">
                 <div className="flex flex-wrap items-center gap-4">
                     <Button onClick={prepare}>Prepare a frame</Button>
-                    <Switch
-                        label="For a new person"
-                        checked={forNew}
-                        onChange={(e) => setForNew(e.currentTarget.checked)}
+                    <Select
+                        aria-label="Prepare it for"
+                        placeholder="For whoever scans its code"
+                        data={people}
+                        value={forUser}
+                        onChange={setForUser}
+                        clearable
+                        searchable
+                        className="w-64"
                     />
                 </div>
                 {prepared && (
                     <div className="flex flex-col gap-1 text-sm" role="status">
                         <span>
-                            Frame #{prepared.device_id}, code <b>{prepared.claim_code}</b>: downloaded{" "}
-                            <code>frame-{prepared.device_id}.json</code> (it holds the frame&apos;s token,
-                            keep it private). Next, add Wi-Fi and write the files to flash:
+                            Frame #{prepared.device_id}
+                            {forUser ? (
+                                <> for {people.find((p) => p.value === forUser)?.label}</>
+                            ) : (
+                                <>
+                                    , code <b>{prepared.claim_code}</b>
+                                </>
+                            )}
+                            : downloaded <code>frame-{prepared.device_id}.json</code> (it holds the
+                            frame&apos;s token, keep it private). Next, add Wi-Fi and write the files to
+                            flash:
                         </span>
                         <code className="rounded bg-raised px-2 py-1">
                             just frame-config -from frame-{prepared.device_id}.json -wifi
@@ -397,23 +422,17 @@ function Frames() {
                                         #{d.id} {d.name}
                                     </Table.Td>
                                     <Table.Td>
-                                        {d.owner || (
-                                            <span className="flex flex-col gap-1">
-                                                <span className="text-muted">
-                                                    waiting, code {d.claim_code}
-                                                </span>
-                                                {d.invite_until && (
-                                                    <Badge size="sm" variant="light" color="yellow">
-                                                        for a new person until{" "}
-                                                        {shortDate(
-                                                            new Date(d.invite_until)
-                                                                .toISOString()
-                                                                .slice(0, 10),
-                                                        )}
-                                                    </Badge>
-                                                )}
-                                            </span>
-                                        )}
+                                        <Select
+                                            aria-label={`Frame ${d.id}'s owner`}
+                                            placeholder={`waiting, code ${d.claim_code}`}
+                                            data={people}
+                                            value={d.owner_id ? String(d.owner_id) : null}
+                                            onChange={(v) => v && give(d.id, v)}
+                                            allowDeselect={false}
+                                            searchable
+                                            size="sm"
+                                            className="w-52"
+                                        />
                                     </Table.Td>
                                     <Table.Td>
                                         {d.last_checkin_at ? fmtTime(d.last_checkin_at) : "never"}
@@ -425,24 +444,15 @@ function Frames() {
                                     </Table.Td>
                                     <Table.Td>{d.firmware || "—"}</Table.Td>
                                     <Table.Td className="text-right whitespace-nowrap">
-                                        {!d.owner &&
-                                            (d.invite_until ? (
-                                                <Button
-                                                    size="xs"
-                                                    variant="subtle"
-                                                    onClick={() => mark(d.id, false)}
-                                                >
-                                                    Unmark
-                                                </Button>
-                                            ) : (
-                                                <Button
-                                                    size="xs"
-                                                    variant="subtle"
-                                                    onClick={() => mark(d.id, true)}
-                                                >
-                                                    Invite whoever sets it up
-                                                </Button>
-                                            ))}
+                                        {d.owner_id > 0 && (
+                                            <Button
+                                                size="xs"
+                                                variant="subtle"
+                                                onClick={() => give(d.id, null)}
+                                            >
+                                                Back to setup
+                                            </Button>
+                                        )}
                                         {confirm === d.id ? (
                                             <Button size="xs" color="red" onClick={() => remove(d.id)}>
                                                 Really remove

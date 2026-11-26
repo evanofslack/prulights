@@ -26,17 +26,9 @@ type Device struct {
 	BatteryMV int
 	Power     string // usb | battery
 	Firmware  string
-	// InviteUntil is set while the frame is marked for a new person: until
-	// then, its code makes an account as well as claiming it.
-	InviteUntil time.Time
 	// APSSID and APPassword are the frame's own setup hotspot.
 	APSSID     string
 	APPassword string
-}
-
-// Invites is whether the frame's code makes an account right now.
-func (d Device) Invites(now time.Time) bool {
-	return !d.Claimed() && !d.InviteUntil.IsZero() && now.Before(d.InviteUntil)
 }
 
 // Claimed is whether someone has claimed the frame.
@@ -117,14 +109,14 @@ func (s *Store) CreateDevice(ctx context.Context, firmware, apSSID, apPassword s
 
 const deviceCols = `d.id, coalesce(d.user_id, 0), coalesce(u.name, ''), d.name, coalesce(d.claim_code, ''), d.settings,
 	d.created_at, coalesce(d.claimed_at, ''), coalesce(d.last_checkin_at, ''), d.battery_mv, d.power, d.fw_version,
-	coalesce(d.invite_until, ''), d.ap_ssid, d.ap_password
+	d.ap_ssid, d.ap_password
 	from devices d left join users u on u.id = d.user_id`
 
 func scanDevice(row interface{ Scan(...any) error }) (Device, error) {
 	var d Device
-	var settings, created, claimed, checkin, invite string
+	var settings, created, claimed, checkin string
 	err := row.Scan(&d.ID, &d.UserID, &d.Owner, &d.Name, &d.ClaimCode, &settings, &created, &claimed, &checkin,
-		&d.BatteryMV, &d.Power, &d.Firmware, &invite, &d.APSSID, &d.APPassword)
+		&d.BatteryMV, &d.Power, &d.Firmware, &d.APSSID, &d.APPassword)
 	if errors.Is(err, sql.ErrNoRows) {
 		return d, ErrNotFound
 	}
@@ -135,9 +127,6 @@ func scanDevice(row interface{ Scan(...any) error }) (Device, error) {
 	}
 	if checkin != "" {
 		d.CheckinAt = parseTime(checkin)
-	}
-	if invite != "" {
-		d.InviteUntil = parseTime(invite)
 	}
 	return d, err
 }
@@ -190,8 +179,8 @@ func (s *Store) Devices(ctx context.Context) ([]Device, error) {
 // claimed is ErrNotFound.
 func (s *Store) Claim(ctx context.Context, code string, userID int64, name string, now time.Time) (Device, error) {
 	var id int64
-	err := s.DB.QueryRowContext(ctx, `update devices set user_id = ?, name = ?, claimed_at = ?, claim_code = null,
-		invite_until = null where claim_code = ? and user_id is null returning id`,
+	err := s.DB.QueryRowContext(ctx, `update devices set user_id = ?, name = ?, claimed_at = ?, claim_code = null
+		where claim_code = ? and user_id is null returning id`,
 		userID, name, fmtTime(now), NormalizeClaimCode(code)).Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Device{}, ErrNotFound
@@ -202,65 +191,17 @@ func (s *Store) Claim(ctx context.Context, code string, userID int64, name strin
 	return s.DeviceByID(ctx, id)
 }
 
-// MarkForInvite lets a frame's code make an account until a time, for
-// someone new to set it up. Only unclaimed frames can be marked. byUserID is
-// the admin who marked it, 0 from the command line.
-func (s *Store) MarkForInvite(ctx context.Context, id, byUserID int64, until time.Time) error {
-	by := sql.NullInt64{Int64: byUserID, Valid: byUserID != 0} // 0: the command line
-	res, err := s.DB.ExecContext(ctx, `update devices set invite_until = ?, invited_by = ? where id = ? and user_id is null`,
-		fmtTime(until), by, id)
+// AssignDevice gives a frame to someone, as an admin: like their claiming
+// it, but by id and without its code. A frame someone else had starts over
+// for its new owner (name and settings); giving it to its owner changes
+// nothing.
+func (s *Store) AssignDevice(ctx context.Context, id, userID int64, now time.Time) (Device, error) {
+	_, err := s.DB.ExecContext(ctx, `update devices set user_id = ?, name = 'Frame', settings = '{}', claimed_at = ?,
+		claim_code = null where id = ? and user_id is not ?`, userID, fmtTime(now), id, userID)
 	if err != nil {
-		return err
+		return Device{}, err
 	}
-	if n, _ := res.RowsAffected(); n == 0 {
-		return ErrNotFound
-	}
-	return nil
-}
-
-// UnmarkInvite stops a frame's code from making accounts.
-func (s *Store) UnmarkInvite(ctx context.Context, id int64) error {
-	res, err := s.DB.ExecContext(ctx, `update devices set invite_until = null, invited_by = null where id = ?`, id)
-	if err != nil {
-		return err
-	}
-	if n, _ := res.RowsAffected(); n == 0 {
-		return ErrNotFound
-	}
-	return nil
-}
-
-// RedeemFrame uses a marked frame's code as an invite: it makes a new user
-// with this passkey and gives them the frame, all at once. A frame that isn't
-// marked (or whose mark ran out, or that was claimed meanwhile) is
-// ErrNotFound; a taken name is ErrNameTaken, and nothing changes.
-func (s *Store) RedeemFrame(ctx context.Context, code string, handle []byte, name string, credID, credData []byte, now time.Time) (User, Device, error) {
-	var u User
-	var id int64
-	err := s.Tx(ctx, func(tx *sql.Tx) error {
-		err := tx.QueryRowContext(ctx, `select id from devices where claim_code = ? and user_id is null and invite_until > ?`,
-			NormalizeClaimCode(code), fmtTime(now)).Scan(&id)
-		if errors.Is(err, sql.ErrNoRows) {
-			return ErrNotFound
-		}
-		if err != nil {
-			return err
-		}
-		if u, err = createUser(ctx, tx, handle, name, false, now); err != nil {
-			return err
-		}
-		if err := addCredential(ctx, tx, u.ID, credID, credData, now); err != nil {
-			return err
-		}
-		_, err = tx.ExecContext(ctx, `update devices set user_id = ?, name = 'Frame', claimed_at = ?, claim_code = null,
-			invite_until = null where id = ?`, u.ID, fmtTime(now), id)
-		return err
-	})
-	if err != nil {
-		return User{}, Device{}, err
-	}
-	d, err := s.DeviceByID(ctx, id)
-	return u, d, err
+	return s.DeviceByID(ctx, id)
 }
 
 // SetHotspot records a frame's setup hotspot, when it says.
@@ -285,9 +226,18 @@ func (s *Store) UpdateDevice(ctx context.Context, id, userID int64, name string,
 // Unclaim lets go of a frame: it forgets its owner and settings and gets a
 // new claim code, so it goes back to its setup screen on its next sync.
 func (s *Store) Unclaim(ctx context.Context, id, userID int64) error {
+	return s.unclaim(ctx, `id = ? and user_id = ?`, id, userID)
+}
+
+// ReleaseDevice is Unclaim by an admin, whoever has the frame.
+func (s *Store) ReleaseDevice(ctx context.Context, id int64) error {
+	return s.unclaim(ctx, `id = ? and user_id is not null`, id)
+}
+
+func (s *Store) unclaim(ctx context.Context, where string, args ...any) error {
 	for range 5 {
 		res, err := s.DB.ExecContext(ctx, `update devices set user_id = null, claimed_at = null, name = '', settings = '{}',
-			invite_until = null, claim_code = ? where id = ? and user_id = ?`, newClaimCode(), id, userID)
+			claim_code = ? where `+where, append([]any{newClaimCode()}, args...)...)
 		if err != nil {
 			if strings.Contains(err.Error(), "UNIQUE") {
 				continue

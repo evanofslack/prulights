@@ -6,9 +6,10 @@ The server and the emulator (`/emulator?mode=device`) already speak this. Firmwa
 ## Preparing a frame
 
 1. **Identity, on the server.** Either `/admin` → Frames → "Prepare a frame" (downloads
-   `frame-<id>.json`), or `docker compose exec prulights prulights frame new -out frame.json`. Both mark
-   the frame for a new person by default (`-invite=false` to skip): for 30 days, whoever scans its
-   code signed out makes an account and gets the frame in one step.
+   `frame-<id>.json`), or `docker compose exec prulights prulights frame new -out frame.json`. Either can
+   give it to someone straight away (pick them, or `-for-user NAME`); otherwise whoever scans its code
+   signed in gets it, or an admin gives it to someone later from `/admin`. A frame given to someone
+   drops its claim code, so the welcome screen on its SD card is only seen until its first sync.
 2. **Wi-Fi, locally.** `just frame-config -from frame.json -wifi "Home:password" -wifi "Cape:password"
    -out sd`. The networks go only into these files, never to the server.
 3. Copy `sd/` onto the frame's SD card (or write `config.json` into NVS when flashing).

@@ -135,13 +135,10 @@ func TestMarkSeen(t *testing.T) {
 	}
 }
 
-func TestFrameInvites(t *testing.T) {
+func TestHotspot(t *testing.T) {
 	ctx := context.Background()
 	s := newTest(t)
 	now := time.Date(2026, 12, 12, 23, 0, 0, 0, time.UTC)
-	inv, _ := s.CreateInvite(ctx, Invite{CreatedAt: now, ExpiresAt: now.Add(time.Hour)})
-	evan, _ := s.Redeem(ctx, inv, NewHandle(), "Evan", []byte("evan"), []byte(`{}`), now)
-
 	d, _, err := s.CreateDevice(ctx, "", "", "", now)
 	if err != nil || !strings.HasPrefix(d.APSSID, "prulights-") || len(d.APPassword) != 10 {
 		t.Fatalf("made-up hotspot = %+v %v", d, err)
@@ -150,48 +147,44 @@ func TestFrameInvites(t *testing.T) {
 	if own.APSSID != "frame-1" || own.APPassword != "secret123" {
 		t.Errorf("the frame's own hotspot = %+v", own)
 	}
+}
 
-	redeem := func(name string, at time.Time) (User, Device, error) {
-		return s.RedeemFrame(ctx, strings.ToLower(d.ClaimCode), NewHandle(), name, []byte(name), []byte(`{}`), at)
+func TestAssignAndRelease(t *testing.T) {
+	ctx := context.Background()
+	s := newTest(t)
+	now := time.Date(2026, 12, 12, 23, 0, 0, 0, time.UTC)
+	evan, _ := s.SignUp(ctx, NewHandle(), "Evan", []byte("evan"), []byte(`{}`), now)
+	mom, _ := s.SignUp(ctx, NewHandle(), "Mom", []byte("mom"), []byte(`{}`), now)
+	d, _, _ := s.CreateDevice(ctx, "", "", "", now)
+
+	got, err := s.AssignDevice(ctx, d.ID, mom.ID, now)
+	if err != nil || got.UserID != mom.ID || got.Owner != "Mom" || got.Name != "Frame" || got.ClaimCode != "" || got.ClaimedAt.IsZero() {
+		t.Fatalf("assign = %+v %v", got, err)
 	}
-	if _, _, err := redeem("Mom", now); !errors.Is(err, ErrNotFound) {
-		t.Errorf("not marked: %v", err)
+	if _, err := s.Claim(ctx, d.ClaimCode, evan.ID, "", now); !errors.Is(err, ErrNotFound) {
+		t.Errorf("its old code still claims it: %v", err)
 	}
-	if err := s.MarkForInvite(ctx, d.ID, evan.ID, now.Add(30*24*time.Hour)); err != nil {
+	// giving it to its owner again keeps what she set
+	s.UpdateDevice(ctx, d.ID, mom.ID, "Kitchen", []byte(`{"theme":"light"}`))
+	if got, _ := s.AssignDevice(ctx, d.ID, mom.ID, now.Add(time.Hour)); got.Name != "Kitchen" || !got.ClaimedAt.Equal(now) {
+		t.Errorf("same owner = %+v", got)
+	}
+	// moving it starts over for evan
+	if got, _ := s.AssignDevice(ctx, d.ID, evan.ID, now); got.Owner != "Evan" || got.Name != "Frame" || string(got.Settings) != "{}" {
+		t.Errorf("moved = %+v", got)
+	}
+	if _, err := s.AssignDevice(ctx, 999, evan.ID, now); !errors.Is(err, ErrNotFound) {
+		t.Errorf("no such frame: %v", err)
+	}
+
+	if err := s.ReleaseDevice(ctx, d.ID); err != nil {
 		t.Fatal(err)
 	}
-	got, _ := s.DeviceByClaimCode(ctx, d.ClaimCode)
-	if !got.Invites(now) || got.Invites(now.Add(31*24*time.Hour)) {
-		t.Errorf("marked = %+v", got)
+	got, _ = s.DeviceByID(ctx, d.ID)
+	if got.Claimed() || got.ClaimCode == "" {
+		t.Errorf("released = %+v", got)
 	}
-	if _, _, err := redeem("Mom", now.Add(31*24*time.Hour)); !errors.Is(err, ErrNotFound) {
-		t.Errorf("mark ran out: %v", err)
-	}
-	if _, _, err := redeem("evan", now); !errors.Is(err, ErrNameTaken) {
-		t.Errorf("taken name: %v", err)
-	}
-	if got, _ := s.DeviceByID(ctx, d.ID); got.Claimed() {
-		t.Error("a taken name still claimed the frame")
-	}
-
-	mom, frame, err := redeem("Mom", now)
-	if err != nil || frame.UserID != mom.ID || frame.Owner != "Mom" || frame.ClaimCode != "" || !frame.InviteUntil.IsZero() {
-		t.Fatalf("redeem = %+v %+v %v", mom, frame, err)
-	}
-	if creds, _ := s.Credentials(ctx, mom.ID); len(creds) != 1 {
-		t.Errorf("mom has %d passkeys", len(creds))
-	}
-	if _, _, err := redeem("Someone", now); !errors.Is(err, ErrNotFound) {
-		t.Errorf("redeemed twice: %v", err)
-	}
-
-	// claiming a marked frame normally clears the mark
-	s.MarkForInvite(ctx, own.ID, evan.ID, now.Add(time.Hour))
-	claimed, err := s.Claim(ctx, own.ClaimCode, evan.ID, "Desk", now)
-	if err != nil || !claimed.InviteUntil.IsZero() {
-		t.Errorf("claim of a marked frame = %+v %v", claimed, err)
-	}
-	if err := s.MarkForInvite(ctx, own.ID, evan.ID, now.Add(time.Hour)); !errors.Is(err, ErrNotFound) {
-		t.Errorf("marking a claimed frame: %v", err)
+	if err := s.ReleaseDevice(ctx, d.ID); !errors.Is(err, ErrNotFound) {
+		t.Errorf("releasing an unclaimed frame: %v", err)
 	}
 }

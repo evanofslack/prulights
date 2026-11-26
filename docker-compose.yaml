@@ -9,6 +9,8 @@ services:
       BASE_URL: https://prulights.evanslack.dev
       TRUST_PROXY: "true"
       LOG_LEVEL: info
+      # the family code for /join, from .env; unset is invite only
+      SIGNUP_CODE: ${SIGNUP_CODE:-}
     volumes:
       - prulights-data:/data
     expose:

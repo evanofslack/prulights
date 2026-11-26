@@ -146,24 +146,30 @@ type DeviceUpdate struct {
 // AdminDevice is a frame, as the admin page lists them.
 type AdminDevice struct {
 	DeviceInfo `tstype:",extends"`
-	Owner      string    `json:"owner"`
-	ClaimCode  string    `json:"claim_code,omitempty"`
-	CreatedAt  time.Time `json:"created_at"`
-	// InviteUntil is set while the frame is marked for a new person.
-	InviteUntil *time.Time `json:"invite_until,omitempty"`
+	Owner      string `json:"owner"`
+	// OwnerID is who has it, 0 while it waits to be claimed.
+	OwnerID   int64     `json:"owner_id"`
+	ClaimCode string    `json:"claim_code,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // ClaimStatus is GET /api/v1/devices/claim/{code}: whether a frame is waiting
-// for that code, and whether the code also makes an account.
+// for that code.
 type ClaimStatus struct {
 	Waiting bool `json:"waiting"`
-	Invites bool `json:"invites"`
 }
 
 // PrepareFrame is POST /api/v1/admin/devices: make a frame's identity before
-// flashing it. Invite marks it for a new person.
+// flashing it. ForUserID gives it to that person straight away; without it
+// the frame waits for someone to scan its code.
 type PrepareFrame struct {
-	Invite bool `json:"invite"`
+	ForUserID *int64 `json:"for_user_id,omitempty"`
+}
+
+// AssignFrame is PUT /api/v1/admin/devices/{id}/owner: give a frame to
+// someone. DELETE sends it back to its setup screen.
+type AssignFrame struct {
+	UserID int64 `json:"user_id"`
 }
 
 // FrameAP is a frame's own setup hotspot.

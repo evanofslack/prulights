@@ -81,12 +81,14 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   `/docs` (stock Swagger UI from `swagger-ui-dist`, copied to `public/swagger` by `npm run swagger` before
   dev/build; don't bundle swagger-ui through next, its OpenAPI 3.1 support breaks), `/emulator` (frame
   previews; only when `/meta` says `dev`, settings live in the url), `/claim?code=` (a frame's setup QR
-  lands here), `/settings` (your frames). `/login?next=` returns to a path after signing in. Data via `useApi` in `web/lib/api.ts`; dates are Boston calendar strings, formatted in
+  lands here), `/settings` (your frames). `/login?next=` returns to a path after signing in; `/join` signs up with the family code. Data via `useApi` in `web/lib/api.ts`; dates are Boston calendar strings, formatted in
   `web/lib/format.ts` at noon UTC so no time zone shifts them.
 - `just e2e` loads the scraper fixtures into a fresh db and runs `e2e/*.mjs` against :8099
   (`SHOTS=dir` for screenshots). Fixture dates: Dec 2026 is known (Dec 10 = Red, Dress for Success).
 - `render.Render` holds a lock: the cached font faces aren't safe to share between goroutines.
-- Sign-in (`server/auth.go`): passkeys only (go-webauthn, discoverable), invite only. `prulights invite
+- Sign-in (`server/auth.go`): passkeys only (go-webauthn, discoverable). Invite links, or the family code:
+  with `SIGNUP_CODE` set anyone who has it signs up at `/join` (`?code=` prefills; case and spaces
+  ignored; never an admin; `GET /auth/signup` says whether it's open). `prulights invite
   [-admin] [-for-user NAME]` / `just invite` makes a link + terminal QR; `-for-user` adds a passkey to
   that person (recovery). Session = random token in the HttpOnly `prulights_session` cookie, sha256 in
   `sessions`, 1 year, slid forward daily. Writes under `/api/v1` need an `Origin` in `RP_ORIGINS` and a
@@ -114,11 +116,12 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   night twice, `dark` and `light` with `from`/`until` (sunrise to lights-on, `daylight`).
   `/settings` draws its choices from `GET /me/devices/{id}/preview.png?view=&light=1&scene=&words=`. `/api/device/compat/current.png?token=` is for the stock firmware.
 - Frame setup: an unclaimed frame's bundle is the welcome screen (`setup`, tonight + 6) plus `wifi`; a
-  claimed one adds `wifi` (empty date) to its views. A frame marked for a new person (`invite_until`,
-  30 days, `MarkForInvite`) lets `register/begin` take `claim_code` instead of `invite`: one passkey
-  makes the account and claims it (`RedeemFrame`). `GET /devices/claim/{code}` tells `/claim` which
-  case it is. Admins prepare frames (`POST /admin/devices`, or `prulights frame new`) as a config v1
-  json; `prulights frame config` / `just frame-config` adds Wi-Fi locally (never sent to the server)
+  claimed one adds `wifi` (empty date) to its views. A frame gets an owner by its code on `/claim`
+  (signed in; signed out it offers sign in or `/join`), or from an admin: `PUT /admin/devices/{id}/owner`
+  (`AssignDevice`; moving it resets name and settings), `DELETE` sends it back to setup (`ReleaseDevice`).
+  The family's way: they sign up with the family code, you give them the frame later. Admins prepare
+  frames (`POST /admin/devices` with optional `for_user_id`, or `prulights frame new [-for-user NAME]`)
+  as a config v1 json; `prulights frame config` / `just frame-config` adds Wi-Fi locally (never sent to the server)
   and writes the SD card files. The frame's contract is `plans/firmware.md`.
 - Emulator device mode (`/emulator?mode=device`, `app/emulator/Device.tsx`, `lib/frame.ts`) is a virtual
   frame on the real device api: it keeps its token, hotspot and known networks in localStorage (or loads a

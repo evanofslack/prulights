@@ -22,12 +22,15 @@ type Config struct {
 	Version      string // set by main, not the environment
 
 	PublicRateLimit int // PUBLIC_RATE_LIMIT: public api requests per minute per client
+	AuthRateLimit   int // AUTH_RATE_LIMIT: sign-in attempts (and claim code lookups) per minute per client
 
 	ScrapeEnabled  bool          // SCRAPE_ENABLED
 	ScrapeInterval time.Duration // SCRAPE_INTERVAL
 
 	RPID      string   // RP_ID: the WebAuthn relying party id, the host of BASE_URL by default
 	RPOrigins []string // RP_ORIGINS: comma separated origins allowed to use passkeys, BASE_URL by default
+
+	SignupCode string // SIGNUP_CODE: a shared code anyone can sign up with at /join, empty for invite only
 }
 
 // Default is the config with nothing set.
@@ -42,6 +45,7 @@ func Default() Config {
 		ScrapeInterval: 6 * time.Hour,
 
 		PublicRateLimit: 60,
+		AuthRateLimit:   30,
 	}
 }
 
@@ -59,9 +63,11 @@ func Load() Config {
 	envBool("TRUST_PROXY", &c.TrustProxy)
 	envBool("DEV", &c.Dev)
 	envInt("PUBLIC_RATE_LIMIT", &c.PublicRateLimit)
+	envInt("AUTH_RATE_LIMIT", &c.AuthRateLimit)
 	envBool("SCRAPE_ENABLED", &c.ScrapeEnabled)
 	envDuration("SCRAPE_INTERVAL", &c.ScrapeInterval)
 	envString("RP_ID", &c.RPID)
+	c.SignupCode = strings.TrimSpace(os.Getenv("SIGNUP_CODE"))
 	if s := os.Getenv("RP_ORIGINS"); s != "" {
 		for _, o := range strings.Split(s, ",") {
 			if o = strings.TrimSpace(o); o != "" {

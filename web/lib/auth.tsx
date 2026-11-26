@@ -18,10 +18,12 @@ interface Auth {
     me: MeResponse | null | undefined;
     signIn: () => Promise<MeResponse>;
     // register makes a passkey for someone new (or a re-invite), from an
-    // invite link or from the code of a frame marked for a new person.
-    register: (from: { invite: string } | { claim_code: string }, name: string) => Promise<MeResponse>;
+    // invite link or the family code.
+    register: (from: RegisterFrom, name: string) => Promise<MeResponse>;
     signOut: () => Promise<void>;
 }
+
+type RegisterFrom = { invite: string } | { code: string };
 
 const AuthContext = createContext<Auth | undefined>(undefined);
 
@@ -47,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return user;
     }, []);
 
-    const register = useCallback(async (from: { invite: string } | { claim_code: string }, name: string) => {
+    const register = useCallback(async (from: RegisterFrom, name: string) => {
         const begin = await post<Ceremony>("/auth/register/begin", { ...from, name });
         const response = await startRegistration({
             optionsJSON: begin.options as PublicKeyCredentialCreationOptionsJSON,
@@ -82,4 +84,11 @@ export function passkeyError(e: unknown): string {
         return e.message;
     }
     return "Something went wrong.";
+}
+
+// nextPath is where to go after signing in or up: ?next= when it's a path on
+// this site, else tonight.
+export function nextPath(): string {
+    const next = new URLSearchParams(window.location.search).get("next") ?? "";
+    return next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : "/";
 }

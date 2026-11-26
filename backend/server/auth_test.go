@@ -217,3 +217,39 @@ func TestCleanName(t *testing.T) {
 		t.Error("41 characters is too long")
 	}
 }
+
+func TestSignupCode(t *testing.T) {
+	s := newTestServer(t)
+	person(t, s, "Evan", true)
+	begin := func(body string) int {
+		return call(t, s, "POST", "/api/v1/auth/register/begin", body, "").Code
+	}
+	open := func() bool {
+		var info SignupInfo
+		json.Unmarshal(call(t, s, "GET", "/api/v1/auth/signup", "", "").Body.Bytes(), &info)
+		return info.Open
+	}
+
+	// no SIGNUP_CODE: invite only, and no code works, not even an empty one
+	if open() {
+		t.Error("signup open without a code")
+	}
+	if got := begin(`{"code":"anything","name":"Mom"}`); got != http.StatusForbidden {
+		t.Errorf("code with signup off = %d", got)
+	}
+
+	s.cfg.SignupCode = "Back Bay  Lights"
+	if !open() {
+		t.Error("signup closed with a code")
+	}
+	for body, want := range map[string]int{
+		`{"code":"back bay","name":"Mom"}`:             http.StatusForbidden,
+		`{"code":"  back   BAY lights ","name":"Mom"}`: http.StatusOK,
+		`{"code":"back bay lights","name":"evan"}`:     http.StatusConflict,
+		`{"code":"back bay lights","name":"  "}`:       http.StatusBadRequest,
+	} {
+		if got := begin(body); got != want {
+			t.Errorf("%s = %d, want %d", body, got, want)
+		}
+	}
+}

@@ -1,4 +1,5 @@
-set dotenv-load := false
+# recipes read .env (gitignored) for local settings like SIGNUP_CODE
+set dotenv-load := true
 
 vps := env("VPS", "")
 air := "go run github.com/air-verse/air@v1.67.4"
@@ -123,7 +124,7 @@ docker-build:
 
 # run the production image locally on :8080 with a throwaway volume
 docker-run: docker-build
-    docker run --rm -p 8080:8080 -v prulights-dev-data:/data -e BASE_URL=http://localhost:8080 evanofslack/prulights:dev
+    docker run --rm -p 8080:8080 -v prulights-dev-data:/data -e BASE_URL=http://localhost:8080 -e SIGNUP_CODE evanofslack/prulights:dev
 
 # pull and restart on the vps (VPS=user@host); see deploy/RUNBOOK.md
 deploy:
@@ -152,7 +153,7 @@ e2e *scripts: install
     # BASE_URL makes passkeys accept this origin; BIN lets scripts make invites
     export DATABASE_PATH="$dir/e2e.db" METRICS_ADDR= SCRAPE_ENABLED=false BASE_URL=http://localhost:8099 BIN="$dir/prulights"
     "$dir/prulights" scrape -delay 0 -url http://localhost:8098/2026-tower-lightings.html -url http://localhost:8098/31-nights-of-light.html >/dev/null
-    DEV=1 PORT=8099 STATIC_DIR=web/out PUBLIC_RATE_LIMIT=10000 "$dir/prulights" serve >/dev/null 2>&1 &
+    DEV=1 PORT=8099 STATIC_DIR=web/out PUBLIC_RATE_LIMIT=10000 AUTH_RATE_LIMIT=10000 SIGNUP_CODE="back bay lights" "$dir/prulights" serve >/dev/null 2>&1 &
     server=$!
     trap 'kill $fixtures $server' EXIT
     for _ in $(seq 50); do curl -sf localhost:8099/readyz >/dev/null && break; sleep 0.2; done

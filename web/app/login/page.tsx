@@ -1,24 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Alert, Button } from "@mantine/core";
 import { IconFingerprint } from "@tabler/icons-react";
-import { passkeyError, useAuth } from "@/lib/auth";
+import type { SignupInfo } from "@/interfaces/api";
+import { useApi } from "@/lib/api";
+import { nextPath, passkeyError, useAuth } from "@/lib/auth";
 import { Shell } from "@/components/Shell";
-
-// nextPath is where to go after signing in: ?next= when it's a path on this
-// site, else tonight.
-function nextPath(): string {
-    const next = new URLSearchParams(window.location.search).get("next") ?? "";
-    return next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : "/";
-}
 
 export default function LoginPage() {
     const { me, signIn } = useAuth();
+    const { data: signup } = useApi<SignupInfo>("/auth/signup");
     const router = useRouter();
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string>();
+    // ?next= rides along to /join
+    const [search, setSearch] = useState("");
+    useEffect(() => setSearch(window.location.search), []);
 
     const go = async () => {
         setBusy(true);
@@ -50,7 +50,13 @@ export default function LoginPage() {
                                 {error}
                             </Alert>
                         )}
-                        <p className="text-muted">Invite only. New, or lost your passkey? Ask for a link.</p>
+                        {signup?.open ? (
+                            <Button component={Link} href={`/join${search}`} size="lg" variant="default">
+                                New here? Join with a code
+                            </Button>
+                        ) : (
+                            <p className="text-muted">Invite only. New here? Ask for a link.</p>
+                        )}
                     </>
                 )}
             </div>

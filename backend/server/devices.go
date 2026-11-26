@@ -34,8 +34,6 @@ const (
 	maxEvents         = 200
 	maxDetailLen      = 200
 	maxDeviceNameLen  = 40
-	// frameInviteTTL is how long a frame stays marked for a new person.
-	frameInviteTTL = 30 * 24 * time.Hour
 	// portalURL is the frame's setup page on its own hotspot.
 	portalURL = "http://192.168.4.1"
 	// Check-in intervals: unclaimed frames wait to be claimed, frames on USB
@@ -198,7 +196,7 @@ func (s *Server) mountDevice(r chi.Router) {
 
 // mountDevices adds claiming and managing frames, inside mountAccount's group.
 func (s *Server) mountDevices(r chi.Router) {
-	r.With(httprate.Limit(authRateLimit, time.Minute, httprate.WithKeyFuncs(s.clientKey),
+	r.With(httprate.Limit(s.cfg.AuthRateLimit, time.Minute, httprate.WithKeyFuncs(s.clientKey),
 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusTooManyRequests, "too many tries, wait a minute")
 		}))).Get("/devices/claim/{code}", s.getClaimStatus)
@@ -213,8 +211,8 @@ func (s *Server) mountAdminDevices(r chi.Router) {
 	r.Get("/devices", s.getAllDevices)
 	r.Post("/devices", s.prepareFrame)
 	r.Delete("/devices/{id}", s.deleteDevice)
-	r.Post("/devices/{id}/invite", s.markFrame)
-	r.Delete("/devices/{id}/invite", s.unmarkFrame)
+	r.Put("/devices/{id}/owner", s.assignFrame)
+	r.Delete("/devices/{id}/owner", s.releaseFrame)
 }
 
 // --- which frame is asking
@@ -877,11 +875,8 @@ func (s *Server) getAllDevices(w http.ResponseWriter, r *http.Request) {
 	}
 	out := make([]AdminDevice, len(list))
 	for i, d := range list {
-		out[i] = AdminDevice{DeviceInfo: deviceInfoOf(d), Owner: d.Owner, ClaimCode: d.ClaimCode, CreatedAt: d.CreatedAt}
-		if d.Invites(s.now()) {
-			t := d.InviteUntil
-			out[i].InviteUntil = &t
-		}
+		out[i] = AdminDevice{DeviceInfo: deviceInfoOf(d), Owner: d.Owner, OwnerID: d.UserID, ClaimCode: d.ClaimCode,
+			CreatedAt: d.CreatedAt}
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, out)
@@ -907,26 +902,36 @@ func (s *Server) deleteDevice(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// getClaimStatus says whether a code is on a frame waiting to be claimed, and
-// whether it would also make an account, so /claim knows what to offer.
+// getClaimStatus says whether a code is on a frame waiting to be claimed.
 func (s *Server) getClaimStatus(w http.ResponseWriter, r *http.Request) {
-	d, err := s.store.DeviceByClaimCode(r.Context(), chi.URLParam(r, "code"))
+	_, err := s.store.DeviceByClaimCode(r.Context(), chi.URLParam(r, "code"))
 	if err != nil && !errors.Is(err, store.ErrNotFound) {
 		s.internalError(w, err)
 		return
 	}
 	w.Header().Set("Cache-Control", "no-store")
-	writeJSON(w, http.StatusOK, ClaimStatus{Waiting: err == nil, Invites: err == nil && d.Invites(s.now())})
+	writeJSON(w, http.StatusOK, ClaimStatus{Waiting: err == nil})
 }
 
-// prepareFrame makes a frame's identity before it's flashed: an unclaimed
-// device, marked for a new person when asked. The token is shown only here.
+// prepareFrame makes a frame's identity before it's flashed, given to
+// someone when asked. The token is shown only here.
 func (s *Server) prepareFrame(w http.ResponseWriter, r *http.Request) {
 	var req PrepareFrame
 	if r.ContentLength != 0 && !decode(w, r, &req) {
 		return
 	}
-	cfg, err := s.PrepareFrame(r.Context(), userFrom(r.Context()).ID, req.Invite)
+	var forUser int64
+	if req.ForUserID != nil {
+		forUser = *req.ForUserID
+		if _, err := s.store.UserByID(r.Context(), forUser); errors.Is(err, store.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "no such person")
+			return
+		} else if err != nil {
+			s.internalError(w, err)
+			return
+		}
+	}
+	cfg, err := s.PrepareFrame(r.Context(), forUser)
 	if err != nil {
 		s.internalError(w, err)
 		return
@@ -936,46 +941,45 @@ func (s *Server) prepareFrame(w http.ResponseWriter, r *http.Request) {
 }
 
 // PrepareFrame makes a new frame's identity, for the admin page and the
-// "prulights frame new" command. byUserID is who marks it, when invite.
-func (s *Server) PrepareFrame(ctx context.Context, byUserID int64, invite bool) (FrameConfig, error) {
+// "prulights frame new" command, and gives it to forUserID unless that's 0.
+// The claim code in the config is the one it was made with; a frame given
+// to someone no longer needs it.
+func (s *Server) PrepareFrame(ctx context.Context, forUserID int64) (FrameConfig, error) {
 	now := s.now()
 	d, token, err := s.store.CreateDevice(ctx, "", "", "", now)
 	if err != nil {
 		return FrameConfig{}, err
 	}
-	if invite {
-		if err := s.store.MarkForInvite(ctx, d.ID, byUserID, now.Add(frameInviteTTL)); err != nil {
+	if forUserID != 0 {
+		if _, err := s.store.AssignDevice(ctx, d.ID, forUserID, now); err != nil {
 			return FrameConfig{}, err
 		}
 	}
-	slog.Info("frame prepared", "device", d.ID, "invite", invite)
+	slog.Info("frame prepared", "device", d.ID, "for", forUserID)
 	return FrameConfig{Version: 1, Server: strings.TrimRight(s.cfg.BaseURL, "/"), DeviceID: d.ID, Token: token,
 		ClaimCode: d.ClaimCode, AP: FrameAP{SSID: d.APSSID, Password: d.APPassword}}, nil
 }
 
-func (s *Server) markFrame(w http.ResponseWriter, r *http.Request) {
+// assignFrame gives a frame to someone, whether it was waiting or someone
+// else's. It picks up its pictures on its next check-in.
+func (s *Server) assignFrame(w http.ResponseWriter, r *http.Request) {
 	id, ok := idParam(w, r)
 	if !ok {
 		return
 	}
-	err := s.store.MarkForInvite(r.Context(), id, userFrom(r.Context()).ID, s.now().Add(frameInviteTTL))
-	if errors.Is(err, store.ErrNotFound) {
-		writeError(w, http.StatusNotFound, "no unclaimed frame with that id")
+	var req AssignFrame
+	if !decode(w, r, &req) {
 		return
 	}
-	if err != nil {
+	ctx := r.Context()
+	if _, err := s.store.UserByID(ctx, req.UserID); errors.Is(err, store.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "no such person")
+		return
+	} else if err != nil {
 		s.internalError(w, err)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func (s *Server) unmarkFrame(w http.ResponseWriter, r *http.Request) {
-	id, ok := idParam(w, r)
-	if !ok {
-		return
-	}
-	err := s.store.UnmarkInvite(r.Context(), id)
+	d, err := s.store.AssignDevice(ctx, id, req.UserID, s.now())
 	if errors.Is(err, store.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "no such frame")
 		return
@@ -984,6 +988,26 @@ func (s *Server) unmarkFrame(w http.ResponseWriter, r *http.Request) {
 		s.internalError(w, err)
 		return
 	}
+	slog.Info("frame given", "device", id, "user", req.UserID, "by", userFrom(ctx).ID)
+	writeJSON(w, http.StatusOK, deviceInfoOf(d))
+}
+
+// releaseFrame sends someone's frame back to its setup screen.
+func (s *Server) releaseFrame(w http.ResponseWriter, r *http.Request) {
+	id, ok := idParam(w, r)
+	if !ok {
+		return
+	}
+	err := s.store.ReleaseDevice(r.Context(), id)
+	if errors.Is(err, store.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "no frame with an owner by that id")
+		return
+	}
+	if err != nil {
+		s.internalError(w, err)
+		return
+	}
+	slog.Info("frame released", "device", id, "by", userFrom(r.Context()).ID)
 	w.WriteHeader(http.StatusNoContent)
 }
 

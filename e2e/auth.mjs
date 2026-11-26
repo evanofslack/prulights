@@ -1,7 +1,7 @@
 // Passkeys end to end, with Chrome's virtual authenticator: an admin invite
 // from the command line, sign up, stay signed in, invite someone from the
 // menu, sign out and back in, a re-invite that adds a passkey, and the ways
-// an invite can be refused.
+// an invite can be refused, and signing up with the family code.
 import { execFileSync } from "node:child_process";
 import { URL, btn, check, finish, launch, open, shot } from "./lib.mjs";
 
@@ -113,6 +113,36 @@ await signUp(copycat, invite(), "MOM");
 await copycat.waitForSelector("text=Someone already has that name.");
 check("a taken name is refused", true);
 await shot(copycat, "auth-taken");
+
+// the family code: Bea signs herself up from the login page
+const bea = await person(browser);
+await bea.goto(`${URL}/login`);
+await bea.click("text=New here? Join with a code");
+await bea.waitForSelector("input[data-signup-code]");
+await bea.fill("input[data-signup-code]", "back bay");
+await bea.fill("input[autocomplete=given-name]", "Bea");
+await bea.click(btn("Create passkey"));
+await bea.waitForSelector("text=Wrong code.");
+check("a wrong family code is refused", true);
+await bea.fill("input[data-signup-code]", "Back Bay Lights");
+await bea.click(btn("Create passkey"));
+await bea.waitForURL(`${URL}/`);
+await bea.waitForSelector("[aria-label=Account]");
+check("bea signs up with the family code", (await signedInAs(bea)).includes("Bea"));
+await bea.click("[aria-label=Account]");
+check("the family code never makes an admin", (await bea.locator("text=Invite someone").count()) === 0);
+await bea.keyboard.press("Escape");
+
+// a link with the code in it needs only a name
+const cy = await person(browser);
+await cy.goto(`${URL}/join?code=back%20bay%20lights`);
+await cy.waitForSelector("input[data-signup-code]");
+check("?code= fills the code in", (await cy.inputValue("input[data-signup-code]")) === "back bay lights");
+await cy.fill("input[autocomplete=given-name]", "Cy");
+await shot(cy, "auth-join");
+await cy.click(btn("Create passkey"));
+await cy.waitForSelector("[aria-label=Account]");
+check("cy joins from a link", (await signedInAs(cy)).includes("Cy"));
 
 // a device with no passkey here can't sign in
 const stranger = await person(browser);
