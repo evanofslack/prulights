@@ -53,8 +53,13 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
 - Mantine (controls) + Tailwind 4 (layout, config in CSS). Utilities beat Mantine's styles (CSS layers).
 - Tokens in `web/styles/index.css` (`surface`, `panel`, `raised`, `fg`, `muted`, `subtle`, `line`,
   `accent`, …) point at the Mantine theme in `web/lib/theme.ts`. Use tokens, not raw Tailwind colors.
-- Dark (night sky) by default. The main user is an older reader on a phone: large type, high contrast,
-  one obvious main action per screen, big tap targets.
+- Two looks: dark (night sky) and light (e-ink paper). The system's choice until the header's sun/moon
+  toggle (`SchemeToggle.tsx`) picks one; both are spelled out per `data-mantine-color-scheme`, so a subtree
+  can pin one (`/display` stays dark). On paper the tower is a night picture in a card. Lighting colors in
+  swatches and crowns go through `soft()` (`lib/palette.tsx`, `--soften`); the api keeps the true colors.
+  Plain white nights get no swatch on the calendar. Keep colors muted.
+- The main user is an older reader on a phone: large type, high contrast, one obvious main action per
+  screen, big tap targets.
 
 ## Conventions
 - Commits: short, lowercase, imperative, 3–5 words ("add scraper parsers").
@@ -63,6 +68,13 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   popover; the footer is one right-aligned row of icons: full screen, API docs, GitHub, info). The web tower
   (`components/Tower.tsx`, same geometry as `render/art.go`) shows the PRUDENTIAL letters on the
   crown as they are on the building; the frame leaves them out (too small). No Prudential logos.
+- The web tower is a sharp svg with a printed look, not the frame's dither (`lib/print.ts`): flat colors
+  from the frame's ink family (lighting colors `mute`d), gradients in hard bands (`banded`), a fine
+  halftone only in the sky and the crown's glow, and paper grain (`feTurbulence`) over it all.
+  Lit windows are solid inks. Its windows follow the night (`lib/windows.ts`, fixed per date: tenants of a few
+  floors empty out in patches, lights left on till 11, a crew sweeping a floor, rooms in homes, the
+  observatory; weekends and holidays nearly dark; three dim levels, it's smoked glass); `live` follows the clock, other nights show 9pm. Web only, the frame keeps
+  its own windows. The red beacons blink in their own svg layer (`.beacon`), so blinking never repaints the scene.
 - Web pages: `/` is the whole site on one page, in sections: tonight, `#week`, `#calendar` (month in
   `?m=`, changed with `router.replace`, no scroll) and `#nights` (signed in only; `components/Month.tsx`,
   `MyNights.tsx`). `/calendar` and `/log` only redirect there. Then `/night?d=`, `/display` (always-on, no chrome; Esc leaves),

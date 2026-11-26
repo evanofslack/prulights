@@ -40,7 +40,7 @@ export function PaletteProvider({ children }: { children: React.ReactNode }) {
 export const usePalette = () => useContext(PaletteContext);
 
 // UNKNOWN is the crown's color before the palette loads.
-const UNKNOWN = "#3d465e";
+const UNKNOWN = "#7a7d88"; // a neutral grey, readable on either look (svg attributes take no var())
 
 // bandsOf expands a night's colors into the bands drawn on the crown: rainbow
 // becomes its six bands, everything else one band per color.
@@ -52,4 +52,12 @@ export function bandsOf(keys: ColorKey[], palette: Map<ColorKey, Color> | undefi
         else out.push(c?.hex ?? UNKNOWN);
     }
     return out.length ? out : [UNKNOWN];
+}
+
+// soft is a lighting color as the site shows it in swatches and crowns: a
+// little of the page mixed in, so the colors sit quietly in either look. The
+// api keeps the true colors; --soften (styles/index.css) says how much stays.
+// It's a CSS value: use it in style, not an svg attribute.
+export function soft(c: string): string {
+    return `color-mix(in oklab, ${c} var(--soften, 80%), var(--color-surface))`;
 }

@@ -1,12 +1,32 @@
 "use client";
 
-import { useId, useMemo } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
+import { soft } from "@/lib/palette";
+import { type Stop, banded, ink, whiteness } from "@/lib/print";
+import {
+    type Light,
+    type Neighborhood,
+    type Plan,
+    type Win,
+    NINE_PM,
+    litAt,
+    minuteOf,
+    nextChange,
+    noise,
+    planFor,
+} from "@/lib/windows";
 
 // Tower draws the Prudential Tower over the Back Bay skyline, its crown lit in
 // the night's colors where the real lights are: the spire, the thin ring at
 // the roofline, the thick ring under the PRUDENTIAL letters, and the setback.
 // The geometry is the frame's pixel art (backend/render/art.go) in the same
 // units, so the web and the frame show the same building.
+//
+// It's a sharp svg with a printed look (lib/print.ts): flat colors from the
+// frame's inks, gradients in hard bands, a light halftone in the sky and the
+// crown's glow, and paper grain over everything. The windows follow the night
+// (lib/windows.ts): tonight's switch on and off with the clock, other nights
+// are shown at 9pm.
 
 export type Sky = "night" | "dusk" | "day";
 
@@ -18,6 +38,10 @@ interface TowerProps {
     // the skyline around the tower; off, the tower stands alone
     skyline?: boolean;
     title?: string;
+    // the night (a date), which picks its windows
+    night?: string;
+    // follow the clock: the windows switch as the night goes on
+    live?: boolean;
 }
 
 // Geometry, from the spire's tip, x from the center line (art.go).
@@ -34,33 +58,84 @@ const SETBACK_TOP = 150;
 const SHAFT_TOP = 162;
 const FLOOR = 9;
 
-// noise is the frame's fixed pseudo-random number for a spot (art.go).
-function noise(x: number, y: number, seed: number): number {
-    let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(seed, -2048144777)) >>> 0;
-    h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0;
-    h = (h ^ (h >>> 16)) >>> 0;
-    return (h % 10007) / 10007;
+// the frame's red ink, for the aircraft lights
+const BEACON_RED = "#b83422";
+
+const topOf = (f: number) => H - f * (H - (TOP + RING_TOP));
+
+// grid is the windows in a box: w×h each, on a pitch.
+function grid(x0: number, y0: number, x1: number, y1: number, w = 2, h = 3, px = 5, py = 7): Win[] {
+    const out: Win[] = [];
+    for (let y = y0; y + h <= y1; y += py) for (let x = x0; x + w <= x1; x += px) out.push({ x, y, w, h });
+    return out;
 }
 
-// windows is a path of lit windows in a box: w×h each, on a pitch.
-function windows(
-    x0: number,
-    y0: number,
-    x1: number,
-    y1: number,
-    chance: number,
-    seed: number,
-    w = 2,
-    h = 3,
-    px = 5,
-    py = 7,
-): string {
-    let d = "";
-    for (let y = y0; y + h <= y1; y += py)
-        for (let x = x0; x + w <= x1; x += px)
-            if (noise(Math.round(x), Math.round(y), seed) < chance) d += `M${x} ${y}h${w}v${h}h${-w}z`;
-    return d;
-}
+// the neighbors: [x0, x1] from the center line, and height as a share of the tower
+const NEIGHBORS: [number, number, number][] = [
+    [-246, -176, 0.3],
+    [120, 182, 0.38],
+    [176, 246, 0.27],
+    [86, 132, 0.2],
+];
+const HANCOCK = { x0: CX - 232, x1: CX - 156, top: topOf(0.74) };
+const DOME = { x0: CX - 152, x1: CX - 98, top: topOf(0.46) };
+const DOME_MID = (DOME.x0 + DOME.x1) / 2;
+const DOME_R = (DOME.x1 - DOME.x0) / 2 - 4;
+const DARK = { x0: CX + 70, x1: CX + 142, top: topOf(0.6) };
+
+// The drawing that never changes, worked out once: the tower's floors and
+// mechanical bands, the brownstones' roofs, every window, the stars.
+const ART = (() => {
+    const floors: Win[][] = [];
+    const mech: number[] = [];
+    for (let f = 0, y = TOP + SHAFT_TOP + 5; y < H; f++, y += FLOOR) {
+        if (f % 14 === 13) {
+            mech.push(y - 2);
+            continue;
+        }
+        const row: Win[] = [];
+        for (let x = -TOWER_HALF + 4; x + 2 <= TOWER_HALF - 3; x += 4) row.push({ x: CX + x, y, w: 2, h: 5 });
+        floors.push(row);
+    }
+    // brownstones: a ragged run of roofs and chimneys
+    let roofs = `M0 ${H}`;
+    const brownstones: Win[] = [];
+    for (let x = 0, i = 0; x < W; i++) {
+        const w = 24 + Math.floor(noise(i, 0, 41) * 30);
+        const h = 20 + Math.floor(noise(i, 1, 41) * 34);
+        roofs += `V${H - h}`;
+        if (noise(i, 2, 41) < 0.5) {
+            const c = x + 4 + Math.floor(noise(i, 3, 41) * (w - 10));
+            roofs += `H${c}v-7h4v7`;
+        }
+        roofs += `H${x + w}`;
+        brownstones.push(...grid(x + 3, H - h + 6, x + w - 3, H - 2));
+        x += w;
+    }
+    roofs += `V${H}Z`;
+    const hood: Neighborhood = {
+        floors,
+        homes: [
+            { wins: grid(DARK.x0 + 16, DARK.top + 6, DARK.x1, H), offices: true, density: 0 },
+            // the first neighbor is offices, the rest apartments
+            ...NEIGHBORS.map(([x0, x1, f], i) => ({
+                wins: grid(CX + x0 + 4, topOf(f) + 4, CX + x1 - 4, H),
+                offices: i === 0,
+                density: 0.3,
+            })),
+            { wins: grid(DOME.x0 + 4, DOME.top + 8, DOME.x1 - 4, H), offices: true, density: 0 },
+            { wins: brownstones, density: 0.42 },
+        ],
+    };
+    // stars, more and less bright, in the upper sky
+    const stars = Array.from({ length: 48 }, (_, i) => ({
+        x: noise(i, 0, 71) * W,
+        y: noise(i, 1, 71) * H * 0.5,
+        r: 0.5 + 0.9 * noise(i, 2, 71) ** 2,
+        o: 0.35 + 0.6 * noise(i, 3, 71),
+    }));
+    return { mech, roofs, hood, stars };
+})();
 
 const SKIES: Record<
     Sky,
@@ -68,84 +143,183 @@ const SKIES: Record<
         stops: [string, string, string];
         far: string;
         near: string;
+        // the tower's face, top to bottom
+        shaft: [string, string];
         glass: [string, string];
+        // the city's glow low in the sky
+        city: [string, number];
         glow: number;
-        lit: number;
+        // how strongly lit windows show
+        windows: number;
         unlit: string;
+        // the halftone in the sky: its ink and how strong it is at the top and the horizon
+        dots: [string, number, number];
     }
 > = {
     night: {
         stops: ["#02040a", "#070c1c", "#16224a"],
         far: "#070a14",
         near: "#03050a",
+        shaft: ["#292d37", "#0e1015"],
         glass: ["#0c1631", "#1b2f5c"],
+        city: ["#d98a4a", 0.3],
         glow: 1,
-        lit: 0.1,
-        unlit: "#18213a",
+        windows: 0.85,
+        unlit: "#2e323c",
+        dots: ["#2254ac", 0.1, 0.5],
     },
     dusk: {
         stops: ["#151c3d", "#4a3f6b", "#e0895c"],
         far: "#151726",
         near: "#0b0c16",
+        shaft: ["#2d2e36", "#0e0f13"],
         glass: ["#3b4374", "#d08a63"],
+        city: ["#f0a060", 0.2],
         glow: 0.7,
-        lit: 0.14,
-        unlit: "#2a2f4c",
+        windows: 0.7,
+        unlit: "#2d3039",
+        dots: ["#e3ce34", 0, 0.35],
     },
     day: {
-        stops: ["#5d8fc6", "#9dbedd", "#e2ebf2"],
-        far: "#4a5a75",
-        near: "#2e3747",
-        glass: ["#8db2d8", "#d2e2f0"],
+        // mostly paper with a few dots of blue, like the frame's daytime look
+        stops: ["#a8c2e2", "#d3dfee", "#f0f2f2"],
+        far: "#8a93a4",
+        near: "#3b4250",
+        shaft: ["#5c616c", "#383b43"],
+        glass: ["#c2d4e8", "#e8eef3"],
+        city: ["#ffffff", 0],
         glow: 0.25,
-        lit: 0.02,
-        unlit: "#56698a",
+        windows: 0.2,
+        unlit: "#777c87",
+        dots: ["#2254ac", 0.45, 0],
     },
 };
 
-export function Tower({ bands, className, sky = "night", skyline = true, title }: TowerProps) {
+// the red aircraft lights: the spire's tip and the roof's corners, [x, y, css radius]
+const BEACONS: [number, number, number][] = [
+    [CX, TOP, 1.7],
+    [CX - 59, TOP + 103, 1.2],
+    [CX + 59, TOP + 103, 1.2],
+];
+
+export function Tower({
+    bands,
+    className,
+    sky = "night",
+    skyline = true,
+    title,
+    night = "",
+    live = false,
+}: TowerProps) {
+    const plan = useMemo(() => planFor(night, ART.hood), [night]);
+    const minute = useNightMinute(night, live, plan);
+    const lights = useMemo(() => litAt(plan, minute), [plan, minute]);
+    const key = bands.join(",");
+    const colors = useMemo(() => key.split(",").map((c) => ink(c)), [key]);
+
+    return (
+        <div
+            role="img"
+            aria-label={title ?? "The Prudential Tower"}
+            className={`relative overflow-hidden ${className ?? ""}`}
+            style={{ background: SKIES[sky].stops[1] }}
+        >
+            <Scene bands={colors} sky={sky} skyline={skyline} lights={lights} />
+            {/* the beacons are their own layer, so their blinking never repaints the scene */}
+            <svg
+                viewBox={`0 0 ${W} ${H}`}
+                preserveAspectRatio="xMidYMin slice"
+                className="pointer-events-none absolute inset-0 h-full w-full"
+                aria-hidden
+            >
+                {BEACONS.map(([x, y, r], i) => (
+                    <circle
+                        key={i}
+                        cx={x}
+                        cy={y}
+                        r={r}
+                        fill={BEACON_RED}
+                        className="beacon"
+                        style={{ animationDelay: `${i * 0.45}s` }}
+                    />
+                ))}
+            </svg>
+        </div>
+    );
+}
+
+// useNightMinute is the minute of the night the windows show: the clock's,
+// woken at each switch, when live; 9pm otherwise.
+function useNightMinute(night: string, live: boolean, plan: Plan): number {
+    const on = live && night !== "";
+    const [minute, setMinute] = useState(() => (on ? minuteOf(Date.now(), night) : NINE_PM));
+    useEffect(() => {
+        if (!on) {
+            setMinute(NINE_PM);
+            return;
+        }
+        let t: ReturnType<typeof setTimeout>;
+        const tick = () => {
+            const m = minuteOf(Date.now(), night);
+            setMinute(m);
+            const next = nextChange(plan, m);
+            const wait = next === undefined ? 30 * 60_000 : (next - m) * 60_000 + 50;
+            t = setTimeout(tick, Math.min(30 * 60_000, Math.max(1000, wait)));
+        };
+        tick();
+        return () => clearTimeout(t);
+    }, [on, night, plan]);
+    return minute;
+}
+
+interface SceneProps {
+    bands: string[];
+    sky: Sky;
+    skyline: boolean;
+    lights: Light[];
+}
+
+// Scene is the drawing.
+function Scene({ bands, sky, skyline, lights }: SceneProps) {
     const id = useId().replace(/:/g, "");
     const s = SKIES[sky];
     const n = bands.length || 1;
     const first = bands[0] ?? "#ffffff";
-    const horizon = H;
-    const span = horizon - (TOP + RING_TOP);
-    const topOf = (f: number) => horizon - f * span;
+    // the crown's halo: a white night's is smaller and fainter (white glares),
+    // a colored night's a little fuller
+    const white = whiteness(first);
+    const halo = s.glow * (1.15 - 0.6 * white);
+    const reach = 1.08 - 0.3 * white;
 
-    // the drawing that doesn't depend on the colors, worked out once
-    const art = useMemo(() => {
-        let lit = "";
-        let warm = "";
-        const mech: number[] = [];
-        for (let f = 0, y = TOP + SHAFT_TOP + 5; y < H; f++, y += FLOOR) {
-            if (f % 14 === 13) {
-                mech.push(y - 2);
-                continue;
-            }
-            for (let x = -TOWER_HALF + 4; x + 2 <= TOWER_HALF - 3; x += 4) {
-                const v = noise(x, f, 3);
-                if (v < s.lit * 0.7) lit += `M${CX + x} ${y}h2v5h-2z`;
-                else if (v < s.lit) warm += `M${CX + x} ${y}h2v5h-2z`;
-            }
+    // lit windows, one path per color and brightness, in three layers: the
+    // tower's, the skyline's, and the brownstones' in front of everything
+    const lit = useMemo(() => {
+        const front = ART.hood.homes.length - 1;
+        const layers = {
+            tower: new Map<string, string>(),
+            skyline: new Map<string, string>(),
+            front: new Map<string, string>(),
+        };
+        for (const l of lights) {
+            const m = l.group < 0 ? layers.tower : l.group === front ? layers.front : layers.skyline;
+            const k = `${l.color}|${Math.round(l.alpha * 20) / 20}`;
+            m.set(k, (m.get(k) ?? "") + `M${l.x} ${l.y}h${l.w}v${l.h}h${-l.w}z`);
         }
-        // brownstones: a ragged run of roofs and chimneys
-        let roofs = `M0 ${H}`;
-        let lamps = "";
-        for (let x = 0, i = 0; x < W; i++) {
-            const w = 24 + Math.floor(noise(i, 0, 41) * 30);
-            const h = 20 + Math.floor(noise(i, 1, 41) * 34);
-            roofs += `V${H - h}`;
-            if (noise(i, 2, 41) < 0.5) {
-                const c = x + 4 + Math.floor(noise(i, 3, 41) * (w - 10));
-                roofs += `H${c}v-7h4v7`;
-            }
-            roofs += `H${x + w}`;
-            lamps += windows(x + 3, H - h + 6, x + w - 3, H - 2, 0.16, 50 + i);
-            x += w;
-        }
-        roofs += `V${H}Z`;
-        return { lit, warm, mech, roofs, lamps };
-    }, [s.lit]);
+        // the buildings behind are further off and hazier: their windows show less
+        const draw = (m: Map<string, string>, far = 1) => (
+            <g opacity={s.windows * far} shapeRendering="crispEdges">
+                {[...m].map(([k, d]) => {
+                    const [color, a] = k.split("|");
+                    return <path key={k} d={d} fill={color} opacity={Number(a)} />;
+                })}
+            </g>
+        );
+        return {
+            tower: draw(layers.tower),
+            skyline: draw(layers.skyline, 0.55),
+            front: draw(layers.front, 0.75),
+        };
+    }, [lights, id, s.windows]);
 
     const ring = (y0: number, y1: number, half: number, opacity = 1) =>
         bands.map((c, i) => {
@@ -163,44 +337,131 @@ export function Tower({ bands, className, sky = "night", skyline = true, title }
             );
         });
 
-    const hancock = { x0: CX - 232, x1: CX - 156, top: topOf(0.74) };
-    const dome = { x0: CX - 152, x1: CX - 98, top: topOf(0.46) };
-    const domeMid = (dome.x0 + dome.x1) / 2;
-    const domeR = (dome.x1 - dome.x0) / 2 - 4;
-    const neighbors: [number, number, number][] = [
-        [-246, -176, 0.3],
-        [120, 182, 0.38],
-        [176, 246, 0.27],
-        [86, 132, 0.2],
-    ];
-
     return (
         <svg
             viewBox={`0 0 ${W} ${H}`}
-            className={className}
-            role="img"
-            aria-label={title ?? "The Prudential Tower"}
+            className="absolute inset-0 h-full w-full"
+            aria-hidden
             preserveAspectRatio="xMidYMin slice"
         >
             <defs>
                 <linearGradient id={`sky-${id}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0" stopColor={s.stops[0]} />
-                    <stop offset="0.55" stopColor={s.stops[1]} />
-                    <stop offset="1" stopColor={s.stops[2]} />
+                    {stops(
+                        banded(
+                            [
+                                [0, s.stops[0]],
+                                [0.55, s.stops[1]],
+                                [1, s.stops[2]],
+                            ],
+                            7,
+                        ),
+                    )}
+                </linearGradient>
+                <linearGradient id={`city-${id}`} x1="0" y1="0" x2="0" y2="1">
+                    {stops(
+                        banded(
+                            [
+                                [0, s.city[0], 0],
+                                [1, s.city[0], s.city[1]],
+                            ],
+                            5,
+                        ),
+                    )}
                 </linearGradient>
                 <radialGradient id={`halo-${id}`}>
-                    <stop offset="0" stopColor={first} stopOpacity={0.55 * s.glow} />
-                    <stop offset="0.45" stopColor={first} stopOpacity={0.18 * s.glow} />
-                    <stop offset="1" stopColor={first} stopOpacity="0" />
+                    {stops(
+                        banded(
+                            [
+                                [0, first, 0.32 * halo],
+                                [0.45, first, 0.12 * halo],
+                                [1, first, 0],
+                            ],
+                            9,
+                        ),
+                    )}
                 </radialGradient>
                 <linearGradient id={`glass-${id}`} x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stopColor={s.glass[0]} />
-                    <stop offset="1" stopColor={s.glass[1]} />
+                    {stops(
+                        banded(
+                            [
+                                [0, s.glass[0]],
+                                [1, s.glass[1]],
+                            ],
+                            5,
+                        ),
+                    )}
+                </linearGradient>
+                <linearGradient id={`shaft-${id}`} x1="0" y1="0" x2="0" y2="1">
+                    {stops(
+                        banded(
+                            [
+                                [0, s.shaft[0]],
+                                [1, s.shaft[1]],
+                            ],
+                            6,
+                        ),
+                    )}
                 </linearGradient>
                 <linearGradient id={`spill-${id}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0" stopColor={first} stopOpacity={0.5 * s.glow} />
-                    <stop offset="1" stopColor={first} stopOpacity="0" />
+                    {stops(
+                        banded(
+                            [
+                                [0, first, 0.28 * halo],
+                                [0.3, first, 0.08 * halo],
+                                [1, first, 0],
+                            ],
+                            5,
+                        ),
+                    )}
                 </linearGradient>
+                {/* the halftone: an ordered screen of fine dots, shown through a banded mask */}
+                {screen(`screen-${id}`, s.dots[0])}
+                {screen(`screen-halo-${id}`, first)}
+                <linearGradient id={`sky-dots-${id}`} x1="0" y1="0" x2="0" y2="1">
+                    {stops(
+                        banded(
+                            [
+                                [0, "#fff", s.dots[1]],
+                                [1, "#fff", s.dots[2]],
+                            ],
+                            5,
+                        ),
+                    )}
+                </linearGradient>
+                <radialGradient id={`halo-dots-${id}`}>
+                    {stops(
+                        banded(
+                            [
+                                [0, "#fff", 0.55 * halo],
+                                [1, "#fff", 0],
+                            ],
+                            5,
+                        ),
+                    )}
+                </radialGradient>
+                <mask id={`sky-mask-${id}`} maskUnits="userSpaceOnUse" x="0" y="0" width={W} height={H}>
+                    <rect width={W} height={H} fill={`url(#sky-dots-${id})`} />
+                </mask>
+                <mask id={`halo-mask-${id}`} maskUnits="userSpaceOnUse" x="0" y="0" width={W} height={H}>
+                    <ellipse
+                        cx={CX}
+                        cy={TOP + RING_LOW}
+                        rx={170 * reach}
+                        ry={100 * reach}
+                        fill={`url(#halo-dots-${id})`}
+                    />
+                </mask>
+                {/* paper grain: fine noise, laid over everything softly */}
+                <filter id={`grain-${id}`} x="0" y="0" width="100%" height="100%">
+                    <feTurbulence
+                        type="fractalNoise"
+                        baseFrequency="0.85"
+                        numOctaves="2"
+                        seed="7"
+                        stitchTiles="stitch"
+                    />
+                    <feColorMatrix type="saturate" values="0" />
+                </filter>
                 <pattern
                     id={`win-${id}`}
                     width="4"
@@ -209,7 +470,7 @@ export function Tower({ bands, className, sky = "night", skyline = true, title }
                     x={CX - TOWER_HALF + 4}
                     y={TOP + SHAFT_TOP + 5}
                 >
-                    <rect width="2" height="5" fill={s.unlit} />
+                    <rect width="2" height="5" fill={s.unlit} shapeRendering="crispEdges" />
                 </pattern>
                 <filter id={`bloom-${id}`} x="-50%" y="-200%" width="200%" height="500%">
                     <feGaussianBlur stdDeviation="2.5" result="b" />
@@ -221,58 +482,51 @@ export function Tower({ bands, className, sky = "night", skyline = true, title }
             </defs>
 
             <rect width={W} height={H} fill={`url(#sky-${id})`} />
+            {/* the city's glow on the low sky */}
+            <rect y={H * 0.45} width={W} height={H * 0.55} fill={`url(#city-${id})`} />
             {sky === "night" &&
-                [
-                    [38, 52],
-                    [92, 128],
-                    [61, 214],
-                    [140, 40],
-                    [22, 300],
-                    [118, 262],
-                    [350, 70],
-                    [412, 34],
-                    [438, 150],
-                    [376, 196],
-                    [452, 248],
-                    [330, 118],
-                    [406, 312],
-                    [70, 380],
-                ].map(([x, y], i) => (
-                    <circle
-                        key={i}
-                        cx={x}
-                        cy={y}
-                        r={(x + y) % 3 === 0 ? 1.2 : 0.7}
-                        fill="#dfe6ff"
-                        opacity={0.8}
-                    />
+                ART.stars.map((t, i) => (
+                    <circle key={i} cx={t.x} cy={t.y} r={t.r} fill="#e6ebff" opacity={t.o} />
                 ))}
-            <ellipse cx={CX} cy={TOP + RING_LOW} rx={190} ry={110} fill={`url(#halo-${id})`} />
+            <ellipse
+                cx={CX}
+                cy={TOP + RING_LOW}
+                rx={190 * reach}
+                ry={110 * reach}
+                fill={`url(#halo-${id})`}
+            />
+            {/* the halftone over the sky and in the crown's glow */}
+            <rect width={W} height={H} fill={`url(#screen-${id})`} mask={`url(#sky-mask-${id})`} />
+            <rect width={W} height={H} fill={`url(#screen-halo-${id})`} mask={`url(#halo-mask-${id})`} />
 
             {skyline && (
                 <g>
                     {/* the Hancock's glass slab and its notch */}
                     <rect
-                        x={hancock.x0}
-                        y={hancock.top}
-                        width={hancock.x1 - hancock.x0}
+                        x={HANCOCK.x0}
+                        y={HANCOCK.top}
+                        width={HANCOCK.x1 - HANCOCK.x0}
                         height={H}
                         fill={`url(#glass-${id})`}
                     />
                     <rect
-                        x={hancock.x0 + 22}
-                        y={hancock.top}
+                        x={HANCOCK.x0 + 22}
+                        y={HANCOCK.top}
                         width={3}
                         height={H}
                         fill={s.far}
                         opacity={0.8}
                     />
-                    {/* a dark tower behind the Pru's right side */}
-                    <rect x={CX + 70} y={topOf(0.6)} width={72} height={H} fill={s.far} />
-                    <path
-                        d={windows(CX + 86, topOf(0.6) + 6, CX + 142, H, 0.05, 11)}
-                        fill="#ffe2a0"
-                        opacity={0.8}
+                    {/* a dark tower behind the Pru's right side, with a mast */}
+                    <rect x={DARK.x0} y={DARK.top} width={DARK.x1 - DARK.x0} height={H} fill={s.far} />
+                    <rect x={DARK.x1 - 30} y={DARK.top - 6} width={20} height={6} fill={s.far} />
+                    <line
+                        x1={DARK.x1 - 20}
+                        y1={DARK.top - 24}
+                        x2={DARK.x1 - 20}
+                        y2={DARK.top - 6}
+                        stroke={s.far}
+                        strokeWidth="1.5"
                     />
                 </g>
             )}
@@ -301,9 +555,8 @@ export function Tower({ bands, className, sky = "night", skyline = true, title }
                 })}
                 <rect x={CX - 8} y={TOP + 58} width={16} height={16} fill={first} fillOpacity={0.35} />
             </g>
-            <circle cx={CX} cy={TOP} r={2.2} fill="#ff3b30" filter={`url(#bloom-${id})`} />
 
-            {/* the rooftop: machinery, antennas, beacons */}
+            {/* the rooftop: machinery, antennas (the beacons are drawn over it) */}
             <rect x={CX - 58} y={TOP + 104} width={116} height={8} fill={s.near} />
             <g stroke="#5b6680" strokeWidth="1">
                 {[
@@ -317,11 +570,15 @@ export function Tower({ bands, className, sky = "night", skyline = true, title }
                     <line key={x} x1={CX + x} y1={TOP + y} x2={CX + x} y2={TOP + 104} />
                 ))}
             </g>
-            <circle cx={CX - 59} cy={TOP + 103} r={1.4} fill="#ff3b30" />
-            <circle cx={CX + 59} cy={TOP + 103} r={1.4} fill="#ff3b30" />
 
             {/* the shaft, its windows, its mechanical floors, the crown's light on it */}
-            <rect x={CX - TOWER_HALF} y={TOP + SHAFT_TOP} width={2 * TOWER_HALF} height={H} fill={s.near} />
+            <rect
+                x={CX - TOWER_HALF}
+                y={TOP + SHAFT_TOP}
+                width={2 * TOWER_HALF}
+                height={H}
+                fill={`url(#shaft-${id})`}
+            />
             <rect
                 x={CX - TOWER_HALF + 4}
                 y={TOP + SHAFT_TOP + 5}
@@ -329,33 +586,40 @@ export function Tower({ bands, className, sky = "night", skyline = true, title }
                 height={H}
                 fill={`url(#win-${id})`}
             />
-            {art.mech.map((y) => (
-                <rect key={y} x={CX - TOWER_HALF} y={y} width={2 * TOWER_HALF} height={FLOOR} fill={s.near} />
+            {ART.mech.map((y) => (
+                <rect
+                    key={y}
+                    x={CX - TOWER_HALF}
+                    y={y}
+                    width={2 * TOWER_HALF}
+                    height={FLOOR}
+                    fill={`url(#shaft-${id})`}
+                />
             ))}
-            <path d={art.lit} fill="#fff4dc" />
-            <path d={art.warm} fill="#ffd27a" />
+            {lit.tower}
             <rect
                 x={CX - TOWER_HALF}
                 y={TOP + SHAFT_TOP}
                 width={2 * TOWER_HALF}
-                height={40}
+                height={150}
                 fill={`url(#spill-${id})`}
             />
+            {/* a warm edge where the city's light catches it, a cool one away */}
             <rect
                 x={CX - TOWER_HALF}
                 y={TOP + SHAFT_TOP}
-                width={1}
+                width={1.5}
                 height={H}
-                fill="#ffffff"
-                opacity={0.12}
+                fill="#ffcf9a"
+                opacity={0.2 * s.glow + 0.05}
             />
             <rect
                 x={CX + TOWER_HALF - 1}
                 y={TOP + SHAFT_TOP}
                 width={1}
                 height={H}
-                fill="#ffffff"
-                opacity={0.12}
+                fill="#bcd0ff"
+                opacity={0.08}
             />
 
             {/* the crown: rings of light, the lettered band, the lit setback */}
@@ -402,56 +666,117 @@ export function Tower({ bands, className, sky = "night", skyline = true, title }
 
             {skyline && (
                 <g>
-                    {neighbors.map(([x0, x1, f], i) => (
-                        <g key={i}>
-                            <rect x={CX + x0} y={topOf(f)} width={x1 - x0} height={H} fill={s.near} />
-                            <path
-                                d={windows(CX + x0 + 4, topOf(f) + 4, CX + x1 - 4, H, 0.09, 20 + i)}
-                                fill="#ffdc96"
-                                opacity={0.85}
-                            />
-                        </g>
+                    {NEIGHBORS.map(([x0, x1, f], i) => (
+                        <Neighbor key={i} x0={CX + x0} x1={CX + x1} top={topOf(f)} roof={i} fill={s.near} />
                     ))}
                     {/* 111 Huntington: a round-shouldered tower under a ribbed dome */}
-                    <rect x={dome.x0} y={dome.top} width={dome.x1 - dome.x0} height={H} fill={s.near} />
-                    <path
-                        d={windows(dome.x0 + 4, dome.top + 8, dome.x1 - 4, H, 0.14, 31)}
-                        fill="#ffdc96"
-                        opacity={0.85}
-                    />
+                    <rect x={DOME.x0} y={DOME.top} width={DOME.x1 - DOME.x0} height={H} fill={s.near} />
                     <rect
-                        x={dome.x0 + 2}
-                        y={dome.top - 4}
-                        width={dome.x1 - dome.x0 - 4}
+                        x={DOME.x0 + 2}
+                        y={DOME.top - 4}
+                        width={DOME.x1 - DOME.x0 - 4}
                         height={4}
                         fill={s.near}
                     />
                     <path
-                        d={`M${domeMid - domeR} ${dome.top - 4}A${domeR} 24 0 0 1 ${domeMid + domeR} ${dome.top - 4}Z`}
+                        d={`M${DOME_MID - DOME_R} ${DOME.top - 4}A${DOME_R} 24 0 0 1 ${DOME_MID + DOME_R} ${DOME.top - 4}Z`}
                         fill={s.near}
                     />
                     <g stroke="#e8dcc0" strokeWidth="0.9" opacity={sky === "day" ? 0.35 : 0.75} fill="none">
                         <path
-                            d={`M${domeMid - domeR} ${dome.top - 4}A${domeR} 24 0 0 1 ${domeMid + domeR} ${dome.top - 4}`}
+                            d={`M${DOME_MID - DOME_R} ${DOME.top - 4}A${DOME_R} 24 0 0 1 ${DOME_MID + DOME_R} ${DOME.top - 4}`}
                         />
                         {[-0.8, -0.45, 0, 0.45, 0.8].map((f) => (
                             <line
                                 key={f}
-                                x1={domeMid + f * domeR}
-                                y1={dome.top - 4 - 24 * Math.sqrt(1 - f * f)}
-                                x2={domeMid + f * domeR * 0.9}
-                                y2={dome.top - 4}
+                                x1={DOME_MID + f * DOME_R}
+                                y1={DOME.top - 4 - 24 * Math.sqrt(1 - f * f)}
+                                x2={DOME_MID + f * DOME_R * 0.9}
+                                y2={DOME.top - 4}
                             />
                         ))}
-                        <line x1={domeMid - domeR} y1={dome.top - 5} x2={domeMid + domeR} y2={dome.top - 5} />
-                        <line x1={domeMid} y1={dome.top - 40} x2={domeMid} y2={dome.top - 28} />
+                        <line
+                            x1={DOME_MID - DOME_R}
+                            y1={DOME.top - 5}
+                            x2={DOME_MID + DOME_R}
+                            y2={DOME.top - 5}
+                        />
+                        <line x1={DOME_MID} y1={DOME.top - 40} x2={DOME_MID} y2={DOME.top - 28} />
                     </g>
+                    {lit.skyline}
                     {/* brownstones in front */}
-                    <path d={art.roofs} fill={s.near} />
-                    <path d={art.lamps} fill="#ffd88a" opacity={0.9} />
+                    <path d={ART.roofs} fill={s.near} />
+                    {lit.front}
                 </g>
             )}
+
+            {/* the paper's grain over it all */}
+            <rect
+                width={W}
+                height={H}
+                filter={`url(#grain-${id})`}
+                opacity={sky === "day" ? 0.4 : 0.3}
+                style={{ mixBlendMode: "overlay" }}
+            />
         </svg>
+    );
+}
+
+// stops draws a gradient's stops.
+function stops(list: Stop[]) {
+    return list.map(([o, c, a = 1], i) => <stop key={i} offset={o} stopColor={c} stopOpacity={a} />);
+}
+
+// screen is a halftone pattern: an ordered grid of fine dots in one ink, a
+// big dot and a small one in each cell.
+function screen(id: string, ink: string) {
+    return (
+        <pattern id={id} width="3" height="3" patternUnits="userSpaceOnUse">
+            <circle cx="0.75" cy="0.75" r="0.6" fill={ink} />
+            <circle cx="2.25" cy="2.25" r="0.42" fill={ink} />
+        </pattern>
+    );
+}
+
+// Neighbor is a building of the skyline, its top made a little irregular: a
+// setback, a water tank on legs, a mast, or two setbacks.
+function Neighbor({
+    x0,
+    x1,
+    top,
+    roof,
+    fill,
+}: {
+    x0: number;
+    x1: number;
+    top: number;
+    roof: number;
+    fill: string;
+}) {
+    const w = x1 - x0;
+    return (
+        <g fill={fill}>
+            <rect x={x0} y={top} width={w} height={H} />
+            {roof === 0 && <rect x={x0 + 10} y={top - 9} width={w - 28} height={9} />}
+            {roof === 1 && (
+                <g>
+                    <rect x={x0 + 12} y={top - 14} width={11} height={9} rx={1} />
+                    <path d={`M${x0 + 11} ${top - 14}l6.5 -4l6.5 4z`} />
+                    <path
+                        d={`M${x0 + 13} ${top - 5}v5M${x0 + 22} ${top - 5}v5`}
+                        stroke={fill}
+                        strokeWidth="1.2"
+                    />
+                </g>
+            )}
+            {roof === 2 && <path d={`M${x0 + 22} ${top}v-22`} stroke={fill} strokeWidth="1.4" />}
+            {roof === 3 && (
+                <g>
+                    <rect x={x0 + 6} y={top - 6} width={w - 12} height={6} />
+                    <rect x={x0 + 14} y={top - 11} width={w - 28} height={5} />
+                </g>
+            )}
+        </g>
     );
 }
 
@@ -467,13 +792,13 @@ export function Crown({ bands, className }: { bands: string[]; className?: strin
                 y={y}
                 width={w / n + 0.2}
                 height={h}
-                fill={c}
+                style={{ fill: soft(c) }}
                 opacity={opacity}
             />
         ));
     return (
         <svg viewBox="0 0 40 44" className={`shrink-0 ${className ?? "h-8 w-8"}`} aria-hidden>
-            <rect x="19.2" y="0" width="1.6" height="13" fill={bands[0]} />
+            <rect x="19.2" y="0" width="1.6" height="13" style={{ fill: soft(bands[0]) }} />
             <rect x="9" y="11" width="22" height="4" fill="var(--color-tower)" />
             <rect x="2" y="15" width="36" height="5" rx="0.5" fill="var(--color-tower)" />
             {ring(15, 5, 2, 36)}

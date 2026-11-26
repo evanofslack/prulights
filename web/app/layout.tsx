@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Atkinson_Hyperlegible } from "next/font/google";
 import { ColorSchemeScript, mantineHtmlProps } from "@mantine/core";
 import { Providers } from "./providers";
+import { BAR } from "@/lib/theme";
 
 import "../styles/index.css";
 
@@ -16,11 +17,14 @@ export const metadata: Metadata = {
     title: "prulights",
     description: "What color is the Pru tonight? The Prudential Tower's lighting schedule.",
     applicationName: "prulights",
-    appleWebApp: { capable: true, title: "Pru tonight", statusBarStyle: "black-translucent" },
+    appleWebApp: { capable: true, title: "Pru tonight", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
-    themeColor: "#0c1020",
+    themeColor: [
+        { media: "(prefers-color-scheme: dark)", color: BAR.dark },
+        { media: "(prefers-color-scheme: light)", color: BAR.light },
+    ],
     width: "device-width",
     initialScale: 1,
     viewportFit: "cover",
@@ -28,9 +32,9 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
-        <html lang="en" {...mantineHtmlProps} data-mantine-color-scheme="dark" className={body.variable}>
+        <html lang="en" {...mantineHtmlProps} className={body.variable}>
             <head>
-                <ColorSchemeScript defaultColorScheme="dark" />
+                <ColorSchemeScript defaultColorScheme="auto" />
             </head>
             <body>
                 <Providers>{children}</Providers>

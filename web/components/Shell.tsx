@@ -9,6 +9,7 @@ import type { DeviceInfo } from "@/interfaces/api";
 import { useApi, useMeta } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Account } from "./Account";
+import { SchemeToggle } from "./SchemeToggle";
 
 // Shell is the page frame: a slim header, the page, and a one-line footer of
 // icons. The site is one page, so the header only links what isn't on it: the
@@ -47,6 +48,7 @@ export function Shell({ children, wide }: { children: React.ReactNode; wide?: bo
                             {l.label}
                         </Link>
                     ))}
+                    <SchemeToggle />
                     <Account />
                 </nav>
             </header>

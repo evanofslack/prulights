@@ -40,6 +40,8 @@ export default function DisplayPage() {
         <main
             className={`fixed inset-0 overflow-hidden bg-[#05070d] text-[#eef1f8] ${idle ? "cursor-none" : ""}`}
             style={{ colorScheme: "dark" }}
+            // always the night sky, whatever the site's look
+            data-mantine-color-scheme="dark"
         >
             <Link
                 href="/"
@@ -58,6 +60,8 @@ export default function DisplayPage() {
                         <Tower
                             bands={bandsOf(data.lighting.colors, palette)}
                             sky={sky}
+                            night={data.date}
+                            live
                             className="h-[94vh] w-[38vw] max-w-[620px] shrink-0 rounded-[2vh]"
                         />
                         <div className="flex max-w-[48vw] min-w-0 flex-col gap-[3vh] pb-[2vh]">
