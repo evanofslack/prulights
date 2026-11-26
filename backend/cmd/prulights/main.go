@@ -4,6 +4,7 @@
 //	prulights scrape [flags]          check the source pages once
 //	prulights backfill                fetch and apply every source page
 //	prulights frame new|config        prepare a frame for flashing
+//	prulights seed [flags]            fill a dev database with made-up sightings
 package main
 
 import (
@@ -56,6 +57,8 @@ func main() {
 		err = inviteCmd(ctx, args)
 	case "frame":
 		err = frameCmd(ctx, args)
+	case "seed":
+		err = seedCmd(ctx, args)
 	case "version", "--version":
 		fmt.Println(version)
 	case "help", "-h", "--help":
@@ -81,6 +84,7 @@ commands:
   invite     make an invite link and QR code (-admin, -for-user NAME)
   frame new  prepare a frame's identity for flashing (-for-user NAME, -out FILE)
   frame config  the files to flash: -from FILE -wifi "SSID:password" … -out DIR
+  seed       dev only: made-up people's sightings (-names Logan,Shiv -reset -seed N)
   version    print the version`)
 }
 

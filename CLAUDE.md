@@ -95,11 +95,15 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   json body (`sameOrigin`). `GET /api/v1/me` is 204 when signed out. Passkey prompts in flight
   (ceremonies) live in memory for 5 minutes. Private routes (`/me`, `/auth`, `/admin`, `/devices`, `/sightings`)
   stay out of `openapi.yaml` (`isPrivateRoute` in `public_test.go`).
+- `just seed [-names Logan,Shiv,Roman,Greg] [-reset] [-seed N]` (dev only, `cmd/prulights/seed.go`) fills the
+  dev db with Succession people (no passkeys) logging the last 60 nights (the first most, the second about
+  half, the rest a few).
 - e2e `auth.mjs` uses Chrome's virtual authenticator (CDP `WebAuthn.addVirtualAuthenticator`); `just
   e2e` sets `BASE_URL=http://localhost:8099` so passkeys accept that origin, and `BIN` for invites.
   The e2e scripts run in parallel against one db and names are unique, so each script signs up its own names.
 - Sightings (`server/sightings.go`): "I saw it" + 0–5 stars + a note, open for tonight and the 7 nights before
-  (`canLog`). `/me/stats` and `/me/sightings` both come from `myNights`. `GET /sightings/{date}` (names,
+  (`canLog`). `/me/stats` and `/me/sightings` both come from `myNights`. `Lately.tsx` after Your nights is a row of
+  badges ("Shiv saw it ★4") for everyone else's sightings in the `canLog` window (`/sightings/recent`), hidden when empty. `GET /sightings/{date}` (names,
   notes) is members only; the public sees only totals at `/lightings/{date}/stats`. Admin corrections
   (`/admin/overrides`) beat the scraped schedule. Embedded response structs use `tstype:",extends"` so
   tygo flattens them.
