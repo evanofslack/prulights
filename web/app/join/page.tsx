@@ -50,19 +50,17 @@ function Join() {
         <form onSubmit={submit} className="flex flex-col gap-5">
             <h1 className="text-3xl font-bold">Join</h1>
             <p className="text-lg text-muted">
-                See what color the Pru is tonight, and keep a log of the nights you see it. Pick a name, then
-                make a passkey: no password, just your face, fingerprint or passcode.
+                Pick a name, then sign in with your face, fingerprint or passcode.
             </p>
             {me && (
                 <Alert variant="light" color="gray">
-                    You&apos;re signed in as {me.name} on this device. Continuing signs this device in as the new
-                    person.
+                    You&apos;re signed in as {me.name} on this device. Continuing signs this device in as the
+                    new person.
                 </Alert>
             )}
             <TextInput
                 size="lg"
-                label="Family code"
-                description="The words you were given."
+                label="Code"
                 value={code}
                 onChange={(e) => setCode(e.currentTarget.value)}
                 required
@@ -74,7 +72,7 @@ function Join() {
             <TextInput
                 size="lg"
                 label="Your name"
-                description="Everyone signed in will see it next to your sightings."
+                description="Shown next to your sightings."
                 value={name}
                 onChange={(e) => setName(e.currentTarget.value)}
                 maxLength={40}

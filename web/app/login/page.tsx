@@ -56,12 +56,11 @@ export default function LoginPage() {
                         )}
                         {signup?.open ? (
                             <Button component={Link} href="/join" size="lg" variant="default">
-                                New here? Join with the family code
+                                New here? Join with a code
                             </Button>
                         ) : (
                             <p className="text-muted">Invite only. New here? Ask for a link.</p>
                         )}
-                        <p className="text-muted">Lost your passkey? Ask for a link.</p>
                     </>
                 )}
             </div>

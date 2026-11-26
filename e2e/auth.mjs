@@ -117,12 +117,12 @@ await shot(copycat, "auth-taken");
 // the family code: Bea signs herself up from the login page
 const bea = await person(browser);
 await bea.goto(`${URL}/login`);
-await bea.click("text=New here? Join with the family code");
+await bea.click("text=New here? Join with a code");
 await bea.waitForSelector("input[data-signup-code]");
 await bea.fill("input[data-signup-code]", "back bay");
 await bea.fill("input[autocomplete=given-name]", "Bea");
 await bea.click(btn("Create passkey"));
-await bea.waitForSelector("text=That isn't the family code.");
+await bea.waitForSelector("text=Wrong code.");
 check("a wrong family code is refused", true);
 await bea.fill("input[data-signup-code]", "Back Bay Lights");
 await bea.click(btn("Create passkey"));

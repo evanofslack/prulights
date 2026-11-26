@@ -345,7 +345,7 @@ func (s *Server) registerBegin(w http.ResponseWriter, r *http.Request) {
 	cer := ceremony{invite: req.Invite, expires: now.Add(ceremonyTTL)}
 	if req.Code != "" {
 		if !s.signupCodeIs(req.Code) {
-			writeError(w, http.StatusForbidden, "that isn't the family code")
+			writeError(w, http.StatusForbidden, "wrong code")
 			return
 		}
 		cer.invite, cer.signup = "", true
