@@ -218,6 +218,20 @@ func (s *Store) Redeem(ctx context.Context, token string, handle []byte, name st
 	return u, err
 }
 
+// SignUp makes a new user (never an admin) with one passkey, for someone
+// who signed up with the family code rather than an invite.
+func (s *Store) SignUp(ctx context.Context, handle []byte, name string, credID, credData []byte, now time.Time) (User, error) {
+	var u User
+	err := s.Tx(ctx, func(tx *sql.Tx) error {
+		var err error
+		if u, err = createUser(ctx, tx, handle, name, false, now); err != nil {
+			return err
+		}
+		return addCredential(ctx, tx, u.ID, credID, credData, now)
+	})
+	return u, err
+}
+
 // CreateSession signs a user in and returns the session token.
 func (s *Store) CreateSession(ctx context.Context, userID int64, now time.Time, ttl time.Duration) (string, error) {
 	token, hash := NewToken()

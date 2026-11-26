@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -29,9 +31,7 @@ const (
 	InviteTTL = 7 * 24 * time.Hour
 	// ceremonyTTL is how long a passkey prompt can take.
 	ceremonyTTL = 5 * time.Minute
-	// authRateLimit is sign-in attempts per client per minute.
-	authRateLimit = 30
-	maxNameLen    = 40
+	maxNameLen  = 40
 )
 
 // InviteURL is the link for an invite token.
@@ -54,9 +54,11 @@ func (s *Server) mountAccount(r chi.Router) {
 		r.Use(s.withUser)
 		r.Use(s.sameOrigin)
 		r.Get("/me", s.getMe)
+		// outside /auth's rate limit: login and /join both ask
+		r.Get("/auth/signup", s.getSignup)
 
 		r.Route("/auth", func(r chi.Router) {
-			r.Use(httprate.Limit(authRateLimit, time.Minute, httprate.WithKeyFuncs(s.clientKey),
+			r.Use(httprate.Limit(s.cfg.AuthRateLimit, time.Minute, httprate.WithKeyFuncs(s.clientKey),
 				httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
 					writeError(w, http.StatusTooManyRequests, "too many sign-in attempts, wait a minute")
 				})))
@@ -256,6 +258,7 @@ type ceremony struct {
 	session webauthn.SessionData
 	invite  string // registration: the invite being used
 	claim   string // or the code of a frame marked for a new person
+	signup  bool   // or the family code
 	name    string // registration of a new person
 	handle  []byte
 	forUser *int64 // registration for a re-invite
@@ -340,7 +343,13 @@ func (s *Server) registerBegin(w http.ResponseWriter, r *http.Request) {
 	ctx, now := r.Context(), s.now()
 	var inv store.Invite
 	cer := ceremony{invite: req.Invite, expires: now.Add(ceremonyTTL)}
-	if req.ClaimCode != "" {
+	if req.Code != "" {
+		if !s.signupCodeIs(req.Code) {
+			writeError(w, http.StatusForbidden, "that isn't the family code")
+			return
+		}
+		cer.invite, cer.signup = "", true
+	} else if req.ClaimCode != "" {
 		d, err := s.store.DeviceByClaimCode(ctx, req.ClaimCode)
 		if err != nil && !errors.Is(err, store.ErrNotFound) {
 			s.internalError(w, err)
@@ -404,6 +413,28 @@ func (s *Server) registerBegin(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, Ceremony{Ceremony: s.ceremonies.put(cer), Options: creation.Response})
 }
 
+// normalCode makes the family code forgiving to type: case and extra
+// spaces don't matter.
+func normalCode(code string) string {
+	return strings.ToLower(strings.Join(strings.Fields(code), " "))
+}
+
+// signupCodeIs is whether code is the family code, in constant time. With
+// no SIGNUP_CODE nothing is.
+func (s *Server) signupCodeIs(code string) bool {
+	want := normalCode(s.cfg.SignupCode)
+	if want == "" {
+		return false
+	}
+	a, b := sha256.Sum256([]byte(normalCode(code))), sha256.Sum256([]byte(want))
+	return subtle.ConstantTimeCompare(a[:], b[:]) == 1
+}
+
+// getSignup says whether /join is open (a family code is set).
+func (s *Server) getSignup(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, SignupInfo{Open: normalCode(s.cfg.SignupCode) != ""})
+}
+
 func (s *Server) registerFinish(w http.ResponseWriter, r *http.Request) {
 	ctx, now := r.Context(), s.now()
 	cer, ok := s.ceremonies.take(r.URL.Query().Get("ceremony"), now)
@@ -434,7 +465,12 @@ func (s *Server) registerFinish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var u store.User
-	if cer.claim != "" {
+	if cer.signup {
+		u, err = s.store.SignUp(ctx, cer.handle, cer.name, cred.ID, data, now)
+		if err == nil {
+			slog.Info("signed up with the family code", "user", u.ID, "name", u.Name)
+		}
+	} else if cer.claim != "" {
 		var d store.Device
 		u, d, err = s.store.RedeemFrame(ctx, cer.claim, cer.handle, cer.name, cred.ID, data, now)
 		if err == nil {

@@ -272,7 +272,7 @@ Static export can't generate pages for dynamic paths, so routes take query param
   - Caddyfile: `prulights.<domain> { reverse_proxy prulights:8080 }`.
 - **Environment variables:**
   - Paths and URLs: `DATABASE_PATH=/data/prulights.db`, `STATIC_DIR=/app/out`, `BASE_URL`
-  - Passkeys: `RP_ID`, `RP_ORIGINS`
+  - Passkeys: `RP_ID`, `RP_ORIGINS`; `SIGNUP_CODE` for the family code at `/join`
   - Scraper: `SCRAPE_ENABLED`, `SCRAPE_INTERVAL=6h`
   - Monitoring: `METRICS_ADDR=:9090`, `LOG_LEVEL`
   - The time zone is fixed to America/New_York in code.

@@ -55,4 +55,6 @@ The scraped schedule can always be rebuilt with `prulights backfill`. Sightings,
 | `SCRAPE_ENABLED` / `SCRAPE_INTERVAL` | `true` / `6h` | |
 | `METRICS_ADDR` | `:2112` | Prometheus; not published by compose |
 | `LOG_LEVEL` | `info` | `debug`, `warn`, `error` |
+| `AUTH_RATE_LIMIT` | `30` | Sign-in attempts per minute per client |
+| `SIGNUP_CODE` | empty | The family code: anyone with it signs up at `/join` (or `/join?code=…`). Set it in `.env`; empty is invite only. Case and spacing don't matter. |
 | `RP_ID` / `RP_ORIGINS` | from `BASE_URL` | Only for unusual setups |

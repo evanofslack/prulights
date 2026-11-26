@@ -85,3 +85,29 @@ func TestInvitesAndSessions(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestSignUp(t *testing.T) {
+	ctx := context.Background()
+	s := newTest(t)
+	now := time.Date(2026, 11, 9, 12, 0, 0, 0, time.UTC)
+
+	mom, err := s.SignUp(ctx, NewHandle(), "Mom", []byte("cred-mom"), []byte(`{}`), now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mom.IsAdmin || mom.Name != "Mom" {
+		t.Errorf("signed up as %+v", mom)
+	}
+	if got, err := s.UserByName(ctx, "mom"); err != nil || got.ID != mom.ID {
+		t.Errorf("UserByName = %+v, %v", got, err)
+	}
+	// a taken name leaves nothing behind, not even the passkey
+	if _, err := s.SignUp(ctx, NewHandle(), "MOM", []byte("cred-2"), []byte(`{}`), now); !errors.Is(err, ErrNameTaken) {
+		t.Errorf("taken name: %v", err)
+	}
+	var creds int
+	s.DB.QueryRowContext(ctx, `SELECT count(*) FROM credentials`).Scan(&creds)
+	if creds != 1 {
+		t.Errorf("%d credentials, want 1", creds)
+	}
+}

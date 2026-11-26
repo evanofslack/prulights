@@ -198,7 +198,7 @@ func (s *Server) mountDevice(r chi.Router) {
 
 // mountDevices adds claiming and managing frames, inside mountAccount's group.
 func (s *Server) mountDevices(r chi.Router) {
-	r.With(httprate.Limit(authRateLimit, time.Minute, httprate.WithKeyFuncs(s.clientKey),
+	r.With(httprate.Limit(s.cfg.AuthRateLimit, time.Minute, httprate.WithKeyFuncs(s.clientKey),
 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusTooManyRequests, "too many tries, wait a minute")
 		}))).Get("/devices/claim/{code}", s.getClaimStatus)

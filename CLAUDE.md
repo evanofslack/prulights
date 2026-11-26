@@ -81,12 +81,14 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   `/docs` (stock Swagger UI from `swagger-ui-dist`, copied to `public/swagger` by `npm run swagger` before
   dev/build; don't bundle swagger-ui through next, its OpenAPI 3.1 support breaks), `/emulator` (frame
   previews; only when `/meta` says `dev`, settings live in the url), `/claim?code=` (a frame's setup QR
-  lands here), `/settings` (your frames). `/login?next=` returns to a path after signing in. Data via `useApi` in `web/lib/api.ts`; dates are Boston calendar strings, formatted in
+  lands here), `/settings` (your frames). `/login?next=` returns to a path after signing in; `/join` signs up with the family code. Data via `useApi` in `web/lib/api.ts`; dates are Boston calendar strings, formatted in
   `web/lib/format.ts` at noon UTC so no time zone shifts them.
 - `just e2e` loads the scraper fixtures into a fresh db and runs `e2e/*.mjs` against :8099
   (`SHOTS=dir` for screenshots). Fixture dates: Dec 2026 is known (Dec 10 = Red, Dress for Success).
 - `render.Render` holds a lock: the cached font faces aren't safe to share between goroutines.
-- Sign-in (`server/auth.go`): passkeys only (go-webauthn, discoverable), invite only. `prulights invite
+- Sign-in (`server/auth.go`): passkeys only (go-webauthn, discoverable). Invite links, or the family code:
+  with `SIGNUP_CODE` set anyone who has it signs up at `/join` (`?code=` prefills; case and spaces
+  ignored; never an admin; `GET /auth/signup` says whether it's open). `prulights invite
   [-admin] [-for-user NAME]` / `just invite` makes a link + terminal QR; `-for-user` adds a passkey to
   that person (recovery). Session = random token in the HttpOnly `prulights_session` cookie, sha256 in
   `sessions`, 1 year, slid forward daily. Writes under `/api/v1` need an `Origin` in `RP_ORIGINS` and a

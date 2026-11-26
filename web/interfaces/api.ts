@@ -109,9 +109,20 @@ export interface RegisterBegin {
    */
   claim_code?: string;
   /**
+   * Code is the family code (SIGNUP_CODE): anyone with it can sign up.
+   */
+  code?: string;
+  /**
    * Name is the new person's display name; ignored for a re-invite.
    */
   name: string;
+}
+/**
+ * SignupInfo is GET /api/v1/auth/signup: whether anyone with the family
+ * code can sign up at /join.
+ */
+export interface SignupInfo {
+  open: boolean;
 }
 /**
  * Ceremony is the reply to a register or login begin: the options to pass to

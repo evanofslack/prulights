@@ -27,8 +27,16 @@ type RegisterBegin struct {
 	// ClaimCode is a frame marked for a new person: its code is the invite,
 	// and the new person gets the frame.
 	ClaimCode string `json:"claim_code,omitempty"`
+	// Code is the family code (SIGNUP_CODE): anyone with it can sign up.
+	Code string `json:"code,omitempty"`
 	// Name is the new person's display name; ignored for a re-invite.
 	Name string `json:"name"`
+}
+
+// SignupInfo is GET /api/v1/auth/signup: whether anyone with the family
+// code can sign up at /join.
+type SignupInfo struct {
+	Open bool `json:"open"`
 }
 
 // Ceremony is the reply to a register or login begin: the options to pass to
