@@ -41,7 +41,7 @@ function PublicTotals({ date, tonight }: { date: string; tonight?: string }) {
             )}
             {!future && (
                 <Link href="/login" className="underline hover:text-fg">
-                    Sign in to log it
+                    Sign in to log
                 </Link>
             )}
         </div>

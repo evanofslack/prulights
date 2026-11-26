@@ -36,7 +36,7 @@ export function Night({ lighting: l, tonight, publishedThrough, children }: Nigh
                 />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-linear-to-b from-transparent to-surface sm:hidden" />
             </div>
-            <div className="flex w-full flex-col justify-end gap-3 pb-2 text-center sm:text-left">
+            <div className="flex w-full flex-col justify-center gap-3 text-center sm:text-left">
                 <p className="text-lg text-muted">
                     <span className="font-bold text-fg">{when}</span>
                     {when === "Tonight" || when === "Tomorrow" || when === "Last night"

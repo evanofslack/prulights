@@ -36,7 +36,11 @@ export function Month({ tonight }: { tonight: string }) {
     const lead = new Date(`${month}-01T12:00:00Z`).getUTCDay();
     const nights = data && data.from === first ? data.lightings : undefined;
     return (
-        <section id="calendar" aria-label="Calendar" className="flex scroll-mt-4 flex-col gap-4">
+        <section
+            id="calendar"
+            aria-label="Calendar"
+            className="flex scroll-mt-4 flex-col gap-4 rounded-2xl bg-raised p-3 shadow-lg sm:p-6"
+        >
             <div className="flex items-center gap-2">
                 <h2 className="mr-auto text-2xl font-bold">{monthTitle(month)}</h2>
                 <ActionIcon variant="default" size="xl" aria-label="Previous month" onClick={() => go(-1)}>
@@ -64,7 +68,7 @@ export function Month({ tonight }: { tonight: string }) {
                                   key={l.date}
                                   href={`/night?d=${l.date}`}
                                   title={`${colorNames(l.colors, palette)}${l.scheduled ? ` for ${l.cause}` : ""}`}
-                                  className={`group flex aspect-[3/4] flex-col overflow-hidden rounded-lg bg-panel ring-offset-2 ring-offset-surface sm:aspect-square ${
+                                  className={`group flex aspect-[3/4] flex-col overflow-hidden rounded-lg bg-panel ring-offset-2 ring-offset-raised sm:aspect-square ${
                                       isTonight ? "ring-2 ring-accent" : ""
                                   }`}
                               >

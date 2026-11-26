@@ -23,9 +23,34 @@ function NightPage() {
     if (!valid) {
         return <ErrorNote error={new Error("that link is missing its date")} />;
     }
+    // the day nav sits in the details column, under the night it steps from
+    const nav = (
+        <nav className="flex items-center justify-center gap-2 pt-2 sm:justify-start">
+            <Button
+                component={Link}
+                href={`/night?d=${addDays(d, -1)}`}
+                variant="default"
+                leftSection={<IconChevronLeft size={18} />}
+            >
+                {shortDate(addDays(d, -1))}
+            </Button>
+            <Button component={Link} href="/" variant="subtle">
+                Tonight
+            </Button>
+            <Button
+                component={Link}
+                href={`/night?d=${addDays(d, 1)}`}
+                variant="default"
+                rightSection={<IconChevronRight size={18} />}
+            >
+                {shortDate(addDays(d, 1))}
+            </Button>
+        </nav>
+    );
     return (
         <div className="flex flex-col gap-8">
             {error && <ErrorNote error={error} retry={reload} />}
+            {error && nav}
             {!data && !error && <NightSkeleton />}
             {data && data.date === d && (
                 <Night
@@ -34,29 +59,9 @@ function NightPage() {
                     publishedThrough={meta.data?.published_through}
                 >
                     <SawIt date={data.date} tonight={meta.data?.tonight} />
+                    {nav}
                 </Night>
             )}
-            <nav className="flex justify-between gap-2">
-                <Button
-                    component={Link}
-                    href={`/night?d=${addDays(d, -1)}`}
-                    variant="default"
-                    leftSection={<IconChevronLeft size={18} />}
-                >
-                    {shortDate(addDays(d, -1))}
-                </Button>
-                <Button component={Link} href="/" variant="subtle">
-                    Tonight
-                </Button>
-                <Button
-                    component={Link}
-                    href={`/night?d=${addDays(d, 1)}`}
-                    variant="default"
-                    rightSection={<IconChevronRight size={18} />}
-                >
-                    {shortDate(addDays(d, 1))}
-                </Button>
-            </nav>
         </div>
     );
 }
