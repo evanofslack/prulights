@@ -7,10 +7,11 @@ import { IconPlugConnected, IconPlugConnectedX } from "@tabler/icons-react";
 import type { DeviceInfo, DeviceSettings } from "@/interfaces/api";
 import { api, useApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { usePrudle } from "@/lib/blackout";
 import { Shell } from "@/components/Shell";
 
 // /settings is for your frames: what each shows, quiet hours, pause, and
-// letting one go.
+// letting one go. Above them, whether you play Prudle in December.
 
 const THEMES = [
     { value: "dark", label: "Dark" },
@@ -50,6 +51,7 @@ export default function SettingsPage() {
     return (
         <Shell>
             <div className="flex flex-col gap-6">
+                {me && <PrudleSetting />}
                 <h1 className="text-3xl font-bold">Your frame</h1>
                 {me === undefined || (me && !data && !error) ? (
                     <Skeleton height={320} radius="lg" />
@@ -91,6 +93,47 @@ export default function SettingsPage() {
                 )}
             </div>
         </Shell>
+    );
+}
+
+// PrudleSetting turns the December game (and its hidden colors) on or off.
+function PrudleSetting() {
+    const { summary, reload } = usePrudle();
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState("");
+    const set = async (play: boolean) => {
+        setSaving(true);
+        setError("");
+        try {
+            await api("/me/prudle/settings", { method: "PUT", body: JSON.stringify({ off: !play }) });
+            reload();
+        } catch (e) {
+            setError((e as Error).message);
+        } finally {
+            setSaving(false);
+        }
+    };
+    return (
+        <section aria-label="Prudle" className="flex flex-col gap-3 rounded-xl bg-panel p-5">
+            <h2 className="text-2xl font-bold">Prudle</h2>
+            {summary ? (
+                <Switch
+                    size="lg"
+                    checked={!summary.off}
+                    disabled={saving}
+                    onChange={(e) => set(e.currentTarget.checked)}
+                    label="Play Prudle in December"
+                    description="Each December night, guess the crown's colors before you see them. Off shows every color."
+                />
+            ) : (
+                <Skeleton height={48} />
+            )}
+            {error && (
+                <Alert color="red" variant="light">
+                    {error}
+                </Alert>
+            )}
+        </section>
     );
 }
 

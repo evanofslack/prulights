@@ -7,6 +7,7 @@ import type { Lighting } from "@/interfaces/schedule";
 import { bandsOf, usePalette } from "@/lib/palette";
 import { colorNames, lightsOnTime, longDate, relativeName, shortDate, weekdayAbbr } from "@/lib/format";
 import { useSky } from "@/lib/sky";
+import { HIDDEN, HIDDEN_NAME, usePrudle } from "@/lib/blackout";
 import { Crown, Tower } from "./Tower";
 
 interface NightProps {
@@ -20,7 +21,9 @@ interface NightProps {
 // Night is one night, large: the tower lit in its colors, then what and why.
 export function Night({ lighting: l, tonight, publishedThrough, children }: NightProps) {
     const palette = usePalette();
-    const bands = bandsOf(l.colors, palette);
+    const hidden = usePrudle().hidden(l.date);
+    const bands = hidden ? HIDDEN : bandsOf(l.colors, palette);
+    const names = hidden ? HIDDEN_NAME : colorNames(l.colors, palette);
     const when = relativeName(l.date, tonight);
     const unannounced = !l.scheduled && publishedThrough !== undefined && l.date > publishedThrough;
     const sky = useSky(l, tonight);
@@ -36,7 +39,11 @@ export function Night({ lighting: l, tonight, publishedThrough, children }: Nigh
                     night={l.date}
                     live={l.date === tonight}
                     className="block h-[64dvh] max-h-[640px] min-h-[400px] w-full"
-                    title={`The Prudential Tower, crown lit ${colorNames(l.colors, palette)}`}
+                    title={
+                        hidden
+                            ? "The Prudential Tower, its colors hidden for Prudle"
+                            : `The Prudential Tower, crown lit ${names}`
+                    }
                 />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-20 bg-linear-to-b from-transparent to-surface dark:block sm:dark:hidden" />
             </div>
@@ -49,9 +56,18 @@ export function Night({ lighting: l, tonight, publishedThrough, children }: Nigh
                         ? ` · ${longDate(l.date)}`
                         : `, ${shortDate(l.date)}`}
                 </p>
-                <h1 className="text-4xl leading-tight font-bold sm:text-5xl">
-                    {colorNames(l.colors, palette)}
-                </h1>
+                <h1 className="text-4xl leading-tight font-bold sm:text-5xl">{names}</h1>
+                {hidden && (
+                    <p className="text-lg text-muted">
+                        {l.date === tonight ? (
+                            <Link href="/#prudle" className="font-bold text-fg underline">
+                                Play tonight&apos;s Prudle to see them
+                            </Link>
+                        ) : (
+                            "December's colors show on their night, after its Prudle."
+                        )}
+                    </p>
+                )}
                 {l.scheduled ? (
                     <p className="text-2xl leading-snug">
                         for{" "}
@@ -110,6 +126,7 @@ export function NightSkeleton() {
 // night.
 export function Upcoming({ nights, tonight }: { nights: Lighting[]; tonight?: string }) {
     const palette = usePalette();
+    const { hidden } = usePrudle();
     const rows: Lighting[][] = [];
     for (const l of nights) {
         const last = rows[rows.length - 1];
@@ -128,7 +145,10 @@ export function Upcoming({ nights, tonight }: { nights: Lighting[]; tonight?: st
                             href={`/night?d=${l.date}`}
                             className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-raised dark:hover:bg-line"
                         >
-                            <Crown bands={bandsOf(l.colors, palette)} className="h-11 w-11" />
+                            <Crown
+                                bands={hidden(l.date) ? HIDDEN : bandsOf(l.colors, palette)}
+                                className="h-11 w-11"
+                            />
                             <span className="w-28 shrink-0">
                                 <span className="block font-bold">
                                     {run.length > 1
@@ -143,7 +163,7 @@ export function Upcoming({ nights, tonight }: { nights: Lighting[]; tonight?: st
                             </span>
                             <span className="min-w-0 flex-1">
                                 <span className="block truncate text-lg">
-                                    {colorNames(l.colors, palette)}
+                                    {hidden(l.date) ? HIDDEN_NAME : colorNames(l.colors, palette)}
                                 </span>
                                 <span className="block truncate text-muted">
                                     {l.scheduled ? l.cause : "Plain white"}
