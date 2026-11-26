@@ -116,7 +116,7 @@ export function Upcoming({ nights, tonight }: { nights: Lighting[]; tonight?: st
     }
     const dayName = (d: string) => (relativeName(d, tonight) === "Tomorrow" ? "Tomorrow" : weekdayAbbr(d));
     return (
-        <ul className="flex flex-col divide-y divide-line overflow-hidden rounded-xl bg-panel">
+        <ul className="flex flex-col divide-y divide-line overflow-hidden rounded-xl bg-panel dark:bg-raised dark:shadow-lg">
             {rows.map((run) => {
                 const l = run[0];
                 const end = run[run.length - 1];
@@ -124,7 +124,7 @@ export function Upcoming({ nights, tonight }: { nights: Lighting[]; tonight?: st
                     <li key={l.date}>
                         <Link
                             href={`/night?d=${l.date}`}
-                            className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-raised"
+                            className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-raised dark:hover:bg-line"
                         >
                             <Crown bands={bandsOf(l.colors, palette)} className="h-11 w-11" />
                             <span className="w-28 shrink-0">

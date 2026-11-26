@@ -116,13 +116,15 @@ const ART = (() => {
     const hood: Neighborhood = {
         floors,
         homes: [
-            { wins: grid(DARK.x0 + 16, DARK.top + 6, DARK.x1, H), density: 0.14 },
-            ...NEIGHBORS.map(([x0, x1, f]) => ({
+            { wins: grid(DARK.x0 + 16, DARK.top + 6, DARK.x1, H), offices: true, density: 0 },
+            // the first neighbor is offices, the rest apartments
+            ...NEIGHBORS.map(([x0, x1, f], i) => ({
                 wins: grid(CX + x0 + 4, topOf(f) + 4, CX + x1 - 4, H),
+                offices: i === 0,
                 density: 0.3,
             })),
-            { wins: grid(DOME.x0 + 4, DOME.top + 8, DOME.x1 - 4, H), density: 0.36 },
-            { wins: brownstones, density: 0.5 },
+            { wins: grid(DOME.x0 + 4, DOME.top + 8, DOME.x1 - 4, H), offices: true, density: 0 },
+            { wins: brownstones, density: 0.42 },
         ],
     };
     // stars, more and less bright, in the upper sky
@@ -158,24 +160,24 @@ const SKIES: Record<
         stops: ["#02040a", "#070c1c", "#16224a"],
         far: "#070a14",
         near: "#03050a",
-        shaft: ["#2b2c30", "#0f1012"],
+        shaft: ["#292d37", "#0e1015"],
         glass: ["#0c1631", "#1b2f5c"],
         city: ["#d98a4a", 0.3],
         glow: 1,
-        windows: 1,
-        unlit: "#3b3d43",
+        windows: 0.85,
+        unlit: "#2e323c",
         dots: ["#2254ac", 0.1, 0.5],
     },
     dusk: {
         stops: ["#151c3d", "#4a3f6b", "#e0895c"],
         far: "#151726",
         near: "#0b0c16",
-        shaft: ["#2f2e33", "#0f0f12"],
+        shaft: ["#2d2e36", "#0e0f13"],
         glass: ["#3b4374", "#d08a63"],
         city: ["#f0a060", 0.2],
         glow: 0.7,
-        windows: 0.85,
-        unlit: "#393a40",
+        windows: 0.7,
+        unlit: "#2d3039",
         dots: ["#e3ce34", 0, 0.35],
     },
     day: {
@@ -183,12 +185,12 @@ const SKIES: Record<
         stops: ["#a8c2e2", "#d3dfee", "#f0f2f2"],
         far: "#8a93a4",
         near: "#3b4250",
-        shaft: ["#5f6066", "#3a3b3f"],
+        shaft: ["#5c616c", "#383b43"],
         glass: ["#c2d4e8", "#e8eef3"],
         city: ["#ffffff", 0],
         glow: 0.25,
         windows: 0.2,
-        unlit: "#7b7c81",
+        unlit: "#777c87",
         dots: ["#2254ac", 0.45, 0],
     },
 };
@@ -295,18 +297,23 @@ function Scene({ bands, sky, skyline, lights }: SceneProps) {
         };
         for (const l of lights) {
             const m = l.group < 0 ? layers.tower : l.group === front ? layers.front : layers.skyline;
-            const k = `${l.color}|${Math.round(l.alpha * 4) / 4}`;
+            const k = `${l.color}|${Math.round(l.alpha * 20) / 20}`;
             m.set(k, (m.get(k) ?? "") + `M${l.x} ${l.y}h${l.w}v${l.h}h${-l.w}z`);
         }
-        const draw = (m: Map<string, string>) => (
-            <g opacity={s.windows} shapeRendering="crispEdges">
+        // the buildings behind are further off and hazier: their windows show less
+        const draw = (m: Map<string, string>, far = 1) => (
+            <g opacity={s.windows * far} shapeRendering="crispEdges">
                 {[...m].map(([k, d]) => {
                     const [color, a] = k.split("|");
                     return <path key={k} d={d} fill={color} opacity={Number(a)} />;
                 })}
             </g>
         );
-        return { tower: draw(layers.tower), skyline: draw(layers.skyline), front: draw(layers.front) };
+        return {
+            tower: draw(layers.tower),
+            skyline: draw(layers.skyline, 0.55),
+            front: draw(layers.front, 0.75),
+        };
     }, [lights, id, s.windows]);
 
     const ring = (y0: number, y1: number, half: number, opacity = 1) =>

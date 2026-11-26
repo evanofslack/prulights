@@ -71,8 +71,9 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
 - The web tower is a sharp svg with a printed look, not the frame's dither (`lib/print.ts`): flat colors
   from the frame's ink family (lighting colors `mute`d), gradients in hard bands (`banded`), a fine
   halftone only in the sky and the crown's glow, and paper grain (`feTurbulence`) over it all.
-  Lit windows are solid inks. Its windows follow the night (`lib/windows.ts`, fixed per date: offices empty
-  out, a cleaning crew, homes); `live` follows the clock, other nights show 9pm. Web only, the frame keeps
+  Lit windows are solid inks. Its windows follow the night (`lib/windows.ts`, fixed per date: tenants of a few
+  floors empty out in patches, lights left on till 11, a crew sweeping a floor, rooms in homes, the
+  observatory; weekends and holidays nearly dark; three dim levels, it's smoked glass); `live` follows the clock, other nights show 9pm. Web only, the frame keeps
   its own windows. The red beacons blink in their own svg layer (`.beacon`), so blinking never repaints the scene.
 - Web pages: `/` is the whole site on one page, in sections: tonight, `#week`, `#calendar` (month in
   `?m=`, changed with `router.replace`, no scroll) and `#nights` (signed in only; `components/Month.tsx`,
