@@ -2,6 +2,6 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "playwright-core": "1.57.0"
+    "playwright-core": "1.65.1"
   }
 }
