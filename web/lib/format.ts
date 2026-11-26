@@ -13,11 +13,6 @@ const weekdayShort = fmt({ weekday: "short" });
 const monthDay = fmt({ month: "long", day: "numeric" });
 const monthDayShort = fmt({ month: "short", day: "numeric" });
 const monthYear = fmt({ month: "long", year: "numeric" });
-const timeBoston = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    hour: "numeric",
-    minute: "2-digit",
-});
 
 export const longDate = (d: string) => `${weekdayLong.format(at(d))}, ${monthDay.format(at(d))}`;
 export const shortDate = (d: string) => monthDayShort.format(at(d));
@@ -25,7 +20,6 @@ export const weekday = (d: string) => weekdayLong.format(at(d));
 export const weekdayAbbr = (d: string) => weekdayShort.format(at(d));
 export const dayOfMonth = (d: string) => Number(d.slice(8, 10));
 export const monthTitle = (month: string) => monthYear.format(at(`${month}-15`));
-export const lightsOnTime = (iso: string) => timeBoston.format(new Date(iso)).toLowerCase().replace(" ", "");
 
 export function addDays(d: string, n: number): string {
     const t = at(d);

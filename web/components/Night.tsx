@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { Anchor, Skeleton } from "@mantine/core";
-import { IconClock, IconExternalLink } from "@tabler/icons-react";
+import { IconExternalLink } from "@tabler/icons-react";
 import type { Lighting } from "@/interfaces/schedule";
 import { bandsOf, usePalette } from "@/lib/palette";
-import { colorNames, lightsOnTime, longDate, relativeName, shortDate, weekdayAbbr } from "@/lib/format";
+import { colorNames, longDate, relativeName, shortDate, weekdayAbbr } from "@/lib/format";
 import { useSky } from "@/lib/sky";
 import { HIDDEN, HIDDEN_NAME, usePrudle } from "@/lib/blackout";
 import { Crown, Tower } from "./Tower";
@@ -27,12 +27,11 @@ export function Night({ lighting: l, tonight, publishedThrough, children }: Nigh
     const when = relativeName(l.date, tonight);
     const unannounced = !l.scheduled && publishedThrough !== undefined && l.date > publishedThrough;
     const sky = useSky(l, tonight);
-    const lit = l.date === tonight && sky === "night";
     return (
         <section className="flex flex-col gap-5 sm:flex-row sm:items-stretch sm:gap-10">
             {/* at night the tower runs to the phone's edges and fades into the page; on
                 paper it's a night picture in a card */}
-            <div className="relative overflow-hidden rounded-2xl shadow-lg sm:w-[46%] sm:shrink-0 dark:-mx-4 dark:-mt-6 dark:rounded-none dark:shadow-none sm:dark:mx-0 sm:dark:mt-0 sm:dark:rounded-2xl">
+            <div className="relative overflow-hidden rounded-2xl shadow-lg sm:w-[46%] sm:shrink-0 sm:self-start dark:-mx-4 dark:-mt-8 dark:rounded-none dark:shadow-none sm:dark:mx-0 sm:dark:mt-0 sm:dark:rounded-2xl">
                 <Tower
                     bands={bands}
                     sky={sky}
@@ -96,12 +95,6 @@ export function Night({ lighting: l, tonight, publishedThrough, children }: Nigh
                         {unannounced ? "Not announced yet. Usually white." : "No special lighting."}
                     </p>
                 )}
-                <p className="inline-flex items-center justify-center gap-1.5 text-lg text-muted sm:justify-start">
-                    <IconClock size={20} aria-hidden />
-                    {lit ? "Lit since " : "Lights on "}
-                    {l.lights_on_source === "sunset" ? "~" : "at "}
-                    {lightsOnTime(l.lights_on)}
-                </p>
                 {children}
             </div>
         </section>

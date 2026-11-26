@@ -56,7 +56,6 @@ for (const [kind, view] of Object.entries(views)) {
     await p.goto(`${URL}/night?d=2026-12-10`);
     await p.waitForSelector("text=Dress for Success");
     check(`${kind}: dec 10 is red`, (await p.locator("h1").textContent()) === "Red");
-    check(`${kind}: dec 10 lights on at 5pm`, await p.locator("text=Lights on at 5:00pm").isVisible());
     await p.click("a[href='/night?d=2026-12-11']");
     await p.waitForURL(/d=2026-12-11/);
     await p.waitForSelector("text=Pawsitively 4Pink");
