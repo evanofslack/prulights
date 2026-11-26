@@ -7,6 +7,7 @@ import { IconCheck, IconEye } from "@tabler/icons-react";
 import type { NightSightings, NightStatsResponse, Sighting } from "@/interfaces/api";
 import { api, sightingsChanged, useApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { Reports } from "./Report";
 
 // SawIt is the "I saw it" panel under a night: mark it seen, rate it, leave a
 // note, and see who else saw it. Signed out, it shows the anonymous totals.
@@ -205,6 +206,7 @@ function Members({ date }: { date: string }) {
                     ))}
                 </ul>
             )}
+            <Reports date={date} />
         </section>
     );
 }
