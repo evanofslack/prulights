@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useMemo } from "react";
+import { soft } from "@/lib/palette";
 
 // Tower draws the Prudential Tower over the Back Bay skyline, its crown lit in
 // the night's colors where the real lights are: the spire, the thin ring at
@@ -467,13 +468,13 @@ export function Crown({ bands, className }: { bands: string[]; className?: strin
                 y={y}
                 width={w / n + 0.2}
                 height={h}
-                fill={c}
+                style={{ fill: soft(c) }}
                 opacity={opacity}
             />
         ));
     return (
         <svg viewBox="0 0 40 44" className={`shrink-0 ${className ?? "h-8 w-8"}`} aria-hidden>
-            <rect x="19.2" y="0" width="1.6" height="13" fill={bands[0]} />
+            <rect x="19.2" y="0" width="1.6" height="13" style={{ fill: soft(bands[0]) }} />
             <rect x="9" y="11" width="22" height="4" fill="var(--color-tower)" />
             <rect x="2" y="15" width="36" height="5" rx="0.5" fill="var(--color-tower)" />
             {ring(15, 5, 2, 36)}

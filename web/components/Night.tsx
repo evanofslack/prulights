@@ -27,14 +27,16 @@ export function Night({ lighting: l, tonight, publishedThrough, children }: Nigh
     const lit = l.date === tonight && sky === "night";
     return (
         <section className="flex flex-col gap-5 sm:flex-row sm:items-stretch sm:gap-10">
-            <div className="relative -mx-4 -mt-6 overflow-hidden sm:mx-0 sm:mt-0 sm:w-[46%] sm:shrink-0 sm:rounded-2xl">
+            {/* at night the tower runs to the phone's edges and fades into the page; on
+                paper it's a night picture in a card */}
+            <div className="relative overflow-hidden rounded-2xl shadow-lg sm:w-[46%] sm:shrink-0 dark:-mx-4 dark:-mt-6 dark:rounded-none dark:shadow-none sm:dark:mx-0 sm:dark:mt-0 sm:dark:rounded-2xl">
                 <Tower
                     bands={bands}
                     sky={sky}
                     className="block h-[64dvh] max-h-[640px] min-h-[400px] w-full"
                     title={`The Prudential Tower, crown lit ${colorNames(l.colors, palette)}`}
                 />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-linear-to-b from-transparent to-surface sm:hidden" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-20 bg-linear-to-b from-transparent to-surface dark:block sm:dark:hidden" />
             </div>
             <div className="flex w-full flex-col justify-center gap-3 text-center sm:text-left">
                 <p className="text-lg text-muted">

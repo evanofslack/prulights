@@ -7,7 +7,7 @@ import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import type { LightingsResponse } from "@/interfaces/api";
 import { useApi } from "@/lib/api";
 import { addDays, colorNames, dayOfMonth, monthTitle } from "@/lib/format";
-import { bandsOf, usePalette } from "@/lib/palette";
+import { bandsOf, soft, usePalette } from "@/lib/palette";
 import { ErrorNote } from "./Shell";
 
 const MONTH = /^\d{4}-\d{2}$/;
@@ -77,13 +77,20 @@ export function Month({ tonight }: { tonight: string }) {
                                   >
                                       {dayOfMonth(l.date)}
                                   </span>
-                                  <span
-                                      className={`m-1.5 mt-1 flex flex-1 overflow-hidden rounded-md ${l.scheduled ? "" : "opacity-35"}`}
-                                  >
-                                      {bandsOf(l.colors, palette).map((c, i) => (
-                                          <span key={i} className="flex-1" style={{ background: c }} />
-                                      ))}
-                                  </span>
+                                  {l.scheduled ? (
+                                      <span className="m-1.5 mt-1 flex flex-1 overflow-hidden rounded-md">
+                                          {bandsOf(l.colors, palette).map((c, i) => (
+                                              <span
+                                                  key={i}
+                                                  className="flex-1"
+                                                  style={{ background: soft(c) }}
+                                              />
+                                          ))}
+                                      </span>
+                                  ) : (
+                                      // a plain white night: just a hairline, so the special ones stand out
+                                      <span className="m-1.5 mt-auto mb-2 h-px bg-line" />
+                                  )}
                               </Link>
                           );
                       })
@@ -91,7 +98,7 @@ export function Month({ tonight }: { tonight: string }) {
                           <Skeleton key={i} className="aspect-[3/4] sm:aspect-square" radius="md" />
                       ))}
             </div>
-            <p className="text-sm text-muted">Faded = plain white.</p>
+            <p className="text-sm text-muted">Blank = plain white.</p>
         </section>
     );
 }

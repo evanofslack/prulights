@@ -40,6 +40,8 @@ export default function DisplayPage() {
         <main
             className={`fixed inset-0 overflow-hidden bg-[#05070d] text-[#eef1f8] ${idle ? "cursor-none" : ""}`}
             style={{ colorScheme: "dark" }}
+            // always the night sky, whatever the site's look
+            data-mantine-color-scheme="dark"
         >
             <Link
                 href="/"

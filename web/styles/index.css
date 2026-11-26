@@ -9,8 +9,10 @@
 
 /*
   Design tokens, named by role so components don't pick shades ad hoc. Colors
-  come from the Mantine theme (lib/theme.ts). Dark is the default; the light
-  values are below under [data-mantine-color-scheme="light"].
+  come from the Mantine theme (lib/theme.ts). Dark is the night sky; light is
+  e-ink paper. The scheme is marked on <html> (the sun/moon toggle, or the
+  system's), and either one can be pinned on a subtree (/display stays dark),
+  so both are spelled out under their attribute.
 */
 @theme {
     --color-surface: var(--mantine-color-dark-8); /* page: the night sky */
@@ -23,24 +25,43 @@
     --color-accent: var(--mantine-color-gold-4);
     --color-on-accent: var(--mantine-color-dark-9);
     --color-danger: var(--mantine-color-red-6);
-    --color-tower: #2a3146; /* the tower's body */
-    --color-tower-line: #46506c;
-    --color-window: #3a4462;
+    --color-tower: #2a2e3e; /* the tower's body */
+    --color-tower-line: #464b5e;
+    --color-window: #3a3f52;
 }
 
+[data-mantine-color-scheme="dark"] {
+    --color-surface: var(--mantine-color-dark-8);
+    --color-panel: var(--mantine-color-dark-7);
+    --color-raised: var(--mantine-color-dark-6);
+    --color-fg: var(--mantine-color-dark-0);
+    --color-muted: var(--mantine-color-dark-2);
+    --color-subtle: var(--mantine-color-dark-3);
+    --color-line: var(--mantine-color-dark-5);
+    --color-accent: var(--mantine-color-gold-4);
+    --color-on-accent: var(--mantine-color-dark-9);
+    --color-tower: #2a2e3e;
+    --color-tower-line: #464b5e;
+    --color-window: #3a3f52;
+    /* how much of a lighting color is kept when it's softened (lib/palette soft) */
+    --soften: 78%;
+}
+
+/* paper: a warm grey-white like an e-ink panel, ink-black text */
 [data-mantine-color-scheme="light"] {
-    --color-surface: #f6f7fb;
-    --color-panel: #ffffff;
-    --color-raised: #eceff6;
-    --color-fg: #141a2b;
-    --color-muted: #4a5470;
-    --color-subtle: #6b7590;
-    --color-line: #d4d9e6;
-    --color-accent: var(--mantine-color-gold-7);
+    --color-surface: #e9e6de;
+    --color-panel: #f5f3ee;
+    --color-raised: #dfdbd1;
+    --color-fg: #1b1d22;
+    --color-muted: #4b4f57;
+    --color-subtle: #62666e;
+    --color-line: #cdc8bc;
+    --color-accent: var(--mantine-color-gold-8);
     --color-on-accent: #ffffff;
-    --color-tower: #8a93ab;
-    --color-tower-line: #6b7590;
-    --color-window: #a7afc4;
+    --color-tower: #8c8a84;
+    --color-tower-line: #6e6c66;
+    --color-window: #aeaca4;
+    --soften: 84%;
 }
 
 /* a visible keyboard focus ring everywhere */

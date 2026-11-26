@@ -85,6 +85,28 @@ for (const [kind, view] of Object.entries(views)) {
     await p.context().close();
 }
 
+// the look follows the system until the sun/moon toggle picks one, which sticks
+{
+    const p = await open(browser, { ...views.phone, colorScheme: "light" });
+    const scheme = () => p.evaluate(() => document.documentElement.dataset.mantineColorScheme);
+    await p.goto(URL);
+    await p.waitForSelector("h1");
+    check("follows a light system", (await scheme()) === "light");
+    await p.click("[aria-label='Dark mode']");
+    await p.reload();
+    await p.waitForSelector("h1");
+    check("the toggle's choice survives a reload", (await scheme()) === "dark");
+    await shot(p, "phone-toggled-dark");
+    await p.click("[aria-label='Light mode']");
+    await p.goto(`${URL}/display`);
+    await p.waitForSelector("main");
+    check(
+        "the display stays dark on paper",
+        (await p.locator("main[data-mantine-color-scheme=dark]").count()) === 1,
+    );
+    await p.context().close();
+}
+
 // the docs are swagger on its own page
 const p = await open(browser, views.desktop);
 await p.goto(`${URL}/docs`);

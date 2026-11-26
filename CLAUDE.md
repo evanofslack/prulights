@@ -53,8 +53,13 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
 - Mantine (controls) + Tailwind 4 (layout, config in CSS). Utilities beat Mantine's styles (CSS layers).
 - Tokens in `web/styles/index.css` (`surface`, `panel`, `raised`, `fg`, `muted`, `subtle`, `line`,
   `accent`, …) point at the Mantine theme in `web/lib/theme.ts`. Use tokens, not raw Tailwind colors.
-- Dark (night sky) by default. The main user is an older reader on a phone: large type, high contrast,
-  one obvious main action per screen, big tap targets.
+- Two looks: dark (night sky) and light (e-ink paper). The system's choice until the header's sun/moon
+  toggle (`SchemeToggle.tsx`) picks one; both are spelled out per `data-mantine-color-scheme`, so a subtree
+  can pin one (`/display` stays dark). On paper the tower is a night picture in a card. Lighting colors in
+  swatches and crowns go through `soft()` (`lib/palette.tsx`, `--soften`); the api keeps the true colors.
+  Plain white nights get no swatch on the calendar. Keep colors muted.
+- The main user is an older reader on a phone: large type, high contrast, one obvious main action per
+  screen, big tap targets.
 
 ## Conventions
 - Commits: short, lowercase, imperative, 3–5 words ("add scraper parsers").
