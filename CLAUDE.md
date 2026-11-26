@@ -83,7 +83,7 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   previews; only when `/meta` says `dev`, settings live in the url), `/prudle-lab` (dev only: plays every listed night as Prudle to tune its
   rules, `lib/prudle.ts`; games run past the budget so stats show win rates at any budget, results in
   localStorage per rule set, bots for a baseline), `/claim?code=` (a frame's setup QR
-  lands here), `/settings` (your frames). `/login?next=` returns to a path after signing in; `/join` signs up with the family code. Data via `useApi` in `web/lib/api.ts`; dates are Boston calendar strings, formatted in
+  lands here), `/settings` (Prudle; your frames only once you have one, admins always). `/login?next=` returns to a path after signing in; `/join` signs up with the family code. Data via `useApi` in `web/lib/api.ts`; dates are Boston calendar strings, formatted in
   `web/lib/format.ts` at noon UTC so no time zone shifts them.
 - `just e2e` loads the scraper fixtures into a fresh db and runs `e2e/*.mjs` against :8099
   (`SHOTS=dir` for screenshots). Fixture dates: Dec 2026 is known (Dec 10 = Red, Dress for Success).

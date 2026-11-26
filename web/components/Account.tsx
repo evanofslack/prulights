@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Menu } from "@mantine/core";
 import {
-    IconDeviceTablet,
+    IconAdjustments,
     IconLogout,
     IconSettings,
     IconUserPlus,
@@ -60,8 +60,8 @@ export function Account() {
                             </Menu.Item>
                         </>
                     )}
-                    <Menu.Item component={Link} href="/settings" leftSection={<IconDeviceTablet size={16} />}>
-                        Your frame
+                    <Menu.Item component={Link} href="/settings" leftSection={<IconAdjustments size={16} />}>
+                        Settings
                     </Menu.Item>
                     <Menu.Item
                         leftSection={<IconLogout size={16} />}
