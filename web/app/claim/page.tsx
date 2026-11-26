@@ -128,7 +128,7 @@ function Claim() {
                 <p className="text-lg text-muted">
                     Sign in to connect this frame to your account.{" "}
                     {signup?.open
-                        ? "New here? Join with the family code first."
+                        ? "New here? Join with a code first."
                         : "New here? Ask the person who gave it to you for an invite."}
                 </p>
             ) : (
@@ -139,7 +139,7 @@ function Claim() {
             </Button>
             {signup?.open && (
                 <Button component={Link} href={`/join?next=${back}`} size="lg" variant="default">
-                    Join with the family code
+                    Join with a code
                 </Button>
             )}
         </div>

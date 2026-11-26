@@ -256,7 +256,7 @@ await emu.click(btn("Register a frame"));
 const code3 = await (await emu.waitForSelector("[data-claim-code]")).getAttribute("data-claim-code");
 const anon = await open(browser, { viewport: { width: 390, height: 844 } });
 await anon.goto(`${URL}/claim?code=${code3}`);
-await anon.waitForSelector(`a:has-text("Join with the family code")`);
+await anon.waitForSelector(`a:has-text("Join with a code")`);
 check("signed out, a frame's code offers sign in or join", true);
 await mabel.goto(`${URL}/claim?code=${code3}`);
 await mabel.click(btn("Connect this frame"));
