@@ -107,7 +107,7 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   that person (recovery). Session = random token in the HttpOnly `prulights_session` cookie, sha256 in
   `sessions`, 1 year, slid forward daily. Writes under `/api/v1` need an `Origin` in `RP_ORIGINS` and a
   json body (`sameOrigin`). `GET /api/v1/me` is 204 when signed out. Passkey prompts in flight
-  (ceremonies) live in memory for 5 minutes. Private routes (`/me`, `/auth`, `/admin`, `/devices`, `/sightings`)
+  (ceremonies) live in memory for 5 minutes. Private routes (`/me`, `/auth`, `/admin`, `/devices`, `/sightings`, `/reports`, `/photos`)
   stay out of `openapi.yaml` (`isPrivateRoute` in `public_test.go`).
 - `just seed [-names Logan,Shiv,Roman,Greg] [-reset] [-seed N]` (dev only, `cmd/prulights/seed.go`) fills the
   dev db with Succession people (no passkeys) logging the last 60 nights (the first most, the second about
@@ -121,6 +121,17 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   notes) is members only; the public sees only totals at `/lightings/{date}/stats`. Admin corrections
   (`/admin/overrides`) beat the scraped schedule. Embedded response structs use `tstype:",extends"` so
   tygo flattens them.
+- Reports (`server/reports.go`, `components/Report.tsx`): "Colors wrong?" under a night, members only, one per
+  person per night, for the week before tonight and any night after (`canReport`). They change nothing on their
+  own: `/admin/reports/{date}/accept` writes an override (picked colors, the night keeps its cause) and closes
+  the night's open reports; `…/dismiss` just closes them. Re-reporting opens it again.
+- Photos (`server/photos.go`, `components/Photos.tsx`): one per person per night inside `canLog`, members only.
+  The browser shrinks it to a jpeg (`lib/photo.ts`, which also turns HEIC into one) and `PUT`s the raw
+  `image/jpeg` body (`sameOrigin` takes json or that); the server decodes and re-encodes it (1600px + a 400px
+  thumb, no EXIF) into sqlite `photos`, on the sighting's key with `on delete cascade`, so un-logging drops it.
+  Served at `/photos/{sha}/{full,thumb}.jpg` (signed in, immutable). Adding one logs the night. Admins take
+  one down from its viewer (`DELETE /admin/photos/{sha}`). Reports and others' photos are hidden by the
+  Prudle blackout, since both give the colors away.
 - Frames (`server/devices.go`): `/api/device/v1/{register,state,bundle,images/{sha}.bin.gz,events}` with a
   bearer token (no cookie, so no origin check); a 401 means "register again". `POST /events` is the
   check-in and answers with the state. A bundle is every enabled view for tonight + 6 nights (plus
