@@ -10,8 +10,9 @@ import { useAuth } from "@/lib/auth";
 import { usePrudle } from "@/lib/blackout";
 import { Shell } from "@/components/Shell";
 
-// /settings is for your frames: what each shows, quiet hours, pause, and
-// letting one go. Above them, whether you play Prudle in December.
+// /settings is everyone's settings: whether you play Prudle in December, and,
+// once you have one, your frames (what each shows, quiet hours, pause, and
+// letting one go).
 
 const THEMES = [
     { value: "dark", label: "Dark" },
@@ -47,17 +48,19 @@ const VIEWS = [
 export default function SettingsPage() {
     const { me } = useAuth();
     const { data, error, reload } = useApi<DeviceInfo[]>(me ? "/me/devices" : null);
+    // frames stay a surprise: the section only shows once you have one (an
+    // admin sees it always, to set them up)
+    const frames = !!me && (me.is_admin || !!data?.length);
 
     return (
         <Shell>
             <div className="flex flex-col gap-6">
-                {me && <PrudleSetting />}
-                <h1 className="text-3xl font-bold">Your frame</h1>
-                {me === undefined || (me && !data && !error) ? (
-                    <Skeleton height={320} radius="lg" />
+                <h1 className="text-3xl font-bold">Settings</h1>
+                {me === undefined ? (
+                    <Skeleton height={120} radius="lg" />
                 ) : me === null ? (
                     <div className="flex flex-col gap-4">
-                        <p className="text-lg text-muted">Sign in to set up your frame.</p>
+                        <p className="text-lg text-muted">Sign in to change your settings.</p>
                         <Button
                             component={Link}
                             href="/login?next=/settings"
@@ -67,29 +70,39 @@ export default function SettingsPage() {
                             Sign in
                         </Button>
                     </div>
-                ) : error ? (
-                    <Alert color="red" variant="light">
-                        {error.message}
-                    </Alert>
-                ) : data && data.length === 0 ? (
-                    <div className="flex flex-col gap-4 rounded-xl bg-panel p-5">
-                        <p className="text-lg">No frame yet.</p>
-                        <p className="text-muted">
-                            A new frame shows a QR code: scan it with your phone&apos;s camera. Or type the
-                            code under it.
-                        </p>
-                        <Button
-                            component={Link}
-                            href="/claim"
-                            size="lg"
-                            leftSection={<IconPlugConnected />}
-                            className="self-start"
-                        >
-                            Enter a code
-                        </Button>
-                    </div>
                 ) : (
-                    data?.map((d) => <FrameCard key={d.id} device={d} onChange={reload} />)
+                    <PrudleSetting />
+                )}
+                {frames && (
+                    <section aria-label="Your frame" className="flex flex-col gap-6">
+                        <h2 className="text-2xl font-bold">Your frame</h2>
+                        {error ? (
+                            <Alert color="red" variant="light">
+                                {error.message}
+                            </Alert>
+                        ) : data && data.length === 0 ? (
+                            <div className="flex flex-col gap-4 rounded-xl bg-panel p-5">
+                                <p className="text-lg">No frame yet.</p>
+                                <p className="text-muted">
+                                    A new frame shows a QR code: scan it with your phone&apos;s camera. Or type
+                                    the code under it.
+                                </p>
+                                <Button
+                                    component={Link}
+                                    href="/claim"
+                                    size="lg"
+                                    leftSection={<IconPlugConnected />}
+                                    className="self-start"
+                                >
+                                    Enter a code
+                                </Button>
+                            </div>
+                        ) : data ? (
+                            data.map((d) => <FrameCard key={d.id} device={d} onChange={reload} />)
+                        ) : (
+                            <Skeleton height={320} radius="lg" />
+                        )}
+                    </section>
                 )}
             </div>
         </Shell>

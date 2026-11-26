@@ -5,25 +5,17 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ActionIcon, Popover, Tooltip } from "@mantine/core";
 import { IconApi, IconBrandGithub, IconInfoCircle, IconMaximize } from "@tabler/icons-react";
-import type { DeviceInfo } from "@/interfaces/api";
-import { useApi, useMeta } from "@/lib/api";
-import { useAuth } from "@/lib/auth";
+import { useMeta } from "@/lib/api";
 import { Account } from "./Account";
 import { SchemeToggle } from "./SchemeToggle";
 
 // Shell is the page frame: a slim header, the page, and a one-line footer of
-// icons. The site is one page, so the header only links what isn't on it: the
-// frame settings and, in dev mode, the emulator. Both hide on phones (Frame is
-// in the account menu too; the emulator previews need a wide screen).
+// icons. The site is one page, and settings are in the account menu, so the
+// header only links the dev tools (emulator, Prudle lab), hidden on phones.
 export function Shell({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
     const path = usePathname();
     const meta = useMeta();
-    const { me } = useAuth();
-    const frames = useApi<DeviceInfo[]>(me ? "/me/devices" : null);
     const links = [
-        ...(me && (frames.data?.length || path.startsWith("/settings"))
-            ? [{ href: "/settings", label: "Frame", active: path.startsWith("/settings") }]
-            : []),
         ...(meta?.dev || path.startsWith("/emulator")
             ? [{ href: "/emulator", label: "Emulator", active: path.startsWith("/emulator") }]
             : []),
