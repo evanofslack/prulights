@@ -1,6 +1,6 @@
 // Sightings end to end: mom marks tonight seen with stars and a note, it shows
 // in her log and to evan, the public sees only totals, the window closes after
-// a week, and evan corrects a night from the admin page.
+// a week, evan sees hers in lately, and evan corrects a night from the admin page.
 import { execFileSync } from "node:child_process";
 import { URL, btn, check, finish, launch, open, shot } from "./lib.mjs";
 
@@ -155,7 +155,18 @@ check(
 // evan sees it on tonight
 await evan.goto(URL);
 await evan.waitForSelector("[aria-label='Also seen by'] >> text=Nana");
-check("evan sees mom's sighting and note", await evan.locator("text=Glowing over the Charles").isVisible());
+check(
+    "evan sees mom's sighting and note",
+    await evan.locator("[aria-label='Also seen by'] >> text=Glowing over the Charles").isVisible(),
+);
+
+// evan sees her in lately, as a badge; mom doesn't see herself there
+await evan.waitForSelector("#lately >> text=Nana saw it");
+check("lately shows mom's night to evan", true);
+await shot(evan, "lately");
+await mom.goto(URL);
+await mom.waitForSelector("#nights");
+check("lately leaves out her own nights", (await mom.locator("#lately >> text=Nana").count()) === 0);
 
 // the public sees a count, no names
 const stranger = await open(browser, { viewport: { width: 390, height: 844 } });

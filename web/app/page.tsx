@@ -9,6 +9,7 @@ import { Night, NightSkeleton, Upcoming } from "@/components/Night";
 import { SawIt } from "@/components/SawIt";
 import { Month } from "@/components/Month";
 import { MyNights } from "@/components/MyNights";
+import { Lately } from "@/components/Lately";
 import { ErrorNote, Shell } from "@/components/Shell";
 
 // / is the whole site on one page: tonight, the week, signed in your nights,
@@ -42,6 +43,7 @@ export default function HomePage() {
                         <Upcoming nights={data.upcoming} tonight={data.date} />
                     </section>
                     <MyNights />
+                    <Lately tonight={data.date} />
                     <Suspense fallback={<Skeleton height={480} radius="lg" />}>
                         <Month tonight={data.date} />
                     </Suspense>
