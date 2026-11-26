@@ -1,0 +1,44 @@
+[
+  {
+    "name": "one at a time, close then hit",
+    "answer": ["red"],
+    "guesses": [["pink"], ["red"]],
+    "turns": ["◐ exact 1", "● exact 1"],
+    "misses": 0.5,
+    "solved": true
+  },
+  {
+    "name": "found colors carry, fewer then exact",
+    "answer": ["blue", "gold"],
+    "guesses": [["blue", "green", "white"], ["gold"]],
+    "turns": ["●○○ fewer 3", "●● exact 2"],
+    "misses": 2,
+    "solved": true
+  },
+  {
+    "name": "duplicates in the answer count once",
+    "answer": ["green", "green", "white"],
+    "guesses": [["green", "white"]],
+    "turns": ["●● exact 2"],
+    "misses": 0,
+    "solved": true
+  },
+  {
+    "name": "five misses still plays, the sixth loses",
+    "answer": ["rainbow"],
+    "guesses": [["red"], ["blue"], ["green"], ["white"], ["yellow"], ["black"]],
+    "turns": ["○ exact 1", "○ exact 1", "○ exact 1", "○ exact 1", "○ exact 1", "○ exact 1"],
+    "misses": 6,
+    "solved": false,
+    "lost": true
+  },
+  {
+    "name": "half misses: 5.5 loses",
+    "answer": ["maroon"],
+    "guesses": [["blue"], ["green"], ["white"], ["yellow"], ["black"], ["red"]],
+    "turns": ["○ exact 1", "○ exact 1", "○ exact 1", "○ exact 1", "○ exact 1", "◐ exact 1"],
+    "misses": 5.5,
+    "solved": false,
+    "lost": true
+  }
+]

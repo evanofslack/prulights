@@ -71,6 +71,7 @@ func (s *Server) mountAccount(r chi.Router) {
 		})
 
 		s.mountSightings(r)
+		s.mountPrudle(r)
 		s.mountDevices(r)
 
 		r.Route("/admin", func(r chi.Router) {
