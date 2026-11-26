@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useMemo, useState } from "react";
 import { soft } from "@/lib/palette";
-import { type Stop, banded, mute } from "@/lib/print";
+import { type Stop, banded, ink, whiteness } from "@/lib/print";
 import {
     type Light,
     type Neighborhood,
@@ -215,7 +215,7 @@ export function Tower({
     const minute = useNightMinute(night, live, plan);
     const lights = useMemo(() => litAt(plan, minute), [plan, minute]);
     const key = bands.join(",");
-    const colors = useMemo(() => key.split(",").map((c) => mute(c)), [key]);
+    const colors = useMemo(() => key.split(",").map((c) => ink(c)), [key]);
 
     return (
         <div
@@ -285,6 +285,11 @@ function Scene({ bands, sky, skyline, lights }: SceneProps) {
     const s = SKIES[sky];
     const n = bands.length || 1;
     const first = bands[0] ?? "#ffffff";
+    // the crown's halo: a white night's is smaller and fainter (white glares),
+    // a colored night's a little fuller
+    const white = whiteness(first);
+    const halo = s.glow * (1.15 - 0.6 * white);
+    const reach = 1.08 - 0.3 * white;
 
     // lit windows, one path per color and brightness, in three layers: the
     // tower's, the skyline's, and the brownstones' in front of everything
@@ -367,8 +372,8 @@ function Scene({ bands, sky, skyline, lights }: SceneProps) {
                     {stops(
                         banded(
                             [
-                                [0, first, 0.32 * s.glow],
-                                [0.45, first, 0.12 * s.glow],
+                                [0, first, 0.32 * halo],
+                                [0.45, first, 0.12 * halo],
                                 [1, first, 0],
                             ],
                             9,
@@ -401,8 +406,8 @@ function Scene({ bands, sky, skyline, lights }: SceneProps) {
                     {stops(
                         banded(
                             [
-                                [0, first, 0.28 * s.glow],
-                                [0.3, first, 0.08 * s.glow],
+                                [0, first, 0.28 * halo],
+                                [0.3, first, 0.08 * halo],
                                 [1, first, 0],
                             ],
                             5,
@@ -427,7 +432,7 @@ function Scene({ bands, sky, skyline, lights }: SceneProps) {
                     {stops(
                         banded(
                             [
-                                [0, "#fff", 0.55 * s.glow],
+                                [0, "#fff", 0.55 * halo],
                                 [1, "#fff", 0],
                             ],
                             5,
@@ -438,7 +443,13 @@ function Scene({ bands, sky, skyline, lights }: SceneProps) {
                     <rect width={W} height={H} fill={`url(#sky-dots-${id})`} />
                 </mask>
                 <mask id={`halo-mask-${id}`} maskUnits="userSpaceOnUse" x="0" y="0" width={W} height={H}>
-                    <ellipse cx={CX} cy={TOP + RING_LOW} rx={170} ry={100} fill={`url(#halo-dots-${id})`} />
+                    <ellipse
+                        cx={CX}
+                        cy={TOP + RING_LOW}
+                        rx={170 * reach}
+                        ry={100 * reach}
+                        fill={`url(#halo-dots-${id})`}
+                    />
                 </mask>
                 {/* paper grain: fine noise, laid over everything softly */}
                 <filter id={`grain-${id}`} x="0" y="0" width="100%" height="100%">
@@ -477,7 +488,13 @@ function Scene({ bands, sky, skyline, lights }: SceneProps) {
                 ART.stars.map((t, i) => (
                     <circle key={i} cx={t.x} cy={t.y} r={t.r} fill="#e6ebff" opacity={t.o} />
                 ))}
-            <ellipse cx={CX} cy={TOP + RING_LOW} rx={190} ry={110} fill={`url(#halo-${id})`} />
+            <ellipse
+                cx={CX}
+                cy={TOP + RING_LOW}
+                rx={190 * reach}
+                ry={110 * reach}
+                fill={`url(#halo-${id})`}
+            />
             {/* the halftone over the sky and in the crown's glow */}
             <rect width={W} height={H} fill={`url(#screen-${id})`} mask={`url(#sky-mask-${id})`} />
             <rect width={W} height={H} fill={`url(#screen-halo-${id})`} mask={`url(#halo-mask-${id})`} />

@@ -36,6 +36,22 @@ export function mute(c: string, amount = 0.16): string {
     return hex([r + (y - r) * amount, g + (y - g) * amount, b + (y - b) * amount]);
 }
 
+// whiteness is how near a color is to plain white light (0–1): light and
+// without much color. White is the most glaring light on a night picture.
+export function whiteness(c: string): number {
+    const [r, g, b] = rgb(c);
+    const hi = Math.max(r, g, b);
+    const chroma = (hi - Math.min(r, g, b)) / 255;
+    const light = Math.min(1, Math.max(0, (hi / 255 - 0.6) / 0.4));
+    return light * Math.min(1, Math.max(0, 1 - chroma / 0.25));
+}
+
+// ink is a lighting color as the tower shows it: muted, and white taken down
+// toward a soft warm grey so it doesn't glare.
+export function ink(c: string): string {
+    return mix(mute(c), "#c9c7c0", 0.42 * whiteness(c));
+}
+
 // a gradient stop: offset, color, opacity
 export type Stop = [number, string, number?];
 
