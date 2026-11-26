@@ -1,4 +1,5 @@
-set dotenv-load := false
+# recipes read .env (gitignored) for local settings like SIGNUP_CODE
+set dotenv-load := true
 
 vps := env("VPS", "")
 air := "go run github.com/air-verse/air@v1.67.4"
@@ -123,7 +124,7 @@ docker-build:
 
 # run the production image locally on :8080 with a throwaway volume
 docker-run: docker-build
-    docker run --rm -p 8080:8080 -v prulights-dev-data:/data -e BASE_URL=http://localhost:8080 evanofslack/prulights:dev
+    docker run --rm -p 8080:8080 -v prulights-dev-data:/data -e BASE_URL=http://localhost:8080 -e SIGNUP_CODE evanofslack/prulights:dev
 
 # pull and restart on the vps (VPS=user@host); see deploy/RUNBOOK.md
 deploy:
