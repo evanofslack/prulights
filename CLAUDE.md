@@ -13,6 +13,17 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   - Web (from `web/`): `npm run type-check`, `npm run build`. No unit tests.
 - Run the checks for whichever side you touched before calling it done.
 
+## Worktrees
+- Parallel work goes in worktrunk (`wt`) worktrees: `wt switch -c <branch>` makes one and moves there,
+  `wt switch main` goes back, `wt list` shows them, `wt remove` (or `wt step prune` for merged ones)
+  cleans up. PRs still go up with `gh stack`; don't `wt merge`.
+- `.config/wt.toml` sets a new worktree up before you land in it: copies what `.worktreeinclude` lists
+  (`.env`, `web/node_modules`, `e2e/node_modules`) from the main checkout, then `just install`. The dev
+  db isn't copied; `just seed` fills a fresh one.
+- `just e2e` installs its own chromium at the pinned `playwright-core` version (`e2e/run.sh`). Never
+  `npx playwright install`: an unpinned playwright sweeps the shared browser cache.
+- Ports are fixed (:8080, :3000, :8099, :8097), so run `just start` or `just e2e` in one worktree at a time.
+
 ## Architecture
 - `backend/config`: everything read from the environment, in one `Config`.
 - `backend/store`: one sqlite file (modernc, no cgo). Schema changes are new numbered files in

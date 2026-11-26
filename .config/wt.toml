@@ -1,0 +1,9 @@
+# worktrunk (wt) project config: what a new worktree gets before you land in it
+
+# copy the gitignored files listed in .worktreeinclude from the main checkout (reflinked on APFS),
+# then install whatever is still missing
+[[pre-start]]
+copy = "wt step copy-ignored --require-include"
+
+[[pre-start]]
+install = "just install"

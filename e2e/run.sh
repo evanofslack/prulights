@@ -4,7 +4,10 @@
 set -euo pipefail
 ! curl -s localhost:8099 >/dev/null || { echo "port 8099 is already in use"; exit 1; }
 ! curl -s localhost:8097 >/dev/null || { echo "port 8097 is already in use"; exit 1; }
-(cd e2e && [ -d node_modules ] || npm ci)
+(cd e2e && { [ -d node_modules ] || npm ci; })
+# the browser for the pinned playwright-core (the cache is shared, so another playwright may have
+# swept it); a no-op when it's already there
+[ -n "${CHROMIUM_PATH:-}" ] || (cd e2e && node node_modules/playwright-core/cli.js install --only-shell chromium)
 (cd web && npm run build)
 dir="$(mktemp -d)"
 (cd backend && go build -o "$dir/prulights" ./cmd/prulights)

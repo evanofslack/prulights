@@ -1,0 +1,4 @@
+# gitignored files a new wt worktree copies from the main checkout (.config/wt.toml)
+.env
+web/node_modules/
+e2e/node_modules/
