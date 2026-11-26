@@ -72,6 +72,7 @@ func (s *Server) mountAccount(r chi.Router) {
 
 		s.mountSightings(r)
 		s.mountReports(r)
+		s.mountPhotos(r)
 		s.mountPrudle(r)
 		s.mountDevices(r)
 
@@ -80,6 +81,7 @@ func (s *Server) mountAccount(r chi.Router) {
 			r.Post("/invites", s.createInvite)
 			s.mountAdmin(r)
 			s.mountAdminReports(r)
+			s.mountAdminPhotos(r)
 			s.mountAdminDevices(r)
 		})
 	})
@@ -161,7 +163,10 @@ func (s *Server) sameOrigin(next http.Handler) http.Handler {
 			writeError(w, http.StatusForbidden, "cross-origin request refused")
 			return
 		}
-		if r.ContentLength != 0 && !strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
+		// json, or a jpeg (photos): neither is a type a form can send, so a
+		// cross-site page can't post one without a preflight
+		ct := r.Header.Get("Content-Type")
+		if r.ContentLength != 0 && !strings.HasPrefix(ct, "application/json") && ct != "image/jpeg" {
 			writeError(w, http.StatusUnsupportedMediaType, "send json")
 			return
 		}

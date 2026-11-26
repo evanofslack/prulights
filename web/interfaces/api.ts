@@ -558,6 +558,20 @@ export interface Sighting {
   rating: number /* int */;
   note: string;
   at: string;
+  /**
+   * Photo is their picture of the night, if they added one.
+   */
+  photo?: SightingPhoto;
+}
+/**
+ * SightingPhoto is a sighting's picture, at /api/v1/photos/{sha256}/full.jpg
+ * (or thumb.jpg, 400px), signed in. PUT /api/v1/me/sightings/{date}/photo
+ * takes a jpeg body: one per person per night, a new one replaces it.
+ */
+export interface SightingPhoto {
+  sha256: string;
+  width: number /* int */;
+  height: number /* int */;
 }
 /**
  * NightSightings is GET /api/v1/sightings/{date}: everyone who saw a night.

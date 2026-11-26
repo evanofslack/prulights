@@ -67,7 +67,11 @@ func dateParam(w http.ResponseWriter, r *http.Request) (schedule.Date, bool) {
 }
 
 func sightingOf(x store.Sighting, me int64) Sighting {
-	return Sighting{Date: x.Date, Name: x.Name, Mine: x.UserID == me, Rating: x.Rating, Note: x.Note, At: x.CreatedAt}
+	out := Sighting{Date: x.Date, Name: x.Name, Mine: x.UserID == me, Rating: x.Rating, Note: x.Note, At: x.CreatedAt}
+	if x.Photo != nil {
+		out.Photo = &SightingPhoto{SHA256: x.Photo.SHA256, Width: x.Photo.Width, Height: x.Photo.Height}
+	}
+	return out
 }
 
 func (s *Server) putSighting(w http.ResponseWriter, r *http.Request) {

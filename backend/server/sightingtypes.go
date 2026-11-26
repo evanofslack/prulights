@@ -24,6 +24,17 @@ type Sighting struct {
 	Rating int           `json:"rating"`
 	Note   string        `json:"note"`
 	At     time.Time     `json:"at"`
+	// Photo is their picture of the night, if they added one.
+	Photo *SightingPhoto `json:"photo,omitempty"`
+}
+
+// SightingPhoto is a sighting's picture, at /api/v1/photos/{sha256}/full.jpg
+// (or thumb.jpg, 400px), signed in. PUT /api/v1/me/sightings/{date}/photo
+// takes a jpeg body: one per person per night, a new one replaces it.
+type SightingPhoto struct {
+	SHA256 string `json:"sha256"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
 }
 
 // NightSightings is GET /api/v1/sightings/{date}: everyone who saw a night.
