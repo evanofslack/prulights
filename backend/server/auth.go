@@ -71,6 +71,7 @@ func (s *Server) mountAccount(r chi.Router) {
 		})
 
 		s.mountSightings(r)
+		s.mountReports(r)
 		s.mountPrudle(r)
 		s.mountDevices(r)
 
@@ -78,6 +79,7 @@ func (s *Server) mountAccount(r chi.Router) {
 			r.Use(s.adminOnly)
 			r.Post("/invites", s.createInvite)
 			s.mountAdmin(r)
+			s.mountAdminReports(r)
 			s.mountAdminDevices(r)
 		})
 	})

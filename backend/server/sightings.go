@@ -306,15 +306,8 @@ func (s *Server) putOverride(w http.ResponseWriter, r *http.Request) {
 	if !decode(w, r, &b) {
 		return
 	}
-	if len(b.Colors) == 0 || len(b.Colors) > 6 {
-		writeError(w, http.StatusBadRequest, "pick 1 to 6 colors")
+	if !validColors(w, b.Colors) {
 		return
-	}
-	for _, c := range b.Colors {
-		if _, ok := schedule.Lookup(c); !ok {
-			writeError(w, http.StatusBadRequest, "unknown color "+string(c))
-			return
-		}
 	}
 	b.Cause, b.CauseURL, b.Note = strings.TrimSpace(b.Cause), strings.TrimSpace(b.CauseURL), strings.TrimSpace(b.Note)
 	if utf8.RuneCountInString(b.Cause) > maxCauseLen || utf8.RuneCountInString(b.Note) > maxNoteLen {

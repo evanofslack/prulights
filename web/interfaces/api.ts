@@ -673,3 +673,62 @@ export interface ScrapeStatus {
   running: boolean;
   runs: ScrapeRunInfo[];
 }
+/**
+ * ReportRequest is PUT /api/v1/me/reports/{date}: "the colors were wrong,
+ * they were really these", with an optional note. Open for the week before
+ * tonight and any night after it.
+ */
+export interface ReportRequest {
+  colors: any /* schedule.ColorKey */[];
+  note: string;
+}
+/**
+ * Report is one person's report on a night's colors.
+ */
+export interface Report {
+  date: schedule.Date;
+  name: string;
+  mine: boolean;
+  colors: any /* schedule.ColorKey */[];
+  note: string;
+  status: 'open' | 'accepted' | 'dismissed';
+  at: string;
+}
+/**
+ * NightReports is GET /api/v1/reports/{date}: everyone's reports on a night.
+ */
+export interface NightReports {
+  date: schedule.Date;
+  reports: Report[];
+  /**
+   * CanReport is whether the night still takes reports.
+   */
+  can_report: boolean;
+}
+/**
+ * ReportedNight is a night with open reports, as the admin page lists them.
+ */
+export interface ReportedNight {
+  /**
+   * Lighting is what the night shows now.
+   */
+  lighting: schedule.Lighting;
+  reports: Report[];
+  /**
+   * Suggested is the colors the most reports agree on.
+   */
+  suggested: any /* schedule.ColorKey */[];
+}
+/**
+ * AdminReports is GET /api/v1/admin/reports: the open reports, newest night first.
+ */
+export interface AdminReports {
+  nights: ReportedNight[];
+}
+/**
+ * AcceptReportBody is POST /api/v1/admin/reports/{date}/accept: the colors
+ * to correct the night to (empty: the suggested ones).
+ */
+export interface AcceptReportBody {
+  colors: any /* schedule.ColorKey */[];
+}

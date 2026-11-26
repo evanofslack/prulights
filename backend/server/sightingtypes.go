@@ -120,3 +120,50 @@ type ScrapeStatus struct {
 	Running bool            `json:"running"`
 	Runs    []ScrapeRunInfo `json:"runs"`
 }
+
+// ReportRequest is PUT /api/v1/me/reports/{date}: "the colors were wrong,
+// they were really these", with an optional note. Open for the week before
+// tonight and any night after it.
+type ReportRequest struct {
+	Colors []schedule.ColorKey `json:"colors"`
+	Note   string              `json:"note"`
+}
+
+// Report is one person's report on a night's colors.
+type Report struct {
+	Date   schedule.Date       `json:"date"`
+	Name   string              `json:"name"`
+	Mine   bool                `json:"mine"`
+	Colors []schedule.ColorKey `json:"colors"`
+	Note   string              `json:"note"`
+	Status string              `json:"status" tstype:"'open' | 'accepted' | 'dismissed'"`
+	At     time.Time           `json:"at"`
+}
+
+// NightReports is GET /api/v1/reports/{date}: everyone's reports on a night.
+type NightReports struct {
+	Date    schedule.Date `json:"date"`
+	Reports []Report      `json:"reports"`
+	// CanReport is whether the night still takes reports.
+	CanReport bool `json:"can_report"`
+}
+
+// ReportedNight is a night with open reports, as the admin page lists them.
+type ReportedNight struct {
+	// Lighting is what the night shows now.
+	Lighting schedule.Lighting `json:"lighting"`
+	Reports  []Report          `json:"reports"`
+	// Suggested is the colors the most reports agree on.
+	Suggested []schedule.ColorKey `json:"suggested"`
+}
+
+// AdminReports is GET /api/v1/admin/reports: the open reports, newest night first.
+type AdminReports struct {
+	Nights []ReportedNight `json:"nights"`
+}
+
+// AcceptReportBody is POST /api/v1/admin/reports/{date}/accept: the colors
+// to correct the night to (empty: the suggested ones).
+type AcceptReportBody struct {
+	Colors []schedule.ColorKey `json:"colors"`
+}
