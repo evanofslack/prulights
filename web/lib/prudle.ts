@@ -20,7 +20,7 @@ export interface Rules {
     bands: BandsRule;
 }
 
-export const DEFAULT_RULES: Rules = { budget: 4, maxPicks: 4, count: "dir", close: "half", bands: "exact" };
+export const DEFAULT_RULES: Rules = { budget: 5, maxPicks: 4, count: "dir", close: "half", bands: "exact" };
 
 export type Mark = "hit" | "close" | "miss";
 export type CountMark = "fewer" | "more" | "exact" | "wrong"; // wrong: not exact, under count=exact
