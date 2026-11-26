@@ -1,23 +1,35 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { Button } from "@mantine/core";
-import { IconMaximize } from "@tabler/icons-react";
+import { Suspense, useEffect } from "react";
+import { Skeleton } from "@mantine/core";
 import type { TonightResponse } from "@/interfaces/api";
 import { useApi } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { Night, NightSkeleton, Upcoming } from "@/components/Night";
 import { SawIt } from "@/components/SawIt";
+import { Month } from "@/components/Month";
+import { MyNights } from "@/components/MyNights";
 import { ErrorNote, Shell } from "@/components/Shell";
 
-export default function TonightPage() {
+// / is the whole site on one page: tonight, the week, the month and, signed
+// in, your nights. Each section loads on its own.
+export default function HomePage() {
     // re-check every 10 minutes, so a page left open rolls over to the next night
     const { data, error, reload } = useApi<TonightResponse>("/tonight", 10 * 60_000);
+    const { me } = useAuth();
+    // the sections render after their data, too late for the browser to follow
+    // a #calendar or #nights link on its own: scroll once they're there
+    const ready = data !== undefined && me !== undefined;
+    useEffect(() => {
+        if (!ready || !location.hash) return;
+        document.getElementById(location.hash.slice(1))?.scrollIntoView();
+    }, [ready]);
     return (
         <Shell>
             {error && !data && <ErrorNote error={error} retry={reload} />}
             {!data && !error && <NightSkeleton />}
             {data && (
-                <div className="flex flex-col gap-8">
+                <div className="flex flex-col gap-12">
                     <Night
                         lighting={data.lighting}
                         tonight={data.date}
@@ -25,38 +37,16 @@ export default function TonightPage() {
                     >
                         <SawIt date={data.date} tonight={data.date} />
                     </Night>
-                    <section className="flex flex-col gap-3">
-                        <h2 className="text-xl font-bold">Coming up</h2>
+                    <section id="week" aria-label="This week" className="flex scroll-mt-4 flex-col gap-4">
+                        <h2 className="text-2xl font-bold">This week</h2>
                         <Upcoming nights={data.upcoming} tonight={data.date} />
                     </section>
-                    <DisplayButton />
+                    <Suspense fallback={<Skeleton height={480} radius="lg" />}>
+                        <Month tonight={data.date} />
+                    </Suspense>
+                    <MyNights />
                 </div>
             )}
         </Shell>
-    );
-}
-
-// DisplayButton turns this screen into the always-on display: fullscreen
-// where the browser allows it, then /display.
-function DisplayButton() {
-    const router = useRouter();
-    const open = async () => {
-        try {
-            await document.documentElement.requestFullscreen?.();
-        } catch {}
-        router.push("/display");
-    };
-    return (
-        <div className="flex flex-col items-start gap-2 rounded-xl bg-panel p-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-muted">Leaving a screen on? Show tonight full screen, kept up to date.</p>
-            <Button
-                variant="default"
-                leftSection={<IconMaximize size={18} />}
-                onClick={open}
-                className="shrink-0"
-            >
-                Open as display
-            </Button>
-        </div>
     );
 }

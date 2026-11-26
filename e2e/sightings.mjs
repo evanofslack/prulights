@@ -82,11 +82,15 @@ await mom.waitForSelector("h1");
 await mom.waitForTimeout(300);
 check("tomorrow can't", (await mom.locator(btn("I saw it")).count()) === 0);
 
-// her log
-await mom.click("header a:text('Log')");
-await mom.waitForSelector("text=Glowing over the Charles");
-check("the log lists both nights", (await mom.locator("main ul li").count()) === 2);
-check("the log counts them", (await mom.locator("dt:text('Nights seen') + dd").textContent()) === "2");
+// her nights, at the bottom of the home page (the old /log lands there)
+await mom.goto(`${URL}/log`);
+await mom.waitForURL(`${URL}/#nights`);
+await mom.waitForSelector("#nights >> text=Glowing over the Charles");
+check("her nights list both", (await mom.locator("#nights ul li").count()) === 2);
+check(
+    "her nights count them",
+    (await mom.locator("#nights dt:text('Nights seen') + dd").textContent()) === "2",
+);
 await shot(mom, "sightings-log");
 
 // evan sees it on tonight
@@ -100,10 +104,11 @@ await stranger.goto(URL);
 await stranger.waitForSelector("text=Seen by 1");
 check("signed out: a count and no names", (await stranger.locator("text=Nana").count()) === 0);
 check("signed out: no I saw it button", (await stranger.locator(btn("I saw it")).count()) === 0);
+check("signed out: no nights section", (await stranger.locator("#nights").count()) === 0);
 
 // mom changes her mind about the old night
 await mom.goto(`${URL}/night?d=${addDays(tonight, -7)}`);
-await mom.click("text=I didn't see it");
+await mom.click(btn("Undo"));
 await mom.waitForSelector(btn("I saw it"));
 check("a sighting can be taken back", true);
 
@@ -116,7 +121,7 @@ await evan.waitForSelector("h2:text('People')");
 await evan.waitForSelector("td:text('Nana')");
 check("admin lists mom", true);
 await evan.fill("input[type=date]", fix);
-await evan.click("label:has-text(\"Colors\")");
+await evan.click('label:has-text("Colors")');
 await evan.keyboard.type("Purple");
 await evan.click("[role=option]:has-text('Purple')");
 await evan.keyboard.press("Escape");

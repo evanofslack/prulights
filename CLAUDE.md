@@ -59,10 +59,13 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
 ## Conventions
 - Commits: short, lowercase, imperative, 3–5 words ("add scraper parsers").
 - PRs: 4–6 word titles, 1–2 sentence descriptions. Work goes up as a `gh stack`.
-- Credit prudentialcenter.com as the source; keep the "not affiliated" footer. The web tower
+- Credit prudentialcenter.com as the source; keep the "not affiliated" credit (the footer's info
+  popover; the footer is one right-aligned row of icons: full screen, API docs, GitHub, info). The web tower
   (`components/Tower.tsx`, same geometry as `render/art.go`) shows the PRUDENTIAL letters on the
   crown as they are on the building; the frame leaves them out (too small). No Prudential logos.
-- Web pages: `/` tonight, `/night?d=`, `/calendar?m=`, `/display` (always-on, no chrome; Esc leaves),
+- Web pages: `/` is the whole site on one page, in sections: tonight, `#week`, `#calendar` (month in
+  `?m=`, changed with `router.replace`, no scroll) and `#nights` (signed in only; `components/Month.tsx`,
+  `MyNights.tsx`). `/calendar` and `/log` only redirect there. Then `/night?d=`, `/display` (always-on, no chrome; Esc leaves),
   `/docs` (stock Swagger UI from `swagger-ui-dist`, copied to `public/swagger` by `npm run swagger` before
   dev/build; don't bundle swagger-ui through next, its OpenAPI 3.1 support breaks), `/emulator` (frame
   previews; only when `/meta` says `dev`, settings live in the url), `/claim?code=` (a frame's setup QR

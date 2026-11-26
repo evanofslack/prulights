@@ -41,10 +41,7 @@ export default function LoginPage() {
                     <p className="text-lg text-muted">You&apos;re signed in as {me.name}.</p>
                 ) : (
                     <>
-                        <p className="text-lg text-muted">
-                            Use the passkey you made when you were invited: your phone or computer will ask
-                            for your face, fingerprint or passcode.
-                        </p>
+                        <p className="text-lg text-muted">Use your face, fingerprint or passcode.</p>
                         <Button size="lg" leftSection={<IconFingerprint />} loading={busy} onClick={go}>
                             Sign in with passkey
                         </Button>
@@ -53,10 +50,7 @@ export default function LoginPage() {
                                 {error}
                             </Alert>
                         )}
-                        <p className="text-muted">
-                            New here? prulights is invite only: ask for a link. Lost your passkey? Ask for a
-                            new link; it keeps everything you&apos;ve logged.
-                        </p>
+                        <p className="text-muted">Invite only. New, or lost your passkey? Ask for a link.</p>
                     </>
                 )}
             </div>
