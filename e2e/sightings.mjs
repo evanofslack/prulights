@@ -69,6 +69,37 @@ check(
         (await mom.locator('[aria-label="Your rating"] input[value="4"]').isChecked()),
 );
 
+// logging a night never moves its title: the panel only grows downward
+// (its place on the page, not on screen: clicks scroll the phone)
+const h1y = () => mom.evaluate(() => document.querySelector("h1").getBoundingClientRect().top + scrollY);
+for (const [label, size] of [
+    ["desktop", { width: 1280, height: 800 }],
+    ["phone", { width: 390, height: 844 }],
+]) {
+    await mom.setViewportSize(size);
+    await mom.goto(`${URL}/night?d=${addDays(tonight, -1)}`);
+    await mom.waitForSelector(btn("I saw it"));
+    const before = await h1y();
+    await shot(mom, `sightings-button-${label}`);
+    await mom.click(btn("I saw it"));
+    await mom.waitForSelector("text=You saw it");
+    const seen = await h1y();
+    await rate(mom, 3);
+    await mom.waitForSelector(btn("Clear stars"));
+    const rated = await h1y();
+    await shot(mom, `sightings-rated-${label}`);
+    await mom.click(btn("Clear stars"));
+    await mom.waitForSelector('[aria-label="Your note"]', { state: "detached" });
+    const cleared = await h1y();
+    check(
+        `${label}: the title stays put while logging`,
+        [seen, rated, cleared].every((y) => Math.abs(y - before) < 1),
+        `${before} ${seen} ${rated} ${cleared}`,
+    );
+    await mom.click(btn("Undo"));
+    await mom.waitForSelector(btn("I saw it"));
+}
+
 // last week is still open; eight nights ago isn't
 await mom.goto(`${URL}/night?d=${addDays(tonight, -7)}`);
 await mom.click(btn("I saw it"));
@@ -92,6 +123,34 @@ check(
     (await mom.locator("#nights dt:text('Nights seen') + dd").textContent()) === "2",
 );
 await shot(mom, "sightings-log");
+
+// the calendar marks her nights; the one with a note opens on it
+const noted = `#calendar a[href="/night?d=${tonight}#note"]`;
+await mom.waitForSelector(`${noted} [data-mark=note]`);
+check("the calendar marks tonight's note", true);
+const weekAgo = addDays(tonight, -7);
+if (weekAgo.slice(0, 7) === tonight.slice(0, 7)) {
+    check(
+        "the calendar dots a night she saw",
+        (await mom.locator(`#calendar a[href="/night?d=${weekAgo}"] [data-mark=seen]`).count()) === 1,
+    );
+}
+check(
+    "unlogged nights have no mark",
+    (await mom.locator(`#calendar a[href="/night?d=${addDays(tonight, -1)}"] [data-mark]`).count()) === 0,
+);
+await shot(mom, "calendar-marks");
+await mom.click(noted);
+await mom.waitForURL(`**/night?d=${tonight}#note`);
+await mom.waitForSelector('[aria-label="Your note"]');
+await mom.waitForTimeout(300);
+check(
+    "it opens with her note in view",
+    await mom.evaluate(() => {
+        const r = document.querySelector('[aria-label="Your note"]').getBoundingClientRect();
+        return r.top >= 0 && r.bottom <= innerHeight;
+    }),
+);
 
 // evan sees it on tonight
 await evan.goto(URL);

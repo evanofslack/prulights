@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button, Rating, Skeleton } from "@mantine/core";
 import type { MySightings, MyStats } from "@/interfaces/api";
-import { useApi } from "@/lib/api";
+import { useApi, useOnSightingsChanged } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { colorNames, shortDate, weekdayAbbr } from "@/lib/format";
 import { bandsOf, usePalette } from "@/lib/palette";
@@ -19,7 +19,11 @@ export function MyNights() {
     const { me } = useAuth();
     if (!me) return null;
     return (
-        <section id="nights" aria-label="Your nights" className="flex scroll-mt-4 flex-col gap-4">
+        <section
+            id="nights"
+            aria-label="Your nights"
+            className="flex scroll-mt-4 flex-col gap-4 rounded-2xl bg-raised p-3 shadow-lg sm:p-6"
+        >
             <h2 className="text-2xl font-bold">Your nights</h2>
             <Log />
         </section>
@@ -30,6 +34,8 @@ function Log() {
     const palette = usePalette();
     const stats = useApi<MyStats>("/me/stats");
     const { data, error, reload } = useApi<MySightings>("/me/sightings");
+    useOnSightingsChanged(stats.reload);
+    useOnSightingsChanged(reload);
     const [all, setAll] = useState(false);
     if (error) return <ErrorNote error={error} retry={reload} />;
     if (!data || !stats.data) return <Skeleton height={300} radius="lg" />;

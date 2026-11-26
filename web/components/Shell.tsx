@@ -31,7 +31,7 @@ export function Shell({ children, wide }: { children: React.ReactNode; wide?: bo
     const width = wide ? "max-w-6xl" : "max-w-3xl";
     return (
         <div className="flex min-h-dvh flex-col">
-            <header className="border-b border-line">
+            <header className="border-b border-line bg-panel">
                 <nav className={`mx-auto flex items-center gap-0.5 px-3 py-2 sm:gap-1 sm:px-4 ${width}`}>
                     <Link href="/" className="mr-auto py-2 text-lg font-bold tracking-tight">
                         prulights
@@ -84,7 +84,7 @@ function Footer({ width }: { width: string }) {
     };
     const icon = { variant: "subtle", color: "gray", size: "xl", radius: "md" } as const;
     return (
-        <footer className="border-t border-line">
+        <footer className="border-t border-line bg-panel">
             <div className={`mx-auto flex items-center justify-end gap-1 px-3 py-2 sm:px-4 ${width}`}>
                 <Tooltip label="Full screen">
                     <ActionIcon {...icon} aria-label="Full screen" onClick={fullScreen}>

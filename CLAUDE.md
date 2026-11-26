@@ -75,9 +75,9 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   floors empty out in patches, lights left on till 11, a crew sweeping a floor, rooms in homes, the
   observatory; weekends and holidays nearly dark; three dim levels, it's smoked glass); `live` follows the clock, other nights show 9pm. Web only, the frame keeps
   its own windows. The red beacons blink in their own svg layer (`.beacon`), so blinking never repaints the scene.
-- Web pages: `/` is the whole site on one page, in sections: tonight, `#week`, `#calendar` (month in
-  `?m=`, changed with `router.replace`, no scroll) and `#nights` (signed in only; `components/Month.tsx`,
-  `MyNights.tsx`). `/calendar` and `/log` only redirect there. Then `/night?d=`, `/display` (always-on, no chrome; Esc leaves),
+- Web pages: `/` is the whole site on one page, in sections: tonight, `#week`, `#nights` (signed in only,
+  `MyNights.tsx`) and `#calendar` (`Month.tsx`, month in `?m=`, changed with `router.replace`, no scroll; your
+  nights get a dot, a noted one links to `/night?d=…#note`). `/calendar` and `/log` only redirect there. Then `/night?d=`, `/display` (always-on, no chrome; Esc leaves),
   `/docs` (stock Swagger UI from `swagger-ui-dist`, copied to `public/swagger` by `npm run swagger` before
   dev/build; don't bundle swagger-ui through next, its OpenAPI 3.1 support breaks), `/emulator` (frame
   previews; only when `/meta` says `dev`, settings live in the url), `/claim?code=` (a frame's setup QR

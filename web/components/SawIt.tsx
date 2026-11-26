@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button, Rating, Textarea } from "@mantine/core";
 import { IconCheck, IconEye } from "@tabler/icons-react";
 import type { NightSightings, NightStatsResponse, Sighting } from "@/interfaces/api";
-import { api, useApi } from "@/lib/api";
+import { api, sightingsChanged, useApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 // SawIt is the "I saw it" panel under a night: mark it seen, rate it, leave a
@@ -58,6 +58,15 @@ function Members({ date }: { date: string }) {
 
     useEffect(() => setNote(mine?.note ?? ""), [mine?.note, date]);
 
+    // a calendar night with your note links here as #note: bring it into view
+    // once it's there (too late for the browser to follow the hash itself)
+    const loaded = data?.date === date;
+    useEffect(() => {
+        if (loaded && location.hash === "#note") {
+            document.getElementById("note")?.scrollIntoView({ block: "center" });
+        }
+    }, [loaded]);
+
     if (!data || data.date !== date) return null;
 
     const save = async (change: { rating?: number; note?: string }) => {
@@ -69,6 +78,7 @@ function Members({ date }: { date: string }) {
                 body: JSON.stringify({ rating: mine?.rating ?? 0, note: mine?.note ?? "", ...change }),
             });
             reload();
+            sightingsChanged();
         } catch (e) {
             setError((e as Error).message);
         } finally {
@@ -81,6 +91,7 @@ function Members({ date }: { date: string }) {
             await api<void>(`/me/sightings/${date}`, { method: "DELETE" });
             setNote("");
             reload();
+            sightingsChanged();
         } catch (e) {
             setError((e as Error).message);
         } finally {
@@ -88,23 +99,27 @@ function Members({ date }: { date: string }) {
         }
     };
 
+    // the note opens under the stars once you've rated (or already wrote one);
+    // every change adds or removes rows below, so nothing above it moves
+    const noting = mine !== undefined && (mine.rating > 0 || (mine.note ?? "") !== "" || note.trim() !== "");
     return (
         <section aria-label="Sightings" className="flex flex-col gap-3 rounded-xl bg-panel p-4 text-left">
             {data.can_log && !mine && (
                 <Button
-                    size="lg"
-                    variant="filled"
-                    leftSection={<IconEye />}
+                    size="md"
+                    variant="light"
+                    leftSection={<IconEye size={20} />}
                     loading={busy}
                     onClick={() => save({})}
+                    className="self-center sm:self-start"
                 >
                     I saw it
                 </Button>
             )}
             {mine && (
                 <div className="flex flex-col gap-3">
-                    <div className="flex flex-wrap items-center gap-3">
-                        <span className="inline-flex items-center gap-1.5 text-lg font-bold text-accent">
+                    <div className="flex items-center gap-3">
+                        <span className="inline-flex shrink-0 items-center gap-1.5 text-lg font-bold text-accent">
                             <IconCheck size={20} /> You saw it
                         </span>
                         {data.can_log ? (
@@ -118,18 +133,18 @@ function Members({ date }: { date: string }) {
                         ) : (
                             <Stars value={mine.rating} size="md" />
                         )}
-                        {data.can_log && mine.rating > 0 && (
+                        {data.can_log && (
                             <button
                                 type="button"
-                                className="min-h-11 px-1 text-muted underline hover:text-fg"
-                                onClick={() => save({ rating: 0 })}
+                                className="ml-auto min-h-11 shrink-0 px-1 text-muted underline hover:text-fg"
+                                onClick={remove}
                             >
-                                Clear stars
+                                Undo
                             </button>
                         )}
                     </div>
-                    {data.can_log ? (
-                        <div className="flex flex-col gap-2">
+                    {data.can_log && noting && (
+                        <div id="note" className="flex scroll-mt-4 flex-col gap-2">
                             <Textarea
                                 aria-label="Your note"
                                 placeholder="A note about it (optional)"
@@ -140,26 +155,36 @@ function Members({ date }: { date: string }) {
                                 autosize
                                 minRows={2}
                             />
-                            <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex min-h-11 flex-wrap items-center gap-3">
                                 {note.trim() !== (mine.note ?? "") && (
-                                    <Button size="md" loading={busy} onClick={() => save({ note })}>
+                                    <Button
+                                        size="sm"
+                                        variant="light"
+                                        loading={busy}
+                                        onClick={() => save({ note })}
+                                    >
                                         Save note
                                     </Button>
                                 )}
                                 {note.length > 240 && (
                                     <span className="text-sm text-muted">{280 - note.length} left</span>
                                 )}
-                                <button
-                                    type="button"
-                                    className="ml-auto min-h-11 px-1 text-muted underline hover:text-fg"
-                                    onClick={remove}
-                                >
-                                    Undo
-                                </button>
+                                {mine.rating > 0 && (
+                                    <button
+                                        type="button"
+                                        className="ml-auto min-h-11 px-1 text-muted underline hover:text-fg"
+                                        onClick={() => save({ rating: 0 })}
+                                    >
+                                        Clear stars
+                                    </button>
+                                )}
                             </div>
                         </div>
-                    ) : (
-                        mine.note && <p className="text-lg">&ldquo;{mine.note}&rdquo;</p>
+                    )}
+                    {!data.can_log && mine.note && (
+                        <p id="note" className="scroll-mt-4 text-lg">
+                            &ldquo;{mine.note}&rdquo;
+                        </p>
                     )}
                 </div>
             )}
