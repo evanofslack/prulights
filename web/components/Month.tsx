@@ -126,7 +126,6 @@ export function Month({ tonight }: { tonight: string }) {
                           <Skeleton key={i} className="aspect-[3/4] sm:aspect-square" radius="md" />
                       ))}
             </div>
-            <p className="text-sm text-muted">Blank = plain white{me ? " · dot = you saw it" : ""}.</p>
         </section>
     );
 }
