@@ -68,11 +68,12 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   popover; the footer is one right-aligned row of icons: full screen, API docs, GitHub, info). The web tower
   (`components/Tower.tsx`, same geometry as `render/art.go`) shows the PRUDENTIAL letters on the
   crown as they are on the building; the frame leaves them out (too small). No Prudential logos.
-- The web tower is drawn like the frame: a hidden svg scene, drawn into a canvas and inked dot by dot
-  (`lib/ink.ts`: the six inks, two-ink mixes on the frame's Bayer matrix, about one css pixel a dot).
+- The web tower is a sharp svg with a printed look, not the frame's dither (`lib/print.ts`): flat colors
+  from the frame's ink family (lighting colors `mute`d), gradients in hard bands (`banded`), a fine
+  halftone only in the sky and the crown's glow, and paper grain (`feTurbulence`) over it all.
   Lit windows are solid inks. Its windows follow the night (`lib/windows.ts`, fixed per date: offices empty
   out, a cleaning crew, homes); `live` follows the clock, other nights show 9pm. Web only, the frame keeps
-  its own windows. The red beacons blink over the canvas (`.beacon`), so blinking never re-inks.
+  its own windows. The red beacons blink in their own svg layer (`.beacon`), so blinking never repaints the scene.
 - Web pages: `/` is the whole site on one page, in sections: tonight, `#week`, `#calendar` (month in
   `?m=`, changed with `router.replace`, no scroll) and `#nights` (signed in only; `components/Month.tsx`,
   `MyNights.tsx`). `/calendar` and `/log` only redirect there. Then `/night?d=`, `/display` (always-on, no chrome; Esc leaves),

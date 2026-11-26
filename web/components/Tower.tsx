@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { soft } from "@/lib/palette";
-import { INK_RED, inkify } from "@/lib/ink";
+import { type Stop, banded, mute } from "@/lib/print";
 import {
     type Light,
     type Neighborhood,
@@ -22,10 +22,11 @@ import {
 // The geometry is the frame's pixel art (backend/render/art.go) in the same
 // units, so the web and the frame show the same building.
 //
-// It's drawn like the e-ink frame: the scene is an svg (kept hidden), drawn
-// into a canvas and turned into the panel's inks, dot by dot (lib/ink.ts), at
-// a finer dot than the frame's. The windows follow the night (lib/windows.ts):
-// tonight's switch on and off with the clock, other nights are shown at 9pm.
+// It's a sharp svg with a printed look (lib/print.ts): flat colors from the
+// frame's inks, gradients in hard bands, a light halftone in the sky and the
+// crown's glow, and paper grain over everything. The windows follow the night
+// (lib/windows.ts): tonight's switch on and off with the clock, other nights
+// are shown at 9pm.
 
 export type Sky = "night" | "dusk" | "day";
 
@@ -57,10 +58,8 @@ const SETBACK_TOP = 150;
 const SHAFT_TOP = 162;
 const FLOOR = 9;
 
-// a dot is about one css pixel: finer than the frame's, still dots
-const DOT_CSS = 1;
-// the most canvas pixels inked at once (a full-screen display)
-const MAX_PIXELS = 2_500_000;
+// the frame's red ink, for the aircraft lights
+const BEACON_RED = "#b83422";
 
 const topOf = (f: number) => H - f * (H - (TOP + RING_TOP));
 
@@ -151,6 +150,8 @@ const SKIES: Record<
         // how strongly lit windows show
         windows: number;
         unlit: string;
+        // the halftone in the sky: its ink and how strong it is at the top and the horizon
+        dots: [string, number, number];
     }
 > = {
     night: {
@@ -163,6 +164,7 @@ const SKIES: Record<
         glow: 1,
         windows: 1,
         unlit: "#2e3d6e",
+        dots: ["#2254ac", 0.1, 0.5],
     },
     dusk: {
         stops: ["#151c3d", "#4a3f6b", "#e0895c"],
@@ -174,6 +176,7 @@ const SKIES: Record<
         glow: 0.7,
         windows: 0.85,
         unlit: "#2a2f4c",
+        dots: ["#e3ce34", 0, 0.35],
     },
     day: {
         // mostly paper with a few dots of blue, like the frame's daytime look
@@ -186,6 +189,7 @@ const SKIES: Record<
         glow: 0.25,
         windows: 0.2,
         unlit: "#727c92",
+        dots: ["#2254ac", 0.45, 0],
     },
 };
 
@@ -208,104 +212,38 @@ export function Tower({
     const plan = useMemo(() => planFor(night, ART.hood), [night]);
     const minute = useNightMinute(night, live, plan);
     const lights = useMemo(() => litAt(plan, minute), [plan, minute]);
+    const key = bands.join(",");
+    const colors = useMemo(() => key.split(",").map((c) => mute(c)), [key]);
 
-    const box = useRef<HTMLDivElement>(null);
-    const scene = useRef<SVGSVGElement>(null);
-    const canvas = useRef<HTMLCanvasElement>(null);
-    const size = useSize(box);
-    const [drawn, setDrawn] = useState(false);
-    const colors = bands.join(",");
-
-    // ink the scene whenever it or the size changes
-    useEffect(() => {
-        const svg = scene.current;
-        const c = canvas.current;
-        if (!size || !svg || !c || !size.w || !size.h) return;
-        let stale = false;
-        let dot = Math.max(1, Math.round(size.dpr * DOT_CSS));
-        while ((size.w * size.dpr * size.h * size.dpr) / (dot * dot) > MAX_PIXELS) dot++;
-        const cw = Math.ceil((size.w * size.dpr) / dot);
-        const ch = Math.ceil((size.h * size.dpr) / dot);
-        const copy = svg.cloneNode(true) as SVGSVGElement;
-        copy.removeAttribute("class");
-        copy.setAttribute("width", String(cw));
-        copy.setAttribute("height", String(ch));
-        const img = new Image();
-        img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(new XMLSerializer().serializeToString(copy))}`;
-        img.decode()
-            .then(() => {
-                const ctx = c.getContext("2d", { willReadFrequently: true });
-                if (stale || !ctx) return;
-                c.width = cw;
-                c.height = ch;
-                // whole device pixels a dot, so every dot is the same size
-                c.style.width = `${(cw * dot) / size.dpr}px`;
-                c.style.height = `${(ch * dot) / size.dpr}px`;
-                ctx.drawImage(img, 0, 0, cw, ch);
-                const px = ctx.getImageData(0, 0, cw, ch);
-                inkify(px);
-                ctx.putImageData(px, 0, 0);
-                setDrawn(true);
-            })
-            .catch(() => {});
-        return () => {
-            stale = true;
-        };
-    }, [size, colors, sky, skyline, lights]);
-
-    // the beacons sit over the canvas, so their blinking never re-inks it
-    const scale = size ? Math.max(size.w / W, size.h / H) : 0;
-    const ox = size ? (size.w - W * scale) / 2 : 0;
     return (
         <div
-            ref={box}
             role="img"
             aria-label={title ?? "The Prudential Tower"}
             className={`relative overflow-hidden ${className ?? ""}`}
             style={{ background: SKIES[sky].stops[1] }}
         >
-            <Scene ref={scene} bands={bands} sky={sky} skyline={skyline} lights={lights} />
-            <canvas
-                ref={canvas}
+            <Scene bands={colors} sky={sky} skyline={skyline} lights={lights} />
+            {/* the beacons are their own layer, so their blinking never repaints the scene */}
+            <svg
+                viewBox={`0 0 ${W} ${H}`}
+                preserveAspectRatio="xMidYMin slice"
+                className="pointer-events-none absolute inset-0 h-full w-full"
                 aria-hidden
-                className={`absolute top-0 left-0 transition-opacity duration-200 ${drawn ? "opacity-100" : "opacity-0"}`}
-                style={{ imageRendering: "pixelated" }}
-            />
-            {drawn &&
-                BEACONS.map(([x, y, r], i) => (
-                    <span
+            >
+                {BEACONS.map(([x, y, r], i) => (
+                    <circle
                         key={i}
-                        aria-hidden
-                        className="beacon absolute"
-                        style={{
-                            left: ox + x * scale - r,
-                            top: y * scale - r,
-                            width: 2 * r,
-                            height: 2 * r,
-                            background: `rgb(${INK_RED.join(",")})`,
-                            animationDelay: `${i * 0.45}s`,
-                        }}
+                        cx={x}
+                        cy={y}
+                        r={r}
+                        fill={BEACON_RED}
+                        className="beacon"
+                        style={{ animationDelay: `${i * 0.45}s` }}
                     />
                 ))}
+            </svg>
         </div>
     );
-}
-
-// useSize is an element's css size and the screen's pixel ratio.
-function useSize(ref: React.RefObject<HTMLElement | null>) {
-    const [size, setSize] = useState<{ w: number; h: number; dpr: number }>();
-    useEffect(() => {
-        const el = ref.current;
-        if (!el) return;
-        const ro = new ResizeObserver(([e]) => {
-            const { width: w, height: h } = e.contentRect;
-            const dpr = window.devicePixelRatio || 1;
-            setSize((s) => (s && s.w === w && s.h === h && s.dpr === dpr ? s : { w, h, dpr }));
-        });
-        ro.observe(el);
-        return () => ro.disconnect();
-    }, [ref]);
-    return size;
 }
 
 // useNightMinute is the minute of the night the windows show: the clock's,
@@ -337,12 +275,10 @@ interface SceneProps {
     sky: Sky;
     skyline: boolean;
     lights: Light[];
-    ref: React.Ref<SVGSVGElement>;
 }
 
-// Scene is the full-color drawing the canvas inks. It stays in the page,
-// hidden, as the source.
-function Scene({ bands, sky, skyline, lights, ref }: SceneProps) {
+// Scene is the drawing.
+function Scene({ bands, sky, skyline, lights }: SceneProps) {
     const id = useId().replace(/:/g, "");
     const s = SKIES[sky];
     const n = bands.length || 1;
@@ -391,40 +327,123 @@ function Scene({ bands, sky, skyline, lights, ref }: SceneProps) {
 
     return (
         <svg
-            ref={ref}
             viewBox={`0 0 ${W} ${H}`}
-            className="invisible absolute inset-0 h-full w-full"
+            className="absolute inset-0 h-full w-full"
             aria-hidden
             preserveAspectRatio="xMidYMin slice"
         >
             <defs>
                 <linearGradient id={`sky-${id}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0" stopColor={s.stops[0]} />
-                    <stop offset="0.55" stopColor={s.stops[1]} />
-                    <stop offset="1" stopColor={s.stops[2]} />
+                    {stops(
+                        banded(
+                            [
+                                [0, s.stops[0]],
+                                [0.55, s.stops[1]],
+                                [1, s.stops[2]],
+                            ],
+                            7,
+                        ),
+                    )}
                 </linearGradient>
                 <linearGradient id={`city-${id}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0" stopColor={s.city[0]} stopOpacity="0" />
-                    <stop offset="1" stopColor={s.city[0]} stopOpacity={s.city[1]} />
+                    {stops(
+                        banded(
+                            [
+                                [0, s.city[0], 0],
+                                [1, s.city[0], s.city[1]],
+                            ],
+                            5,
+                        ),
+                    )}
                 </linearGradient>
                 <radialGradient id={`halo-${id}`}>
-                    <stop offset="0" stopColor={first} stopOpacity={0.42 * s.glow} />
-                    <stop offset="0.45" stopColor={first} stopOpacity={0.18 * s.glow} />
-                    <stop offset="1" stopColor={first} stopOpacity="0" />
+                    {stops(
+                        banded(
+                            [
+                                [0, first, 0.32 * s.glow],
+                                [0.45, first, 0.12 * s.glow],
+                                [1, first, 0],
+                            ],
+                            9,
+                        ),
+                    )}
                 </radialGradient>
                 <linearGradient id={`glass-${id}`} x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stopColor={s.glass[0]} />
-                    <stop offset="1" stopColor={s.glass[1]} />
+                    {stops(
+                        banded(
+                            [
+                                [0, s.glass[0]],
+                                [1, s.glass[1]],
+                            ],
+                            5,
+                        ),
+                    )}
                 </linearGradient>
                 <linearGradient id={`shaft-${id}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0" stopColor={s.shaft[0]} />
-                    <stop offset="1" stopColor={s.shaft[1]} />
+                    {stops(
+                        banded(
+                            [
+                                [0, s.shaft[0]],
+                                [1, s.shaft[1]],
+                            ],
+                            6,
+                        ),
+                    )}
                 </linearGradient>
                 <linearGradient id={`spill-${id}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0" stopColor={first} stopOpacity={0.28 * s.glow} />
-                    <stop offset="0.3" stopColor={first} stopOpacity={0.08 * s.glow} />
-                    <stop offset="1" stopColor={first} stopOpacity="0" />
+                    {stops(
+                        banded(
+                            [
+                                [0, first, 0.28 * s.glow],
+                                [0.3, first, 0.08 * s.glow],
+                                [1, first, 0],
+                            ],
+                            5,
+                        ),
+                    )}
                 </linearGradient>
+                {/* the halftone: an ordered screen of fine dots, shown through a banded mask */}
+                {screen(`screen-${id}`, s.dots[0])}
+                {screen(`screen-halo-${id}`, first)}
+                <linearGradient id={`sky-dots-${id}`} x1="0" y1="0" x2="0" y2="1">
+                    {stops(
+                        banded(
+                            [
+                                [0, "#fff", s.dots[1]],
+                                [1, "#fff", s.dots[2]],
+                            ],
+                            5,
+                        ),
+                    )}
+                </linearGradient>
+                <radialGradient id={`halo-dots-${id}`}>
+                    {stops(
+                        banded(
+                            [
+                                [0, "#fff", 0.55 * s.glow],
+                                [1, "#fff", 0],
+                            ],
+                            5,
+                        ),
+                    )}
+                </radialGradient>
+                <mask id={`sky-mask-${id}`} maskUnits="userSpaceOnUse" x="0" y="0" width={W} height={H}>
+                    <rect width={W} height={H} fill={`url(#sky-dots-${id})`} />
+                </mask>
+                <mask id={`halo-mask-${id}`} maskUnits="userSpaceOnUse" x="0" y="0" width={W} height={H}>
+                    <ellipse cx={CX} cy={TOP + RING_LOW} rx={170} ry={100} fill={`url(#halo-dots-${id})`} />
+                </mask>
+                {/* paper grain: fine noise, laid over everything softly */}
+                <filter id={`grain-${id}`} x="0" y="0" width="100%" height="100%">
+                    <feTurbulence
+                        type="fractalNoise"
+                        baseFrequency="0.85"
+                        numOctaves="2"
+                        seed="7"
+                        stitchTiles="stitch"
+                    />
+                    <feColorMatrix type="saturate" values="0" />
+                </filter>
                 <pattern
                     id={`win-${id}`}
                     width="4"
@@ -452,6 +471,9 @@ function Scene({ bands, sky, skyline, lights, ref }: SceneProps) {
                     <circle key={i} cx={t.x} cy={t.y} r={t.r} fill="#e6ebff" opacity={t.o} />
                 ))}
             <ellipse cx={CX} cy={TOP + RING_LOW} rx={190} ry={110} fill={`url(#halo-${id})`} />
+            {/* the halftone over the sky and in the crown's glow */}
+            <rect width={W} height={H} fill={`url(#screen-${id})`} mask={`url(#sky-mask-${id})`} />
+            <rect width={W} height={H} fill={`url(#screen-halo-${id})`} mask={`url(#halo-mask-${id})`} />
 
             {skyline && (
                 <g>
@@ -510,7 +532,7 @@ function Scene({ bands, sky, skyline, lights, ref }: SceneProps) {
                 <rect x={CX - 8} y={TOP + 58} width={16} height={16} fill={first} fillOpacity={0.35} />
             </g>
 
-            {/* the rooftop: machinery, antennas (the beacons are drawn over the canvas) */}
+            {/* the rooftop: machinery, antennas (the beacons are drawn over it) */}
             <rect x={CX - 58} y={TOP + 104} width={116} height={8} fill={s.near} />
             <g stroke="#5b6680" strokeWidth="1">
                 {[
@@ -663,7 +685,32 @@ function Scene({ bands, sky, skyline, lights, ref }: SceneProps) {
                     {lit.front}
                 </g>
             )}
+
+            {/* the paper's grain over it all */}
+            <rect
+                width={W}
+                height={H}
+                filter={`url(#grain-${id})`}
+                opacity={sky === "day" ? 0.4 : 0.3}
+                style={{ mixBlendMode: "overlay" }}
+            />
         </svg>
+    );
+}
+
+// stops draws a gradient's stops.
+function stops(list: Stop[]) {
+    return list.map(([o, c, a = 1], i) => <stop key={i} offset={o} stopColor={c} stopOpacity={a} />);
+}
+
+// screen is a halftone pattern: an ordered grid of fine dots in one ink, a
+// big dot and a small one in each cell.
+function screen(id: string, ink: string) {
+    return (
+        <pattern id={id} width="3" height="3" patternUnits="userSpaceOnUse">
+            <circle cx="0.75" cy="0.75" r="0.6" fill={ink} />
+            <circle cx="2.25" cy="2.25" r="0.42" fill={ink} />
+        </pattern>
     );
 }
 

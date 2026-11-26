@@ -44,8 +44,7 @@ export interface Light extends Win {
     off: number;
 }
 
-// window light colors: each is one of the panel's inks (lib/ink.ts), so a
-// window inks as a solid block, as on the frame
+// window light colors: the frame's inks, so a window is a solid block of ink
 const WHITE = "#eceae2";
 const YELLOW = "#e3ce34";
 const TV = "#2254ac";
