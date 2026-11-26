@@ -19,7 +19,11 @@ export function MyNights() {
     const { me } = useAuth();
     if (!me) return null;
     return (
-        <section id="nights" aria-label="Your nights" className="flex scroll-mt-4 flex-col gap-4">
+        <section
+            id="nights"
+            aria-label="Your nights"
+            className="flex scroll-mt-4 flex-col gap-4 rounded-2xl bg-raised p-3 shadow-lg sm:p-6"
+        >
             <h2 className="text-2xl font-bold">Your nights</h2>
             <Log />
         </section>

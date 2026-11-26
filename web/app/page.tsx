@@ -11,8 +11,8 @@ import { Month } from "@/components/Month";
 import { MyNights } from "@/components/MyNights";
 import { ErrorNote, Shell } from "@/components/Shell";
 
-// / is the whole site on one page: tonight, the week, the month and, signed
-// in, your nights. Each section loads on its own.
+// / is the whole site on one page: tonight, the week, signed in your nights,
+// and the month. Each section loads on its own.
 export default function HomePage() {
     // re-check every 10 minutes, so a page left open rolls over to the next night
     const { data, error, reload } = useApi<TonightResponse>("/tonight", 10 * 60_000);
@@ -41,10 +41,10 @@ export default function HomePage() {
                         <h2 className="text-2xl font-bold">This week</h2>
                         <Upcoming nights={data.upcoming} tonight={data.date} />
                     </section>
+                    <MyNights />
                     <Suspense fallback={<Skeleton height={480} radius="lg" />}>
                         <Month tonight={data.date} />
                     </Suspense>
-                    <MyNights />
                 </div>
             )}
         </Shell>
