@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button, Rating, Textarea } from "@mantine/core";
 import { IconCheck, IconEye } from "@tabler/icons-react";
 import type { NightSightings, NightStatsResponse, Sighting } from "@/interfaces/api";
-import { api, useApi } from "@/lib/api";
+import { api, sightingsChanged, useApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 // SawIt is the "I saw it" panel under a night: mark it seen, rate it, leave a
@@ -58,6 +58,15 @@ function Members({ date }: { date: string }) {
 
     useEffect(() => setNote(mine?.note ?? ""), [mine?.note, date]);
 
+    // a calendar night with your note links here as #note: bring it into view
+    // once it's there (too late for the browser to follow the hash itself)
+    const loaded = data?.date === date;
+    useEffect(() => {
+        if (loaded && location.hash === "#note") {
+            document.getElementById("note")?.scrollIntoView({ block: "center" });
+        }
+    }, [loaded]);
+
     if (!data || data.date !== date) return null;
 
     const save = async (change: { rating?: number; note?: string }) => {
@@ -69,6 +78,7 @@ function Members({ date }: { date: string }) {
                 body: JSON.stringify({ rating: mine?.rating ?? 0, note: mine?.note ?? "", ...change }),
             });
             reload();
+            sightingsChanged();
         } catch (e) {
             setError((e as Error).message);
         } finally {
@@ -81,6 +91,7 @@ function Members({ date }: { date: string }) {
             await api<void>(`/me/sightings/${date}`, { method: "DELETE" });
             setNote("");
             reload();
+            sightingsChanged();
         } catch (e) {
             setError((e as Error).message);
         } finally {

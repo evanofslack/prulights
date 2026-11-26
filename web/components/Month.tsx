@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ActionIcon, Skeleton } from "@mantine/core";
-import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
-import type { LightingsResponse } from "@/interfaces/api";
-import { useApi } from "@/lib/api";
+import { IconChevronLeft, IconChevronRight, IconMessage } from "@tabler/icons-react";
+import type { LightingsResponse, LoggedNight, MySightings } from "@/interfaces/api";
+import { useApi, useOnSightingsChanged } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { addDays, colorNames, dayOfMonth, monthTitle } from "@/lib/format";
 import { bandsOf, soft, usePalette } from "@/lib/palette";
 import { ErrorNote } from "./Shell";
@@ -20,7 +21,8 @@ function shiftMonth(month: string, n: number): string {
 }
 
 // Month is the calendar section of the home page: a month of nights as color
-// cells, each opening that night. The month lives in ?m= so it can be linked,
+// cells, each opening that night. Signed in, the nights you saw get a quiet
+// dot (a note mark if you wrote one, and the cell opens on your note). The month lives in ?m= so it can be linked,
 // but changing it replaces the url in place: no jump, no history per month.
 export function Month({ tonight }: { tonight: string }) {
     const router = useRouter();
@@ -31,6 +33,10 @@ export function Month({ tonight }: { tonight: string }) {
     const first = `${month}-01`;
     const last = addDays(`${shiftMonth(month, 1)}-01`, -1);
     const { data, error, reload } = useApi<LightingsResponse>(`/lightings?from=${first}&to=${last}`);
+    const { me } = useAuth();
+    const mine = useApi<MySightings>(me ? "/me/sightings" : null);
+    useOnSightingsChanged(mine.reload);
+    const seen = new Map<string, LoggedNight>((me ? mine.data?.nights : undefined)?.map((x) => [x.date, x]));
     const go = (n: number) => router.replace(`/?m=${shiftMonth(month, n)}#calendar`, { scroll: false });
 
     const lead = new Date(`${month}-01T12:00:00Z`).getUTCDay();
@@ -63,19 +69,41 @@ export function Month({ tonight }: { tonight: string }) {
                 {nights
                     ? nights.map((l) => {
                           const isTonight = l.date === tonight;
+                          const saw = seen.get(l.date);
+                          const noted = !!saw?.note;
                           return (
                               <Link
                                   key={l.date}
-                                  href={`/night?d=${l.date}`}
-                                  title={`${colorNames(l.colors, palette)}${l.scheduled ? ` for ${l.cause}` : ""}`}
+                                  href={`/night?d=${l.date}${noted ? "#note" : ""}`}
+                                  title={`${colorNames(l.colors, palette)}${l.scheduled ? ` for ${l.cause}` : ""}${
+                                      noted ? " · your note" : saw ? " · you saw it" : ""
+                                  }`}
                                   className={`group flex aspect-[3/4] flex-col overflow-hidden rounded-lg bg-panel ring-offset-2 ring-offset-raised sm:aspect-square ${
                                       isTonight ? "ring-2 ring-accent" : ""
                                   }`}
                               >
-                                  <span
-                                      className={`px-1.5 pt-1 text-sm sm:text-base ${isTonight ? "font-bold text-accent" : "text-muted"}`}
-                                  >
-                                      {dayOfMonth(l.date)}
+                                  <span className="flex items-start justify-between px-1.5 pt-1">
+                                      <span
+                                          className={`text-sm sm:text-base ${isTonight ? "font-bold text-accent" : "text-muted"}`}
+                                      >
+                                          {dayOfMonth(l.date)}
+                                      </span>
+                                      {noted ? (
+                                          <IconMessage
+                                              size={12}
+                                              className="mt-1 text-muted"
+                                              aria-label="your note"
+                                              data-mark="note"
+                                          />
+                                      ) : (
+                                          saw && (
+                                              <span
+                                                  className="mt-1.5 size-1.5 rounded-full bg-muted"
+                                                  aria-label="you saw it"
+                                                  data-mark="seen"
+                                              />
+                                          )
+                                      )}
                                   </span>
                                   {l.scheduled ? (
                                       <span className="m-1.5 mt-1 flex flex-1 overflow-hidden rounded-md">
@@ -98,7 +126,7 @@ export function Month({ tonight }: { tonight: string }) {
                           <Skeleton key={i} className="aspect-[3/4] sm:aspect-square" radius="md" />
                       ))}
             </div>
-            <p className="text-sm text-muted">Blank = plain white.</p>
+            <p className="text-sm text-muted">Blank = plain white{me ? " · dot = you saw it" : ""}.</p>
         </section>
     );
 }

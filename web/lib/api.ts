@@ -102,3 +102,19 @@ export function useMeta(): MetaResponse | undefined {
     }, []);
     return meta;
 }
+
+// Sightings live in several sections of a page (the "I saw it" panel, the
+// calendar's marks, your nights). After a save the panel calls
+// sightingsChanged, and the others reload through useOnSightingsChanged.
+const SIGHTINGS = "prulights:sightings";
+
+export function sightingsChanged() {
+    window.dispatchEvent(new Event(SIGHTINGS));
+}
+
+export function useOnSightingsChanged(reload: () => void) {
+    useEffect(() => {
+        window.addEventListener(SIGHTINGS, reload);
+        return () => window.removeEventListener(SIGHTINGS, reload);
+    }, [reload]);
+}

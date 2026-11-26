@@ -124,6 +124,34 @@ check(
 );
 await shot(mom, "sightings-log");
 
+// the calendar marks her nights; the one with a note opens on it
+const noted = `#calendar a[href="/night?d=${tonight}#note"]`;
+await mom.waitForSelector(`${noted} [data-mark=note]`);
+check("the calendar marks tonight's note", true);
+const weekAgo = addDays(tonight, -7);
+if (weekAgo.slice(0, 7) === tonight.slice(0, 7)) {
+    check(
+        "the calendar dots a night she saw",
+        (await mom.locator(`#calendar a[href="/night?d=${weekAgo}"] [data-mark=seen]`).count()) === 1,
+    );
+}
+check(
+    "unlogged nights have no mark",
+    (await mom.locator(`#calendar a[href="/night?d=${addDays(tonight, -1)}"] [data-mark]`).count()) === 0,
+);
+await shot(mom, "calendar-marks");
+await mom.click(noted);
+await mom.waitForURL(`**/night?d=${tonight}#note`);
+await mom.waitForSelector('[aria-label="Your note"]');
+await mom.waitForTimeout(300);
+check(
+    "it opens with her note in view",
+    await mom.evaluate(() => {
+        const r = document.querySelector('[aria-label="Your note"]').getBoundingClientRect();
+        return r.top >= 0 && r.bottom <= innerHeight;
+    }),
+);
+
 // evan sees it on tonight
 await evan.goto(URL);
 await evan.waitForSelector("[aria-label='Also seen by'] >> text=Nana");
