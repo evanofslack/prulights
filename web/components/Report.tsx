@@ -44,9 +44,7 @@ export function Reports({ date }: { date: string }) {
             ))}
             {mine && (
                 <p className="flex flex-wrap items-center gap-x-3 text-muted">
-                    <span>
-                        You said it was {colorNames(mine.colors, palette)}. An admin will check it.
-                    </span>
+                    <span>You said it was {colorNames(mine.colors, palette)}.</span>
                     {data.can_report && (
                         <>
                             <button
@@ -135,7 +133,7 @@ function ReportModal({
     return (
         <Modal opened={opened} onClose={onClose} title="What colors was it?" centered size="lg">
             <div className="flex flex-col gap-4">
-                <p className="text-muted">Pick the colors you saw. An admin checks before the night changes.</p>
+                <p className="text-muted">Pick the colors you saw.</p>
                 {palette && (
                     <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                         {[...palette.values()].map((c) => (
