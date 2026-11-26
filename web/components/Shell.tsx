@@ -27,6 +27,9 @@ export function Shell({ children, wide }: { children: React.ReactNode; wide?: bo
         ...(meta?.dev || path.startsWith("/emulator")
             ? [{ href: "/emulator", label: "Emulator", active: path.startsWith("/emulator") }]
             : []),
+        ...(meta?.dev || path.startsWith("/prudle-lab")
+            ? [{ href: "/prudle-lab", label: "Prudle", active: path.startsWith("/prudle-lab") }]
+            : []),
     ];
     const width = wide ? "max-w-6xl" : "max-w-3xl";
     return (
