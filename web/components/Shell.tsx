@@ -1,30 +1,30 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { ActionIcon, Popover, Tooltip } from "@mantine/core";
+import { IconApi, IconBrandGithub, IconInfoCircle, IconMaximize } from "@tabler/icons-react";
 import type { DeviceInfo } from "@/interfaces/api";
 import { useApi, useMeta } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Account } from "./Account";
 
-// Shell is the page frame: a slim header with the main places, the page, and
-// the credit to the source. The emulator shows up when the server is in dev
-// mode, since its previews only exist there, and only on wider screens.
+// Shell is the page frame: a slim header, the page, and a one-line footer of
+// icons. The site is one page, so the header only links what isn't on it: the
+// frame settings and, in dev mode, the emulator. Both hide on phones (Frame is
+// in the account menu too; the emulator previews need a wide screen).
 export function Shell({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
     const path = usePathname();
     const meta = useMeta();
     const { me } = useAuth();
     const frames = useApi<DeviceInfo[]>(me ? "/me/devices" : null);
-    // wide links hide on phones (Frame is in the account menu there too)
     const links = [
-        { href: "/", label: "Tonight", active: path === "/" || path === "/night" },
-        { href: "/calendar", label: "Calendar", active: path.startsWith("/calendar") },
-        ...(me ? [{ href: "/log", label: "Log", active: path.startsWith("/log") }] : []),
         ...(me && (frames.data?.length || path.startsWith("/settings"))
-            ? [{ href: "/settings", label: "Frame", active: path.startsWith("/settings"), wide: true }]
+            ? [{ href: "/settings", label: "Frame", active: path.startsWith("/settings") }]
             : []),
         ...(meta?.dev || path.startsWith("/emulator")
-            ? [{ href: "/emulator", label: "Emulator", active: path.startsWith("/emulator"), wide: true }]
+            ? [{ href: "/emulator", label: "Emulator", active: path.startsWith("/emulator") }]
             : []),
     ];
     const width = wide ? "max-w-6xl" : "max-w-3xl";
@@ -40,8 +40,8 @@ export function Shell({ children, wide }: { children: React.ReactNode; wide?: bo
                             key={l.href}
                             href={l.href}
                             aria-current={l.active ? "page" : undefined}
-                            className={`rounded-md px-2.5 py-2 text-base sm:px-3 ${l.active ? "bg-raised font-bold" : "text-muted hover:text-fg"} ${
-                                "wide" in l ? "hidden sm:block" : ""
+                            className={`hidden rounded-md px-2.5 py-2 text-base sm:block sm:px-3 ${
+                                l.active ? "bg-raised font-bold" : "text-muted hover:text-fg"
                             }`}
                         >
                             {l.label}
@@ -51,37 +51,89 @@ export function Shell({ children, wide }: { children: React.ReactNode; wide?: bo
                 </nav>
             </header>
             <main className={`mx-auto w-full flex-1 px-4 py-6 ${width}`}>{children}</main>
-            <footer className="flex flex-col gap-2 border-t border-line px-4 py-5 text-center text-sm text-subtle">
-                <p className="flex justify-center gap-4">
-                    <Link className="underline hover:text-fg" href="/display">
-                        Display
-                    </Link>
-                    <a className="underline hover:text-fg" href="/docs">
-                        API
-                    </a>
-                    <a
-                        className="underline hover:text-fg"
+            <Footer width={width} />
+        </div>
+    );
+}
+
+// Footer is one right-aligned row of icons. The credit to the source sits
+// behind the info icon: hover or focus on a computer, tap on a phone.
+function Footer({ width }: { width: string }) {
+    const router = useRouter();
+    // the credit opens on hover or tap (a tap also sends mouseenter, so a click
+    // only ever opens) and closes on leaving, a tap elsewhere or esc. Leaving
+    // waits a moment so the pointer can cross the gap to click the link.
+    const [credit, setCredit] = useState(false);
+    const leaving = useRef<ReturnType<typeof setTimeout>>(undefined);
+    const show = () => {
+        clearTimeout(leaving.current);
+        setCredit(true);
+    };
+    const hide = () => {
+        clearTimeout(leaving.current);
+        leaving.current = setTimeout(() => setCredit(false), 150);
+    };
+    useEffect(() => () => clearTimeout(leaving.current), []);
+    const fullScreen = async () => {
+        try {
+            await document.documentElement.requestFullscreen?.();
+        } catch {}
+        router.push("/display");
+    };
+    const icon = { variant: "subtle", color: "gray", size: "xl", radius: "md" } as const;
+    return (
+        <footer className="border-t border-line">
+            <div className={`mx-auto flex items-center justify-end gap-1 px-3 py-2 sm:px-4 ${width}`}>
+                <Tooltip label="Full screen">
+                    <ActionIcon {...icon} aria-label="Full screen" onClick={fullScreen}>
+                        <IconMaximize size={22} />
+                    </ActionIcon>
+                </Tooltip>
+                <Tooltip label="API docs">
+                    <ActionIcon {...icon} component="a" href="/docs" aria-label="API docs">
+                        <IconApi size={22} />
+                    </ActionIcon>
+                </Tooltip>
+                <Tooltip label="Source">
+                    <ActionIcon
+                        {...icon}
+                        component="a"
                         href="https://github.com/evanofslack/prulights"
                         target="_blank"
                         rel="noopener"
+                        aria-label="Source"
                     >
-                        Source
-                    </a>
-                </p>
-                <p>
-                    Schedule from the{" "}
-                    <a
-                        className="underline hover:text-fg"
-                        href="https://www.prudentialcenter.com/experiences/events/31-nights-of-light/"
-                        target="_blank"
-                        rel="noopener"
-                    >
-                        Prudential Center
-                    </a>
-                    . Not affiliated with the Prudential Center, BXP or Prudential Financial.
-                </p>
-            </footer>
-        </div>
+                        <IconBrandGithub size={22} />
+                    </ActionIcon>
+                </Tooltip>
+                <Popover opened={credit} onChange={setCredit} position="top-end" width={280} shadow="md">
+                    <Popover.Target>
+                        <ActionIcon
+                            {...icon}
+                            aria-label="About the schedule"
+                            aria-expanded={credit}
+                            onClick={show}
+                            onMouseEnter={show}
+                            onMouseLeave={hide}
+                        >
+                            <IconInfoCircle size={22} />
+                        </ActionIcon>
+                    </Popover.Target>
+                    <Popover.Dropdown onMouseEnter={show} onMouseLeave={hide} className="text-sm text-muted">
+                        Schedule from the{" "}
+                        <a
+                            className="underline hover:text-fg"
+                            href="https://www.prudentialcenter.com/experiences/events/31-nights-of-light/"
+                            target="_blank"
+                            rel="noopener"
+                        >
+                            Prudential Center
+                        </a>
+                        . Not affiliated with the Prudential Center, BXP or Prudential Financial.
+                    </Popover.Dropdown>
+                </Popover>
+            </div>
+        </footer>
     );
 }
 

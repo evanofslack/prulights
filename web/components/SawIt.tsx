@@ -154,7 +154,7 @@ function Members({ date }: { date: string }) {
                                     className="ml-auto min-h-11 px-1 text-muted underline hover:text-fg"
                                     onClick={remove}
                                 >
-                                    I didn&apos;t see it
+                                    Undo
                                 </button>
                             </div>
                         </div>

@@ -1,19 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Anchor, Badge, Skeleton } from "@mantine/core";
+import { Anchor, Skeleton } from "@mantine/core";
 import { IconClock, IconExternalLink } from "@tabler/icons-react";
 import type { Lighting } from "@/interfaces/schedule";
 import { bandsOf, usePalette } from "@/lib/palette";
-import {
-    colorNames,
-    kindLabel,
-    lightsOnTime,
-    longDate,
-    relativeName,
-    shortDate,
-    weekdayAbbr,
-} from "@/lib/format";
+import { colorNames, lightsOnTime, longDate, relativeName, shortDate, weekdayAbbr } from "@/lib/format";
 import { useSky } from "@/lib/sky";
 import { Crown, Tower } from "./Tower";
 
@@ -79,25 +71,15 @@ export function Night({ lighting: l, tonight, publishedThrough, children }: Nigh
                     </p>
                 ) : (
                     <p className="text-xl text-muted">
-                        {unannounced
-                            ? "Nothing announced yet. When the crown has no special lighting it shines white."
-                            : "No special lighting. The crown shines white."}
+                        {unannounced ? "Not announced yet. Usually white." : "No special lighting."}
                     </p>
                 )}
-                <div className="flex flex-wrap items-center justify-center gap-3 text-muted sm:justify-start">
-                    <span className="inline-flex items-center gap-1.5 text-lg">
-                        <IconClock size={20} aria-hidden />
-                        {lit ? "Lit since " : "Lights on "}
-                        {l.lights_on_source === "sunset" ? "around " : "at "}
-                        {lightsOnTime(l.lights_on)}
-                        {l.lights_on_source === "sunset" ? " (sunset)" : ""}
-                    </span>
-                    {l.scheduled && (
-                        <Badge variant="light" color="gray" size="lg" radius="sm">
-                            {kindLabel[l.kind] ?? l.kind}
-                        </Badge>
-                    )}
-                </div>
+                <p className="inline-flex items-center justify-center gap-1.5 text-lg text-muted sm:justify-start">
+                    <IconClock size={20} aria-hidden />
+                    {lit ? "Lit since " : "Lights on "}
+                    {l.lights_on_source === "sunset" ? "~" : "at "}
+                    {lightsOnTime(l.lights_on)}
+                </p>
                 {children}
             </div>
         </section>
@@ -158,7 +140,7 @@ export function Upcoming({ nights, tonight }: { nights: Lighting[]; tonight?: st
                                     {colorNames(l.colors, palette)}
                                 </span>
                                 <span className="block truncate text-muted">
-                                    {l.scheduled ? l.cause : "No special lighting"}
+                                    {l.scheduled ? l.cause : "Plain white"}
                                 </span>
                             </span>
                         </Link>

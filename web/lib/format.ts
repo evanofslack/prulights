@@ -59,11 +59,3 @@ export function headline(l: Lighting, palette: Map<ColorKey, Color> | undefined)
     const colors = colorNames(l.colors, palette);
     return l.scheduled && l.cause ? `${colors} for ${l.cause}` : colors;
 }
-
-export const kindLabel: Record<string, string> = {
-    nonprofit: "Nonprofit partner",
-    holiday: "Holiday",
-    sports: "Sports",
-    civic: "Observance",
-    default: "Every night",
-};

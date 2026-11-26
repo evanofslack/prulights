@@ -16,18 +16,41 @@ for (const [kind, view] of Object.entries(views)) {
     );
     check(`${kind}: tonight names its colors`, (await p.locator("h1").textContent()).length > 2);
     // runs of plain white nights share a row ("Thu – Mon")
-    const rows = await p.locator("main ul li a[href^='/night?d=']").allTextContents();
+    const rows = await p.locator("#week ul li a[href^='/night?d=']").allTextContents();
     check(
-        `${kind}: the next nights coming up, white runs grouped`,
+        `${kind}: the week ahead, white runs grouped`,
         rows.length >= 1 && rows.length <= 7 && /^Tomorrow/.test(rows[0]),
         rows.join(" | "),
     );
-    check(
-        `${kind}: credits the source`,
-        await p.locator('footer a[href*="prudentialcenter.com"]').isVisible(),
-    );
+    check(`${kind}: signed out, no nights section`, (await p.locator("#nights").count()) === 0);
+    check(`${kind}: footer is one line`, (await p.locator("footer > div").boundingBox()).height < 70);
+    // the credit is behind the info icon: a tap (or hover) shows it, esc hides it
+    await p.click("[aria-label='About the schedule']");
+    const credit = p.locator('a[href*="prudentialcenter.com"]:text("Prudential Center")');
+    await credit.waitFor({ timeout: 3000 }).catch(() => {});
+    check(`${kind}: credits the source`, await credit.isVisible());
+    await p.keyboard.press("Escape");
     check(`${kind}: tonight has no sideways scroll`, !(await sideways(p)));
     await shot(p, `${kind}-tonight`);
+
+    // the calendar is on the same page; months change in place
+    await p.goto(`${URL}/?m=2026-12`);
+    await p.waitForSelector("#calendar h2:text('December 2026')");
+    await p.waitForSelector("#calendar a[href='/night?d=2026-12-31']");
+    check(
+        `${kind}: december has 31 nights`,
+        (await p.locator("#calendar a[href^='/night?d=2026-12-']").count()) === 31,
+    );
+    await p.click("[aria-label='Next month']");
+    await p.waitForSelector("#calendar h2:text('January 2027')");
+    check(`${kind}: next month, same page`, new globalThis.URL(p.url()).pathname === "/");
+    await shot(p, `${kind}-calendar`);
+
+    // the old /calendar links land on that section
+    await p.goto(`${URL}/calendar?m=2026-12`);
+    await p.waitForURL(/\/\?m=2026-12#calendar$/);
+    await p.waitForSelector("#calendar h2:text('December 2026')");
+    check(`${kind}: /calendar lands on the calendar`, true);
 
     // a listed night, and its neighbors
     await p.goto(`${URL}/night?d=2026-12-10`);
@@ -42,26 +65,13 @@ for (const [kind, view] of Object.entries(views)) {
 
     // an unlisted night is white
     await p.goto(`${URL}/night?d=2027-08-03`);
-    await p.waitForSelector("text=shines white");
+    await p.waitForSelector("text=Not announced yet. Usually white.");
     check(`${kind}: unlisted night is white`, (await p.locator("h1").textContent()) === "White");
 
-    // the calendar
-    await p.goto(`${URL}/calendar?m=2026-12`);
-    await p.waitForSelector("h1:text('December 2026')");
-    await p.waitForSelector("main a[href='/night?d=2026-12-31']");
-    check(
-        `${kind}: december has 31 nights`,
-        (await p.locator("main a[href^='/night?d=2026-12-']").count()) === 31,
-    );
-    check(`${kind}: calendar has no sideways scroll`, !(await sideways(p)));
-    await p.click("[aria-label='Next month']");
-    await p.waitForSelector("h1:text('January 2027')");
-    check(`${kind}: next month`, true);
-    await shot(p, `${kind}-calendar`);
-
-    // the display, opened from tonight, and out again
+    // the display, opened from the footer, and out again
     await p.goto(URL);
-    await p.click(btn("Open as display"));
+    await p.waitForSelector("h1");
+    await p.click("footer [aria-label='Full screen']");
     await p.waitForURL(/\/display$/);
     await p.waitForSelector("h1");
     check(`${kind}: display shows seven nights`, (await p.locator("main ul li").count()) === 7);
@@ -80,7 +90,7 @@ const p = await open(browser, views.desktop);
 await p.goto(`${URL}/docs`);
 await p.waitForSelector(".swagger-ui .opblock", { timeout: 20000 });
 check("docs list the endpoints", (await p.locator(".swagger-ui .opblock").count()) >= 8);
-check("docs have no site header", (await p.locator("header nav a:text('Calendar')").count()) === 0);
+check("docs have no site header", (await p.locator("header nav").count()) === 0);
 await p.click(".opblock-get .opblock-summary:has-text('/tonight')");
 await p.waitForSelector(".opblock.is-open >> text=No parameters"); // resolved, ready to run
 await p.click(btn("Execute"));
