@@ -121,6 +121,17 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   `scene`, `words` (`withDefaults` fills them for older settings). An `auto` frame's bundle has each
   night twice, `dark` and `light` with `from`/`until` (sunrise to lights-on, `daylight`).
   `/settings` draws its choices from `GET /me/devices/{id}/preview.png?view=&light=1&scene=&words=`. `/api/device/compat/current.png?token=` is for the stock firmware.
+- Prudle (December only): each night, guess tonight's colors with its cause as the clue. Only tonight is
+  playable. Rules are the lab's (budget 5 misses, close costs ½, at most 4 colors) in `backend/prudle` (pure; the
+  copy that counts, `testdata/games.json` keeps `web/lib/prudle.ts` in step). `server/prudle.go`: `/me/prudle`
+  (summary), `/me/prudle/{date}` (never the answer before the game ends), `…/guesses`, `…/pass` ("just show me"),
+  `/me/prudle/settings` (`users.prudle_off`), `/prudle/{date}` (family marks, no colors, locked until you've
+  played). The answer is kept from the first guess (`prudle_games`). The blackout is web only
+  (`lib/blackout.tsx`, `usePrudle().hidden(date)`): signed in, December nights from tonight on stay hidden until
+  tonight's game ends; signed out sees colors and a sign-in card. `/display`, frames, admin and the public api
+  always show colors. The board's pieces are `components/Prudle.tsx` (shared with the lab), the game is
+  `components/PrudleGame.tsx`. e2e `prudle.mjs` runs on a second server on :8097 with `DEV_NOW` (only with
+  `DEV=1`) set to Dec 10, 2026.
 - Frame setup: an unclaimed frame's bundle is the welcome screen (`setup`, tonight + 6) plus `wifi`; a
   claimed one adds `wifi` (empty date) to its views. A frame gets an owner by its code on `/claim`
   (signed in; signed out it offers sign in or `/join`), or from an admin: `PUT /admin/devices/{id}/owner`

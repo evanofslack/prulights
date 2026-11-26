@@ -55,6 +55,10 @@ func New(cfg config.Config, st *store.Store) *Server {
 		panic(fmt.Sprintf("passkeys: bad RP_ID or RP_ORIGINS: %v", err))
 	}
 	s := &Server{cfg: cfg, store: st, router: chi.NewRouter(), now: time.Now, wa: wa}
+	if cfg.Dev && !cfg.DevNow.IsZero() {
+		start, at := time.Now(), cfg.DevNow
+		s.now = func() time.Time { return at.Add(time.Since(start)) }
+	}
 	s.router.Use(middleware.RequestID)
 	s.router.Use(middleware.Recoverer)
 	s.router.Use(requestLog)

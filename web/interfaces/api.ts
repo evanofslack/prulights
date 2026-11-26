@@ -406,6 +406,138 @@ export interface DevInks {
 }
 
 //////////
+// source: prudletypes.go
+
+/**
+ * PrudleResult is how one of your nights went.
+ */
+export interface PrudleResult {
+  date: schedule.Date;
+  /**
+   * Status is "playing", "won", "lost" or "passed" ("just show me").
+   */
+  status: string;
+  turns: number /* int */;
+  misses: number /* float64 */;
+}
+/**
+ * PrudleSummary is GET /api/v1/me/prudle: whether you play tonight, and
+ * your December so far.
+ */
+export interface PrudleSummary {
+  tonight: schedule.Date;
+  /**
+   * Season is whether tonight is in December, when Prudle runs.
+   */
+  season: boolean;
+  /**
+   * Playable is whether tonight has a Prudle: in season and listed with a
+   * cause and colors.
+   */
+  playable: boolean;
+  /**
+   * Off is whether you turned Prudle off and see every color.
+   */
+  off: boolean;
+  /**
+   * Done is whether tonight's game is over (won, lost or passed).
+   */
+  done: boolean;
+  /**
+   * Games are this December's, oldest first.
+   */
+  games: PrudleResult[];
+  won: number /* int */;
+  streak: number /* int */; // nights won in a row, through tonight or last night
+}
+/**
+ * PrudlePick is one new color of a guess and what it was: "hit", "close" or "miss".
+ */
+export interface PrudlePick {
+  key: any /* schedule.ColorKey */;
+  mark: string;
+}
+/**
+ * PrudleTurn is one guess: its new colors, its whole size (colors already
+ * found ride along) and the count: "fewer", "more" or "exact".
+ */
+export interface PrudleTurn {
+  picks: PrudlePick[];
+  size: number /* int */;
+  count: string;
+}
+/**
+ * PrudleState is GET /api/v1/me/prudle/{date}: your game of a night. The
+ * answer only comes once the game is over or the night is past.
+ */
+export interface PrudleState {
+  date: schedule.Date;
+  cause: string;
+  budget: number /* int */; // misses allowed; one more loses
+  max_picks: number /* int */; // the most colors in one guess
+  status: string;
+  can_play: boolean; // tonight, and not over
+  turns: PrudleTurn[];
+  found: any /* schedule.ColorKey */[];
+  /**
+   * Out are the colors guessed and not on, with their mark.
+   */
+  out: PrudlePick[];
+  misses: number /* float64 */;
+  /**
+   * Lo and Hi are what's known of how many colors; Hi is 0 until a "fewer".
+   */
+  lo: number /* int */;
+  hi: number /* int */;
+  /**
+   * Bands is whether the count is known (then it's Lo).
+   */
+  bands: boolean;
+  answer?: any /* schedule.ColorKey */[];
+}
+/**
+ * PrudleGuess is POST /api/v1/me/prudle/{date}/guesses: the new colors of a
+ * guess (the ones already found ride along on their own).
+ */
+export interface PrudleGuess {
+  colors: any /* schedule.ColorKey */[];
+}
+/**
+ * PrudleSettings is PUT /api/v1/me/prudle/settings.
+ */
+export interface PrudleSettings {
+  off: boolean;
+}
+/**
+ * PrudleRow is one guess as marks only, for sharing: the colors already
+ * found, then the new ones good news first, and the count.
+ */
+export interface PrudleRow {
+  marks: string[];
+  size: number /* int */;
+  count: string;
+}
+/**
+ * PrudlePlayer is someone's finished game of a night, without its colors.
+ */
+export interface PrudlePlayer {
+  name: string;
+  mine: boolean;
+  status: string;
+  misses: number /* float64 */;
+  rows: PrudleRow[];
+}
+/**
+ * PrudleNight is GET /api/v1/prudle/{date}: how everyone did. Locked (and
+ * empty) until your own game of the night is over, or the night is past.
+ */
+export interface PrudleNight {
+  date: schedule.Date;
+  locked: boolean;
+  players: PrudlePlayer[];
+}
+
+//////////
 // source: sightingtypes.go
 
 /**

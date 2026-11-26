@@ -6,6 +6,7 @@ import { useApi, useOnSightingsChanged } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { relativeName } from "@/lib/format";
 import { bandsOf, usePalette } from "@/lib/palette";
+import { HIDDEN, usePrudle } from "@/lib/blackout";
 import { Crown } from "./Tower";
 
 // Lately is a row of small badges for what everyone else saw this past week:
@@ -19,6 +20,7 @@ export function Lately({ tonight }: { tonight: string }) {
 
 function Badges({ tonight }: { tonight: string }) {
     const palette = usePalette();
+    const { hidden } = usePrudle();
     const { data, reload } = useApi<RecentSightings>("/sightings/recent");
     useOnSightingsChanged(reload);
     if (!data || data.sightings.length === 0) return null;
@@ -32,7 +34,10 @@ function Badges({ tonight }: { tonight: string }) {
                             href={`/night?d=${x.date}`}
                             className="inline-flex min-h-11 items-center gap-2 rounded-full bg-panel py-1.5 pr-4 pl-2 transition-colors hover:bg-raised"
                         >
-                            <Crown bands={bandsOf(x.lighting.colors, palette)} className="h-6 w-6" />
+                            <Crown
+                                bands={hidden(x.date) ? HIDDEN : bandsOf(x.lighting.colors, palette)}
+                                className="h-6 w-6"
+                            />
                             <span>
                                 <span className="font-bold">{x.name}</span> saw it
                                 {x.rating > 0 && <span className="text-accent"> ★{x.rating}</span>}

@@ -9,6 +9,7 @@ import { useApi, useOnSightingsChanged } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { addDays, colorNames, dayOfMonth, monthTitle } from "@/lib/format";
 import { bandsOf, soft, usePalette } from "@/lib/palette";
+import { usePrudle } from "@/lib/blackout";
 import { ErrorNote } from "./Shell";
 
 const MONTH = /^\d{4}-\d{2}$/;
@@ -34,6 +35,7 @@ export function Month({ tonight }: { tonight: string }) {
     const last = addDays(`${shiftMonth(month, 1)}-01`, -1);
     const { data, error, reload } = useApi<LightingsResponse>(`/lightings?from=${first}&to=${last}`);
     const { me } = useAuth();
+    const { hidden } = usePrudle();
     const mine = useApi<MySightings>(me ? "/me/sightings" : null);
     useOnSightingsChanged(mine.reload);
     const seen = new Map<string, LoggedNight>((me ? mine.data?.nights : undefined)?.map((x) => [x.date, x]));
@@ -71,11 +73,12 @@ export function Month({ tonight }: { tonight: string }) {
                           const isTonight = l.date === tonight;
                           const saw = seen.get(l.date);
                           const noted = !!saw?.note;
+                          const masked = hidden(l.date);
                           return (
                               <Link
                                   key={l.date}
                                   href={`/night?d=${l.date}${noted ? "#note" : ""}`}
-                                  title={`${colorNames(l.colors, palette)}${l.scheduled ? ` for ${l.cause}` : ""}${
+                                  title={`${masked ? "Colors hidden for Prudle" : colorNames(l.colors, palette)}${l.scheduled ? ` for ${l.cause}` : ""}${
                                       noted ? " · your note" : saw ? " · you saw it" : ""
                                   }`}
                                   className={`group flex aspect-[3/4] flex-col overflow-hidden rounded-lg bg-panel ring-offset-2 ring-offset-raised sm:aspect-square ${
@@ -105,7 +108,15 @@ export function Month({ tonight }: { tonight: string }) {
                                           )
                                       )}
                                   </span>
-                                  {l.scheduled ? (
+                                  {masked ? (
+                                      // hidden for Prudle: an empty dashed cell, the same for white nights
+                                      <span
+                                          className="m-1.5 mt-1 flex flex-1 items-center justify-center rounded-md border border-dashed border-line text-subtle"
+                                          data-mark="hidden"
+                                      >
+                                          ?
+                                      </span>
+                                  ) : l.scheduled ? (
                                       <span className="m-1.5 mt-1 flex flex-1 overflow-hidden rounded-md">
                                           {bandsOf(l.colors, palette).map((c, i) => (
                                               <span

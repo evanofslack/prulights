@@ -5,8 +5,9 @@ import type { ColorKey } from "@/interfaces/schedule";
 // a hit, close (the same family, see CLOSE) or a miss, and the guess's size
 // comes back against the night's count: fewer, more, or exactly right. Misses
 // cost; hits don't. Solved when every color is found. Pure, no React: the lab
-// (/prudle-lab) plays it in the browser, the real game will grade it on the
-// server with the same rules.
+// (/prudle-lab) plays it in the browser; the real game is graded on the
+// server (backend/prudle, the same rules at DEFAULT_RULES, and the copy that
+// counts), and this file only draws its state.
 
 export type CountRule = "dir" | "exact"; // fewer/more/exact, or only exact
 export type CloseRule = "none" | "half" | "full"; // no close mark; close costs ½; close is marked but costs 1
@@ -20,7 +21,7 @@ export interface Rules {
     bands: BandsRule;
 }
 
-export const DEFAULT_RULES: Rules = { budget: 4, maxPicks: 4, count: "dir", close: "half", bands: "exact" };
+export const DEFAULT_RULES: Rules = { budget: 5, maxPicks: 4, count: "dir", close: "half", bands: "exact" };
 
 export type Mark = "hit" | "close" | "miss";
 export type CountMark = "fewer" | "more" | "exact" | "wrong"; // wrong: not exact, under count=exact
@@ -95,10 +96,19 @@ export function countMark(t: Turn): string {
 }
 
 // shareText is a finished game without its colors.
-export function shareText(date: string, g: Game, solved: boolean): string {
-    const head = solved
-        ? `Prudle ${date} · ${g.turns.length} ${g.turns.length === 1 ? "guess" : "guesses"} · ${g.misses} ${g.misses === 1 ? "miss" : "misses"}`
-        : `Prudle ${date} · gave up`;
+export function shareText(
+    date: string,
+    g: { turns: Turn[]; misses: number },
+    result: "won" | "lost" | "passed",
+): string {
+    const n = g.turns.length;
+    const misses = `${g.misses} ${g.misses === 1 ? "miss" : "misses"}`;
+    const head =
+        result === "won"
+            ? `Prudle ${date} · ${n} ${n === 1 ? "guess" : "guesses"} · ${misses}`
+            : result === "lost"
+              ? `Prudle ${date} · out of misses`
+              : `Prudle ${date} · peeked`;
     return [
         head,
         ...g.turns.map(

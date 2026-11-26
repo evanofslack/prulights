@@ -3,6 +3,7 @@
 # Run from the repo root (just e2e). See e2e/README.md.
 set -euo pipefail
 ! curl -s localhost:8099 >/dev/null || { echo "port 8099 is already in use"; exit 1; }
+! curl -s localhost:8097 >/dev/null || { echo "port 8097 is already in use"; exit 1; }
 (cd e2e && [ -d node_modules ] || npm ci)
 (cd web && npm run build)
 dir="$(mktemp -d)"
@@ -17,6 +18,10 @@ export DATABASE_PATH="$dir/e2e.db" METRICS_ADDR= SCRAPE_ENABLED=false BASE_URL=h
 "$dir/prulights" scrape -delay 0 -url http://localhost:8098/2026-tower-lightings.html -url http://localhost:8098/31-nights-of-light.html >/dev/null
 DEV=1 PORT=8099 STATIC_DIR=web/out PUBLIC_RATE_LIMIT=10000 AUTH_RATE_LIMIT=10000 SIGNUP_CODE="back bay lights" "$dir/prulights" serve >/dev/null 2>&1 &
 server=$!
-trap 'kill $fixtures $server' EXIT
-for _ in $(seq 50); do curl -sf localhost:8099/readyz >/dev/null && break; sleep 0.2; done
+# prudle.mjs gets its own server and database, its clock set to a December night
+cp "$dir/e2e.db" "$dir/prudle.db"
+DEV=1 DEV_NOW=2026-12-10T20:00:00-05:00 DATABASE_PATH="$dir/prudle.db" BASE_URL=http://localhost:8097 PORT=8097 STATIC_DIR=web/out PUBLIC_RATE_LIMIT=10000 AUTH_RATE_LIMIT=10000 SIGNUP_CODE="back bay lights" "$dir/prulights" serve >/dev/null 2>&1 &
+december=$!
+trap 'kill $fixtures $server $december' EXIT
+for _ in $(seq 50); do curl -sf localhost:8099/readyz >/dev/null && curl -sf localhost:8097/readyz >/dev/null && break; sleep 0.2; done
 cd e2e && node run.mjs "$@"

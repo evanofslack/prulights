@@ -8,6 +8,7 @@ import { useApi, useOnSightingsChanged } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { colorNames, shortDate, weekdayAbbr } from "@/lib/format";
 import { bandsOf, usePalette } from "@/lib/palette";
+import { HIDDEN, HIDDEN_NAME, usePrudle } from "@/lib/blackout";
 import { Crown } from "./Tower";
 import { ErrorNote } from "./Shell";
 
@@ -32,6 +33,7 @@ export function MyNights() {
 
 function Log() {
     const palette = usePalette();
+    const { hidden } = usePrudle();
     const stats = useApi<MyStats>("/me/stats");
     const { data, error, reload } = useApi<MySightings>("/me/sightings");
     useOnSightingsChanged(stats.reload);
@@ -41,6 +43,8 @@ function Log() {
     if (!data || !stats.data) return <Skeleton height={300} radius="lg" />;
     const st = stats.data;
     const shown = all ? data.nights : data.nights.slice(0, RECENT);
+    // a hidden night you logged would show in your colors: leave them out till it shows
+    const favorites = data.nights.some((n) => hidden(n.date)) ? [] : st.favorites;
     return (
         <>
             <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -50,8 +54,8 @@ function Log() {
                 <div className="flex flex-col gap-1 rounded-xl bg-panel p-4">
                     <dt className="text-sm text-muted">Your colors</dt>
                     <dd className="flex gap-1.5 pt-1">
-                        {st.favorites.length
-                            ? st.favorites.map((f) => (
+                        {favorites.length
+                            ? favorites.map((f) => (
                                   <span key={f.color} title={`${colorNames([f.color], palette)}: ${f.count}`}>
                                       <Crown bands={bandsOf([f.color], palette)} className="h-7 w-7" />
                                   </span>
@@ -75,7 +79,7 @@ function Log() {
                                     className="flex items-start gap-4 px-4 py-3 transition-colors hover:bg-raised"
                                 >
                                     <Crown
-                                        bands={bandsOf(n.lighting.colors, palette)}
+                                        bands={hidden(n.date) ? HIDDEN : bandsOf(n.lighting.colors, palette)}
                                         className="mt-1 h-11 w-11"
                                     />
                                     <span className="w-16 shrink-0">
@@ -84,7 +88,9 @@ function Log() {
                                     </span>
                                     <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                                         <span className="truncate text-lg">
-                                            {colorNames(n.lighting.colors, palette)}
+                                            {hidden(n.date)
+                                                ? HIDDEN_NAME
+                                                : colorNames(n.lighting.colors, palette)}
                                         </span>
                                         <span className="truncate text-muted">
                                             {n.lighting.scheduled ? n.lighting.cause : "Plain white"}

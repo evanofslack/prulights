@@ -269,5 +269,5 @@ func TestSpecCoversRoutes(t *testing.T) {
 // not part of the public spec.
 func isPrivateRoute(p string) bool {
 	first, _, _ := strings.Cut(strings.TrimPrefix(p, "/"), "/")
-	return slices.Contains([]string{"me", "auth", "admin", "devices", "sightings"}, first)
+	return slices.Contains([]string{"me", "auth", "admin", "devices", "sightings", "prudle"}, first)
 }

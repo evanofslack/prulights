@@ -19,7 +19,10 @@ type Config struct {
 	BaseURL      string // BASE_URL: the public origin, e.g. https://prulights.evanslack.dev
 	TrustProxy   bool   // TRUST_PROXY: take the client address from CF-Connecting-IP / X-Forwarded-For
 	Dev          bool   // DEV: dev-only routes and relaxed origins
-	Version      string // set by main, not the environment
+	// DevNow (DEV_NOW, RFC3339, only with DEV) starts the server's clock at a
+	// set time, so e2e can play a December night in any month.
+	DevNow  time.Time
+	Version string // set by main, not the environment
 
 	PublicRateLimit int // PUBLIC_RATE_LIMIT: public api requests per minute per client
 	AuthRateLimit   int // AUTH_RATE_LIMIT: sign-in attempts (and claim code lookups) per minute per client
@@ -62,6 +65,9 @@ func Load() Config {
 	c.BaseURL = strings.TrimRight(c.BaseURL, "/")
 	envBool("TRUST_PROXY", &c.TrustProxy)
 	envBool("DEV", &c.Dev)
+	if t, err := time.Parse(time.RFC3339, os.Getenv("DEV_NOW")); err == nil && c.Dev {
+		c.DevNow = t
+	}
 	envInt("PUBLIC_RATE_LIMIT", &c.PublicRateLimit)
 	envInt("AUTH_RATE_LIMIT", &c.AuthRateLimit)
 	envBool("SCRAPE_ENABLED", &c.ScrapeEnabled)
