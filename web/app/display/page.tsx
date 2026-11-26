@@ -60,6 +60,8 @@ export default function DisplayPage() {
                         <Tower
                             bands={bandsOf(data.lighting.colors, palette)}
                             sky={sky}
+                            night={data.date}
+                            live
                             className="h-[94vh] w-[38vw] max-w-[620px] shrink-0 rounded-[2vh]"
                         />
                         <div className="flex max-w-[48vw] min-w-0 flex-col gap-[3vh] pb-[2vh]">

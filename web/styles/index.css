@@ -116,3 +116,23 @@
         background: #bec8c880;
     }
 }
+
+/* the tower's red aircraft lights: on, then off, like the real ones */
+@keyframes beacon {
+    0%,
+    55% {
+        opacity: 1;
+    }
+    56%,
+    100% {
+        opacity: 0.12;
+    }
+}
+.beacon {
+    animation: beacon 1.6s steps(1, end) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+    .beacon {
+        animation: none;
+    }
+}

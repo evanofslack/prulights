@@ -33,6 +33,8 @@ export function Night({ lighting: l, tonight, publishedThrough, children }: Nigh
                 <Tower
                     bands={bands}
                     sky={sky}
+                    night={l.date}
+                    live={l.date === tonight}
                     className="block h-[64dvh] max-h-[640px] min-h-[400px] w-full"
                     title={`The Prudential Tower, crown lit ${colorNames(l.colors, palette)}`}
                 />
