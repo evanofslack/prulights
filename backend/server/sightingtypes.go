@@ -41,6 +41,12 @@ type LoggedNight struct {
 	Lighting schedule.Lighting `json:"lighting"`
 }
 
+// RecentSightings is GET /api/v1/sightings/recent: what everyone else saw
+// lately, newest night first.
+type RecentSightings struct {
+	Sightings []LoggedNight `json:"sightings"`
+}
+
 // MySightings is GET /api/v1/me/sightings: everything you've logged, newest first.
 type MySightings struct {
 	Nights []LoggedNight `json:"nights"`

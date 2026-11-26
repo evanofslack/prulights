@@ -18,7 +18,9 @@ import (
 
 const (
 	// logWindow is how many nights back "I saw it" stays open, besides tonight.
-	logWindow   = 7
+	logWindow = 7
+	// recentLimit is how many sightings "Lately" shows.
+	recentLimit = 8
 	maxNoteLen  = 280
 	maxCauseLen = 200
 	// scrapeTimeout bounds a "scrape now" from the admin page.
@@ -36,6 +38,7 @@ func (s *Server) mountSightings(r chi.Router) {
 	r.Put("/me/sightings/{date}", s.requireUser(s.putSighting))
 	r.Delete("/me/sightings/{date}", s.requireUser(s.deleteSighting))
 	r.Get("/me/stats", s.requireUser(s.getMyStats))
+	r.Get("/sightings/recent", s.requireUser(s.getRecentSightings))
 	r.Get("/sightings/{date}", s.requireUser(s.getNightSightings))
 }
 
@@ -134,13 +137,29 @@ func (s *Server) getNightSightings(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
-// myNights is everything a user has logged, newest first, with each night's
-// lighting.
-func (s *Server) myNights(r *http.Request, userID int64) ([]LoggedNight, error) {
+// getRecentSightings is everyone else's sightings from the nights that are
+// still open for logging, with each night's lighting.
+func (s *Server) getRecentSightings(w http.ResponseWriter, r *http.Request) {
+	me := userFrom(r.Context()).ID
 	tonight := schedule.Tonight(s.now())
-	xs, err := s.store.UserSightings(r.Context(), userID, "0001-01-01", tonight)
-	if err != nil || len(xs) == 0 {
-		return []LoggedNight{}, err
+	xs, err := s.store.RecentSightings(r.Context(), me, tonight.AddDays(-logWindow), tonight, recentLimit)
+	if err != nil {
+		s.internalError(w, err)
+		return
+	}
+	out, err := s.withLightings(r, xs, me)
+	if err != nil {
+		s.internalError(w, err)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, http.StatusOK, RecentSightings{Sightings: out})
+}
+
+// withLightings pairs sightings (newest first) with their nights.
+func (s *Server) withLightings(r *http.Request, xs []store.Sighting, me int64) ([]LoggedNight, error) {
+	if len(xs) == 0 {
+		return []LoggedNight{}, nil
 	}
 	nights, err := s.lightings(r, xs[len(xs)-1].Date, xs[0].Date)
 	if err != nil {
@@ -152,9 +171,20 @@ func (s *Server) myNights(r *http.Request, userID int64) ([]LoggedNight, error) 
 	}
 	out := make([]LoggedNight, len(xs))
 	for i, x := range xs {
-		out[i] = LoggedNight{Sighting: sightingOf(x, userID), Lighting: byDate[x.Date]}
+		out[i] = LoggedNight{Sighting: sightingOf(x, me), Lighting: byDate[x.Date]}
 	}
 	return out, nil
+}
+
+// myNights is everything a user has logged, newest first, with each night's
+// lighting.
+func (s *Server) myNights(r *http.Request, userID int64) ([]LoggedNight, error) {
+	tonight := schedule.Tonight(s.now())
+	xs, err := s.store.UserSightings(r.Context(), userID, "0001-01-01", tonight)
+	if err != nil {
+		return nil, err
+	}
+	return s.withLightings(r, xs, userID)
 }
 
 func (s *Server) getMySightings(w http.ResponseWriter, r *http.Request) {

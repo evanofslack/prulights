@@ -196,3 +196,22 @@ func TestScrapeNow(t *testing.T) {
 		t.Error("still running after the scrape returned")
 	}
 }
+
+func TestLately(t *testing.T) {
+	s := seeded(t)
+	_, mom := person(t, s, "Mom", false)
+	_, evan := person(t, s, "Evan", true)
+	call(t, s, "PUT", "/api/v1/me/sightings/2026-12-11", `{"rating":4}`, mom)
+	call(t, s, "PUT", "/api/v1/me/sightings/2026-12-12", `{}`, mom)
+	call(t, s, "PUT", "/api/v1/me/sightings/2026-12-01", `{}`, mom) // too long ago
+	call(t, s, "PUT", "/api/v1/me/sightings/2026-12-12", `{}`, evan)
+
+	recent := decodeAs[RecentSightings](t, call(t, s, "GET", "/api/v1/sightings/recent", "", evan).Body.Bytes())
+	if len(recent.Sightings) != 2 || recent.Sightings[0].Date != "2026-12-12" || recent.Sightings[0].Name != "Mom" ||
+		recent.Sightings[1].Rating != 4 || recent.Sightings[1].Lighting.Date != "2026-12-11" {
+		t.Errorf("recent = %+v", recent)
+	}
+	if rec := call(t, s, "GET", "/api/v1/sightings/recent", "", ""); rec.Code != http.StatusUnauthorized {
+		t.Errorf("signed out = %d", rec.Code)
+	}
+}

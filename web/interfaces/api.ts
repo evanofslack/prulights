@@ -446,6 +446,13 @@ export interface LoggedNight extends Sighting {
   lighting: schedule.Lighting;
 }
 /**
+ * RecentSightings is GET /api/v1/sightings/recent: what everyone else saw
+ * lately, newest night first.
+ */
+export interface RecentSightings {
+  sightings: LoggedNight[];
+}
+/**
  * MySightings is GET /api/v1/me/sightings: everything you've logged, newest first.
  */
 export interface MySightings {

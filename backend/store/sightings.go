@@ -86,6 +86,13 @@ func (s *Store) NightSightings(ctx context.Context, date schedule.Date) ([]Sight
 	return s.sightings(ctx, `where s.date = ? order by s.created_at, s.user_id`, date)
 }
 
+// RecentSightings lists everyone but one user's sightings between two
+// nights, newest night first, at most limit of them.
+func (s *Store) RecentSightings(ctx context.Context, except int64, from, to schedule.Date, limit int) ([]Sighting, error) {
+	return s.sightings(ctx, `where s.user_id != ? and s.date between ? and ?
+		order by s.date desc, s.created_at desc, s.user_id limit ?`, except, from, to, limit)
+}
+
 // NightStats are a night's anonymous totals.
 type NightStats struct {
 	Seen    int

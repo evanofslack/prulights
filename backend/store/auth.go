@@ -111,6 +111,24 @@ func (s *Store) Users(ctx context.Context) ([]User, error) {
 	return out, rows.Err()
 }
 
+// CreateUser makes a user with no passkey, who can't sign in: for seeding
+// a dev database.
+func (s *Store) CreateUser(ctx context.Context, name string, now time.Time) (User, error) {
+	var u User
+	err := s.Tx(ctx, func(tx *sql.Tx) error {
+		var err error
+		u, err = createUser(ctx, tx, NewHandle(), name, false, now)
+		return err
+	})
+	return u, err
+}
+
+// DeleteUser forgets a user and everything they logged.
+func (s *Store) DeleteUser(ctx context.Context, id int64) error {
+	_, err := s.DB.ExecContext(ctx, `DELETE FROM users WHERE id = ?`, id)
+	return err
+}
+
 // Credentials returns a user's passkeys, as the json the server stored.
 func (s *Store) Credentials(ctx context.Context, userID int64) ([][]byte, error) {
 	rows, err := s.DB.QueryContext(ctx, `SELECT data FROM credentials WHERE user_id = ? ORDER BY created_at`, userID)

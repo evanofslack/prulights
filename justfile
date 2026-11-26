@@ -9,60 +9,51 @@ default:
     @just --list
 
 # install web deps if missing
+[group('dev')]
 install:
     cd web && [ -d node_modules ] || npm ci
 
-# go server on :8080 with hot reload; dev passkey origins for next on :3000
-backend:
-    cd backend && DEV=1 LOG_LEVEL=debug RP_ORIGINS=http://localhost:3000,http://localhost:8080 \
-        DATABASE_PATH=${DATABASE_PATH:-prulights.db} {{ air }}
-
-# next dev server on :3000, passing /api through to the go server
-web: install
-    cd web && npm run dev
-
 # backend and web together; ctrl-c stops both
+[group('dev')]
 start:
     #!/usr/bin/env bash
     trap 'kill 0' EXIT
     just backend & just web & wait
 
+# go server on :8080 with hot reload; dev passkey origins for next on :3000
+[group('dev')]
+backend:
+    cd backend && DEV=1 LOG_LEVEL=debug RP_ORIGINS=http://localhost:3000,http://localhost:8080 \
+        DATABASE_PATH=${DATABASE_PATH:-prulights.db} {{ air }}
+
+# next dev server on :3000, passing /api through to the go server
+[group('dev')]
+web: install
+    cd web && npm run dev
+
 # production-like: static export served by the go server on :8080
+[group('dev')]
 serve: install
     cd web && npm run build
     cd backend && STATIC_DIR=../web/out go run ./cmd/prulights serve
 
-# format go and web code
-fmt:
-    cd backend && gofmt -w .
-    cd web && npx prettier --write . --log-level warn
+# open sqlite on the dev database
+[group('dev')]
+db:
+    sqlite3 backend/${DATABASE_PATH:-prulights.db}
 
-# vet go code
-lint:
-    cd backend && go vet ./...
+# made-up people's sightings in the dev database: just seed -names Logan,Shiv -reset
+[group('dev')]
+seed *args:
+    cd backend && DEV=1 DATABASE_PATH=${DATABASE_PATH:-prulights.db} go run ./cmd/prulights seed {{ args }}
 
-# run go tests
-test *args:
-    cd backend && go test -race {{ args }} ./...
-
-# draw a frame view from sample data to backend/tmp/render-<view>.png
-render view="tonight" date="2026-12-12" palette="measured" *args="":
-    mkdir -p backend/tmp
-    cd backend && go run ./cmd/prulights render -view {{ view }} -date {{ date }} -palette {{ palette }} {{ args }} -out tmp/render-{{ view }}.png
-
-# check the frame views against their golden pngs
-golden:
-    cd backend && go test ./render -run TestGolden
-
-# redraw the golden pngs (look at them before committing)
-golden-update:
-    cd backend && go test ./render -run TestGolden -update
-
-# generate the web's api types from the go code
-types:
-    cd backend && go tool tygo generate
+# make an invite link and QR code on the dev database: just invite -admin, just invite -for-user Mom
+[group('dev')]
+invite *args:
+    cd backend && go run ./cmd/prulights invite {{ args }}
 
 # same checks as ci
+[group('check')]
 check: install
     cd backend && test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
     cd backend && go vet ./...
@@ -71,51 +62,71 @@ check: install
     cd web && npm run type-check
     cd web && npm run build
 
+# format go and web code
+[group('check')]
+fmt:
+    cd backend && gofmt -w .
+    cd web && npx prettier --write . --log-level warn
+
+# run go tests
+[group('check')]
+test *args:
+    cd backend && go test -race {{ args }} ./...
+
+# generate the web's api types from the go code
+[group('check')]
+types:
+    cd backend && go tool tygo generate
+
+# check the frame views against their golden pngs
+[group('check')]
+golden:
+    cd backend && go test ./render -run TestGolden
+
+# redraw the golden pngs (look at them before committing)
+[group('check')]
+golden-update:
+    cd backend && go test ./render -run TestGolden -update
+
+# browser checks against a static build on :8099: all, or the named scripts (just e2e public)
+[group('check')]
+e2e *scripts: install
+    ./e2e/run.sh {{ scripts }}
+
 # check the source pages once against the live site; -dry-run is on unless you pass args
+[group('scrape')]
 scrape *args="-dry-run":
     cd backend && go run ./cmd/prulights scrape {{ args }}
 
 # fetch and apply every source page into the dev database
+[group('scrape')]
 backfill:
     cd backend && go run ./cmd/prulights backfill
 
-# re-download the saved source pages the scraper tests use (10s apart, as robots.txt asks)
+# re-download the saved source pages the scraper tests use
+[group('scrape')]
 scrape-snapshot:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cd backend/scrape/testdata
-    ua="prulights/1.0 (+https://prulights.evanslack.dev)"
-    site=https://www.prudentialcenter.com
-    curl -fsSL -A "$ua" -o event-sitemap.xml "$site/event-sitemap.xml"
-    for page in 2024-tower-lighting-schedule 2026-tower-lightings 31-nights-of-light; do
-        sleep 10
-        echo "$page"
-        curl -fsSL -A "$ua" -o "$page.html" "$site/experiences/events/$page/"
-    done
-    cd .. && go test . || echo "the pages changed: review, then go test ./scrape -update"
+    ./backend/scrape/snapshot.sh
 
-# make an invite link and QR code on the dev database: just invite -admin, just invite -for-user Mom
-invite *args:
-    cd backend && go run ./cmd/prulights invite {{ args }}
+# draw a frame view from sample data to backend/tmp/render-<view>.png
+[group('frames')]
+render view="tonight" date="2026-12-12" palette="measured" *args="":
+    mkdir -p backend/tmp
+    cd backend && go run ./cmd/prulights render -view {{ view }} -date {{ date }} -palette {{ palette }} {{ args }} -out tmp/render-{{ view }}.png
 
 # prepare a frame's identity (in prod: docker compose exec prulights prulights frame new -out frame.json)
+[group('frames')]
 frame-new *args:
     cd backend && go run ./cmd/prulights frame new {{ args }}
 
-# the files to flash, with Wi-Fi that never reaches the server (plans/firmware.md):
-#   just frame-config -from frame.json -wifi "Home:password" -wifi "Cape:password" -out sd
+# (plans/firmware.md) e.g. just frame-config -from frame.json -wifi "Home:password" -wifi "Cape:password" -out sd
+# the files to flash, with Wi-Fi that never reaches the server
+[group('frames')]
 frame-config *args:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    bin="$(mktemp -d)/prulights"
-    (cd backend && go build -o "$bin" ./cmd/prulights)
-    "$bin" frame config {{ args }}
-
-# open sqlite on the dev database
-db:
-    sqlite3 backend/${DATABASE_PATH:-prulights.db}
+    cd backend && go run ./cmd/prulights frame config {{ args }}
 
 # build the production image locally, for this machine's arch (ci builds amd64 with buildx)
+[group('ops')]
 docker-build:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -123,38 +134,18 @@ docker-build:
     docker build --build-arg BUILDPLATFORM=linux/$arch --build-arg TARGETARCH=$arch -t evanofslack/prulights:dev .
 
 # run the production image locally on :8080 with a throwaway volume
+[group('ops')]
 docker-run: docker-build
     docker run --rm -p 8080:8080 -v prulights-dev-data:/data -e BASE_URL=http://localhost:8080 -e SIGNUP_CODE evanofslack/prulights:dev
 
 # pull and restart on the vps (VPS=user@host); see deploy/RUNBOOK.md
+[group('ops')]
 deploy:
     @test -n "{{ vps }}" || (echo "set VPS=user@host" && exit 1)
     ssh {{ vps }} 'cd ~/prulights && docker compose pull && docker compose up -d && docker compose ps'
 
 # follow the container logs on the vps
+[group('ops')]
 logs:
     @test -n "{{ vps }}" || (echo "set VPS=user@host" && exit 1)
     ssh {{ vps }} 'cd ~/prulights && docker compose logs --follow --tail 200'
-
-# browser checks against a static build on :8099: all, or the named scripts (just e2e public). See e2e/README.md
-e2e *scripts: install
-    #!/usr/bin/env bash
-    set -euo pipefail
-    ! curl -s localhost:8099 >/dev/null || { echo "port 8099 is already in use"; exit 1; }
-    (cd e2e && [ -d node_modules ] || npm ci)
-    (cd web && npm run build)
-    dir="$(mktemp -d)"
-    (cd backend && go build -o "$dir/prulights" ./cmd/prulights)
-    # serve the scraper fixtures and load them into a fresh database
-    python3 -m http.server 8098 -d backend/scrape/testdata >/dev/null 2>&1 &
-    fixtures=$!
-    trap 'kill $fixtures' EXIT
-    for _ in $(seq 50); do curl -sf localhost:8098 >/dev/null && break; sleep 0.2; done
-    # BASE_URL makes passkeys accept this origin; BIN lets scripts make invites
-    export DATABASE_PATH="$dir/e2e.db" METRICS_ADDR= SCRAPE_ENABLED=false BASE_URL=http://localhost:8099 BIN="$dir/prulights"
-    "$dir/prulights" scrape -delay 0 -url http://localhost:8098/2026-tower-lightings.html -url http://localhost:8098/31-nights-of-light.html >/dev/null
-    DEV=1 PORT=8099 STATIC_DIR=web/out PUBLIC_RATE_LIMIT=10000 AUTH_RATE_LIMIT=10000 SIGNUP_CODE="back bay lights" "$dir/prulights" serve >/dev/null 2>&1 &
-    server=$!
-    trap 'kill $fixtures $server' EXIT
-    for _ in $(seq 50); do curl -sf localhost:8099/readyz >/dev/null && break; sleep 0.2; done
-    cd e2e && node run.mjs {{ scripts }}
