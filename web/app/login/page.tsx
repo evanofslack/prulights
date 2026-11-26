@@ -1,21 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Alert, Button } from "@mantine/core";
 import { IconFingerprint } from "@tabler/icons-react";
 import type { SignupInfo } from "@/interfaces/api";
 import { useApi } from "@/lib/api";
-import { passkeyError, useAuth } from "@/lib/auth";
+import { nextPath, passkeyError, useAuth } from "@/lib/auth";
 import { Shell } from "@/components/Shell";
-
-// nextPath is where to go after signing in: ?next= when it's a path on this
-// site, else tonight.
-function nextPath(): string {
-    const next = new URLSearchParams(window.location.search).get("next") ?? "";
-    return next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : "/";
-}
 
 export default function LoginPage() {
     const { me, signIn } = useAuth();
@@ -23,6 +16,9 @@ export default function LoginPage() {
     const router = useRouter();
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string>();
+    // ?next= rides along to /join
+    const [search, setSearch] = useState("");
+    useEffect(() => setSearch(window.location.search), []);
 
     const go = async () => {
         setBusy(true);
@@ -55,7 +51,7 @@ export default function LoginPage() {
                             </Alert>
                         )}
                         {signup?.open ? (
-                            <Button component={Link} href="/join" size="lg" variant="default">
+                            <Button component={Link} href={`/join${search}`} size="lg" variant="default">
                                 New here? Join with a code
                             </Button>
                         ) : (

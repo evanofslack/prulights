@@ -1,9 +1,9 @@
 // The frame, end to end in the emulator's device mode: register, claim it on
 // /claim, sync, the button (short cycles views, long logs tonight), settings
 // that change the bundle, offline queueing, running past the bundle, the
-// admin list, and letting it go. Then a prepared frame for someone new: the
-// admin prepares it, the emulator is "flashed" with it, a person with no
-// account signs up from its code, and it loses and finds Wi-Fi.
+// admin list, and letting it go. Then the way family gets one: someone signs
+// up with the family code, the admin prepares a frame, the emulator is
+// "flashed" with it, the admin gives it to them, and it loses and finds Wi-Fi.
 import { execFileSync } from "node:child_process";
 import { URL, btn, check, finish, launch, open, shot } from "./lib.mjs";
 
@@ -170,7 +170,10 @@ await fran.click(btn("Now"));
 // the admin page lists it
 await fran.goto(`${URL}/admin`);
 await fran.waitForSelector("[aria-label=Frames] >> text=Kitchen");
-check("admin lists the frame", (await fran.locator("[aria-label=Frames] >> text=Fran").count()) === 1);
+check(
+    "admin lists the frame with its owner",
+    await fran.locator("[aria-label=Frames] input").evaluateAll((els) => els.some((e) => e.value === "Fran")),
+);
 
 // letting go sends it back to setup with a new code
 await fran.goto(`${URL}/settings`);
@@ -182,16 +185,24 @@ await showingStarts("setup");
 const code2 = await fran.getAttribute("[data-claim-code]", "data-claim-code");
 check("disconnected, it's back to setup with a new code", code2 && code2 !== code, code2);
 
-// a frame prepared for someone new
+// mabel signs herself up with the family code
+const mabel = await passkeyPage(browser, { width: 390, height: 844 });
+await mabel.goto(`${URL}/join?code=back+bay+lights`);
+await mabel.fill("input[autocomplete=given-name]", "Mabel");
+await mabel.click(btn("Create passkey"));
+await mabel.waitForSelector("[aria-label=Account]");
+check("mabel joins with the family code", true);
+
+// weeks later, a frame prepared for no one yet
 await fran.goto(`${URL}/admin`);
 await fran.waitForSelector("text=Prepare a frame");
 const [download] = await Promise.all([fran.waitForEvent("download"), fran.click(btn("Prepare a frame"))]);
 const file = await download.path();
 const prepared = JSON.parse(await (await import("node:fs/promises")).readFile(file, "utf8"));
-await fran.waitForSelector(`text=for a new person until`);
+await fran.waitForSelector(`[role=status] >> text=frame-${prepared.device_id}.json`);
 check(
-    "admin prepares a marked frame",
-    prepared.version === 1 && prepared.token && /^prulights-/.test(prepared.ap.ssid),
+    "admin prepares a frame",
+    prepared.version === 1 && prepared.token && prepared.claim_code && /^prulights-/.test(prepared.ap.ssid),
     JSON.stringify({ ...prepared, token: "…" }),
 );
 await shot(fran, "frame-prepare");
@@ -205,17 +216,14 @@ await emu.waitForSelector(`[data-claim-code='${prepared.claim_code}']`);
 await emu.waitForFunction((sel) => document.querySelector(sel)?.dataset.showing?.startsWith("setup"), frame);
 check("a prepared frame boots to its welcome screen", true);
 
-// someone with no account scans it and signs up there and then
-const mabel = await passkeyPage(browser, { width: 390, height: 844 });
-await mabel.goto(`${URL}/claim?code=${prepared.claim_code}`);
-await mabel.waitForSelector("text=Set up your frame");
-await shot(mabel, "frame-claim-new");
-await mabel.fill("input[autocomplete=given-name]", "Mabel");
-await mabel.click(btn("Create passkey"));
-await mabel.waitForSelector("text=Welcome, Mabel");
-await shot(mabel, "frame-claim-welcome");
+// the admin gives it to mabel
+await fran.reload();
+await fran.click(`[aria-label="Frame ${prepared.device_id}'s owner"]`);
+await fran.getByRole("option", { name: "Mabel", exact: true }).click();
+await fran.waitForSelector(`[data-frame="${prepared.device_id}"] >> ${btn("Back to setup")}`);
+await shot(fran, "frame-given");
 const mine = await (await mabel.request.get(`${URL}/api/v1/me/devices`)).json();
-check("signing up from the frame's code claims it", mine.length === 1 && mine[0].id === prepared.device_id);
+check("the admin gives mabel the frame", mine.length === 1 && mine[0].id === prepared.device_id);
 await emu.click(btn("Double press"));
 await emu.waitForFunction(
     (sel) => document.querySelector(sel)?.dataset.showing?.startsWith("tonight "),
@@ -242,18 +250,18 @@ check(
     (await emu.textContent("body")).includes("Cape House"),
 );
 
-// a member signed in on a frame that isn't marked just claims it
+// signed out, a frame's code asks you to sign in or join; signed in, it claims
 await emu.click(btn("Forget this frame"));
 await emu.click(btn("Register a frame"));
 const code3 = await (await emu.waitForSelector("[data-claim-code]")).getAttribute("data-claim-code");
 const anon = await open(browser, { viewport: { width: 390, height: 844 } });
 await anon.goto(`${URL}/claim?code=${code3}`);
-await anon.waitForSelector("text=needs an invite");
-check("signed out, an unmarked frame asks for an invite", true);
+await anon.waitForSelector(`a:has-text("Join with the family code")`);
+check("signed out, a frame's code offers sign in or join", true);
 await mabel.goto(`${URL}/claim?code=${code3}`);
 await mabel.click(btn("Connect this frame"));
 await mabel.waitForSelector("text=Connected");
-check("a member claims an unmarked frame", true);
+check("a member claims a frame from its code", true);
 
 for (const [who, p] of [
     ["fran", fran],

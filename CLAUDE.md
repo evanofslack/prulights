@@ -116,11 +116,12 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   night twice, `dark` and `light` with `from`/`until` (sunrise to lights-on, `daylight`).
   `/settings` draws its choices from `GET /me/devices/{id}/preview.png?view=&light=1&scene=&words=`. `/api/device/compat/current.png?token=` is for the stock firmware.
 - Frame setup: an unclaimed frame's bundle is the welcome screen (`setup`, tonight + 6) plus `wifi`; a
-  claimed one adds `wifi` (empty date) to its views. A frame marked for a new person (`invite_until`,
-  30 days, `MarkForInvite`) lets `register/begin` take `claim_code` instead of `invite`: one passkey
-  makes the account and claims it (`RedeemFrame`). `GET /devices/claim/{code}` tells `/claim` which
-  case it is. Admins prepare frames (`POST /admin/devices`, or `prulights frame new`) as a config v1
-  json; `prulights frame config` / `just frame-config` adds Wi-Fi locally (never sent to the server)
+  claimed one adds `wifi` (empty date) to its views. A frame gets an owner by its code on `/claim`
+  (signed in; signed out it offers sign in or `/join`), or from an admin: `PUT /admin/devices/{id}/owner`
+  (`AssignDevice`; moving it resets name and settings), `DELETE` sends it back to setup (`ReleaseDevice`).
+  The family's way: they sign up with the family code, you give them the frame later. Admins prepare
+  frames (`POST /admin/devices` with optional `for_user_id`, or `prulights frame new [-for-user NAME]`)
+  as a config v1 json; `prulights frame config` / `just frame-config` adds Wi-Fi locally (never sent to the server)
   and writes the SD card files. The frame's contract is `plans/firmware.md`.
 - Emulator device mode (`/emulator?mode=device`, `app/emulator/Device.tsx`, `lib/frame.ts`) is a virtual
   frame on the real device api: it keeps its token, hotspot and known networks in localStorage (or loads a

@@ -333,79 +333,109 @@ func TestQuietHours(t *testing.T) {
 	}
 }
 
-func TestFrameInvite(t *testing.T) {
+func TestPrepareAndAssign(t *testing.T) {
 	s := seeded(t)
 	_, admin := person(t, s, "Evan", true)
-	_, member := person(t, s, "Kim", false)
+	kim, member := person(t, s, "Kim", false)
+	mom, momSession := person(t, s, "Mom", false)
+	views := func(token string) map[string]bool {
+		t.Helper()
+		out := map[string]bool{}
+		for _, it := range bundleOf(t, s, token).Items {
+			out[it.View] = true
+		}
+		return out
+	}
+	prepare := func(body string) FrameConfig {
+		t.Helper()
+		rec := call(t, s, "POST", "/api/v1/admin/devices", body, admin)
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("prepare %s = %d %s", body, rec.Code, rec.Body.String())
+		}
+		return decodeAs[FrameConfig](t, rec.Body.Bytes())
+	}
 
-	// an admin prepares a frame for someone new
-	if rec := call(t, s, "POST", "/api/v1/admin/devices", `{"invite":true}`, member); rec.Code != http.StatusForbidden {
+	if rec := call(t, s, "POST", "/api/v1/admin/devices", `{}`, member); rec.Code != http.StatusForbidden {
 		t.Errorf("prepare as a member = %d", rec.Code)
 	}
-	rec := call(t, s, "POST", "/api/v1/admin/devices", `{"invite":true}`, admin)
-	if rec.Code != http.StatusCreated {
-		t.Fatalf("prepare = %d %s", rec.Code, rec.Body.String())
+	if rec := call(t, s, "POST", "/api/v1/admin/devices", `{"for_user_id":999}`, admin); rec.Code != http.StatusNotFound {
+		t.Errorf("prepare for nobody = %d", rec.Code)
 	}
-	cfg := decodeAs[FrameConfig](t, rec.Body.Bytes())
-	if cfg.Version != 1 || cfg.Token == "" || cfg.Server != "http://localhost:8080" ||
+
+	// a frame prepared for no one waits for its code
+	cfg := prepare(`{}`)
+	if cfg.Version != 1 || cfg.Token == "" || cfg.Server != "http://localhost:8080" || cfg.ClaimCode == "" ||
 		!strings.HasPrefix(cfg.AP.SSID, "prulights-") || cfg.AP.Password == "" {
 		t.Fatalf("config = %+v", cfg)
 	}
-	// the prepared token works as the frame's, and it draws its hotspot
-	st := stateOf(t, s, cfg.Token)
-	if st.Claimed || st.ClaimCode != cfg.ClaimCode {
+	if st := stateOf(t, s, cfg.Token); st.Claimed || st.ClaimCode != cfg.ClaimCode {
 		t.Errorf("prepared frame state = %+v", st)
 	}
-	list := decodeAs[[]AdminDevice](t, call(t, s, "GET", "/api/v1/admin/devices", "", admin).Body.Bytes())
-	if len(list) != 1 || list[0].InviteUntil == nil || !list[0].InviteUntil.Equal(s.now().Add(frameInviteTTL)) {
-		t.Errorf("admin list = %+v", list)
-	}
-
 	status := func(code string) ClaimStatus {
 		t.Helper()
 		return decodeAs[ClaimStatus](t, call(t, s, "GET", "/api/v1/devices/claim/"+code, "", "").Body.Bytes())
 	}
-	if got := status(strings.ToLower(cfg.ClaimCode)); got != (ClaimStatus{Waiting: true, Invites: true}) {
-		t.Errorf("marked status = %+v", got)
+	if got := status(strings.ToLower(cfg.ClaimCode)); !got.Waiting {
+		t.Errorf("waiting status = %+v", got)
 	}
-	if got := status("ZZZ-ZZZ"); got != (ClaimStatus{}) {
+	if got := status("ZZZ-ZZZ"); got.Waiting {
 		t.Errorf("unknown code status = %+v", got)
 	}
-
-	// signed out, the code starts a passkey for a new person
-	begin := func(code string) int {
-		return call(t, s, "POST", "/api/v1/auth/register/begin", `{"claim_code":"`+code+`","name":"Mom"}`, "").Code
-	}
-	if c := begin(cfg.ClaimCode); c != http.StatusOK {
-		t.Errorf("register with a marked frame's code = %d", c)
-	}
-	if c := begin("ZZZ-ZZZ"); c != http.StatusGone {
-		t.Errorf("register with an unknown code = %d", c)
+	if v := views(cfg.Token); !v["setup"] || v["tonight"] {
+		t.Errorf("unclaimed bundle views = %v", v)
 	}
 
-	// unmarked, the code only claims for someone signed in
-	if rec := call(t, s, "DELETE", "/api/v1/admin/devices/"+itoa(cfg.DeviceID)+"/invite", "", admin); rec.Code != http.StatusNoContent {
-		t.Fatalf("unmark = %d", rec.Code)
+	// weeks later, the admin gives it to mom
+	owner := "/api/v1/admin/devices/" + itoa(cfg.DeviceID) + "/owner"
+	if rec := call(t, s, "PUT", owner, `{"user_id":`+itoa(mom.ID)+`}`, member); rec.Code != http.StatusForbidden {
+		t.Errorf("assign as a member = %d", rec.Code)
 	}
-	if got := status(cfg.ClaimCode); got != (ClaimStatus{Waiting: true}) {
-		t.Errorf("unmarked status = %+v", got)
+	if rec := call(t, s, "PUT", owner, `{"user_id":999}`, admin); rec.Code != http.StatusNotFound {
+		t.Errorf("assign to nobody = %d", rec.Code)
 	}
-	if c := begin(cfg.ClaimCode); c != http.StatusGone {
-		t.Errorf("register with an unmarked frame's code = %d", c)
+	if rec := call(t, s, "PUT", "/api/v1/admin/devices/999/owner", `{"user_id":`+itoa(mom.ID)+`}`, admin); rec.Code != http.StatusNotFound {
+		t.Errorf("assign no frame = %d", rec.Code)
 	}
-	if rec := call(t, s, "POST", "/api/v1/admin/devices/"+itoa(cfg.DeviceID)+"/invite", "", admin); rec.Code != http.StatusNoContent {
-		t.Fatalf("mark = %d", rec.Code)
+	if rec := call(t, s, "PUT", owner, `{"user_id":`+itoa(mom.ID)+`}`, admin); rec.Code != http.StatusOK {
+		t.Fatalf("assign = %d %s", rec.Code, rec.Body.String())
+	}
+	if st := stateOf(t, s, cfg.Token); !st.Claimed || st.ClaimCode != "" {
+		t.Errorf("assigned frame state = %+v", st)
+	}
+	if v := views(cfg.Token); v["setup"] || !v["tonight"] {
+		t.Errorf("assigned bundle views = %v", v)
+	}
+	if got := status(cfg.ClaimCode); got.Waiting {
+		t.Error("an assigned frame's old code still waits")
+	}
+	mine := decodeAs[[]DeviceInfo](t, call(t, s, "GET", "/api/v1/me/devices", "", momSession).Body.Bytes())
+	if len(mine) != 1 || mine[0].ID != cfg.DeviceID {
+		t.Errorf("mom's frames = %+v", mine)
+	}
+	list := decodeAs[[]AdminDevice](t, call(t, s, "GET", "/api/v1/admin/devices", "", admin).Body.Bytes())
+	if len(list) != 1 || list[0].Owner != "Mom" || list[0].OwnerID != mom.ID || list[0].ClaimCode != "" {
+		t.Errorf("admin list = %+v", list)
 	}
 
-	// a member scanning a marked frame just claims it
-	if rec := call(t, s, "POST", "/api/v1/devices/claim", `{"code":"`+cfg.ClaimCode+`"}`, member); rec.Code != http.StatusOK {
-		t.Fatalf("member claim = %d", rec.Code)
+	// back to setup, with a new code
+	if rec := call(t, s, "DELETE", owner, "", admin); rec.Code != http.StatusNoContent {
+		t.Fatalf("release = %d", rec.Code)
 	}
-	if got := status(cfg.ClaimCode); got != (ClaimStatus{}) {
-		t.Errorf("claimed status = %+v", got)
+	if rec := call(t, s, "DELETE", owner, "", admin); rec.Code != http.StatusNotFound {
+		t.Errorf("release twice = %d", rec.Code)
 	}
-	if rec := call(t, s, "POST", "/api/v1/admin/devices/"+itoa(cfg.DeviceID)+"/invite", "", admin); rec.Code != http.StatusNotFound {
-		t.Errorf("marking a claimed frame = %d", rec.Code)
+	if st := stateOf(t, s, cfg.Token); st.Claimed || st.ClaimCode == "" || st.ClaimCode == cfg.ClaimCode {
+		t.Errorf("released frame state = %+v", st)
+	}
+
+	// a frame prepared for someone is theirs from the start
+	kims := prepare(`{"for_user_id":` + itoa(kim.ID) + `}`)
+	if st := stateOf(t, s, kims.Token); !st.Claimed {
+		t.Errorf("frame prepared for kim = %+v", st)
+	}
+	mine = decodeAs[[]DeviceInfo](t, call(t, s, "GET", "/api/v1/me/devices", "", member).Body.Bytes())
+	if len(mine) != 1 || mine[0].ID != kims.DeviceID {
+		t.Errorf("kim's frames = %+v", mine)
 	}
 }
 

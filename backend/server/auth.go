@@ -257,7 +257,6 @@ func (s *Server) loadUser(ctx context.Context, u store.User) (*waUser, error) {
 type ceremony struct {
 	session webauthn.SessionData
 	invite  string // registration: the invite being used
-	claim   string // or the code of a frame marked for a new person
 	signup  bool   // or the family code
 	name    string // registration of a new person
 	handle  []byte
@@ -349,17 +348,6 @@ func (s *Server) registerBegin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		cer.invite, cer.signup = "", true
-	} else if req.ClaimCode != "" {
-		d, err := s.store.DeviceByClaimCode(ctx, req.ClaimCode)
-		if err != nil && !errors.Is(err, store.ErrNotFound) {
-			s.internalError(w, err)
-			return
-		}
-		if err != nil || !d.Invites(now) {
-			writeError(w, http.StatusGone, "this frame isn't set up for someone new: ask the person who gave it to you")
-			return
-		}
-		cer.invite, cer.claim = "", req.ClaimCode
 	} else {
 		var err error
 		inv, err = s.store.InviteByToken(ctx, req.Invite, now)
@@ -470,18 +458,10 @@ func (s *Server) registerFinish(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			slog.Info("signed up with the family code", "user", u.ID, "name", u.Name)
 		}
-	} else if cer.claim != "" {
-		var d store.Device
-		u, d, err = s.store.RedeemFrame(ctx, cer.claim, cer.handle, cer.name, cred.ID, data, now)
-		if err == nil {
-			slog.Info("frame claimed by a new person", "device", d.ID, "user", u.ID)
-		}
 	} else {
 		u, err = s.store.Redeem(ctx, cer.invite, cer.handle, cer.name, cred.ID, data, now)
 	}
 	switch {
-	case errors.Is(err, store.ErrNotFound) && cer.claim != "":
-		writeError(w, http.StatusGone, "this frame was set up meanwhile, or its invite ran out")
 	case errors.Is(err, store.ErrNotFound):
 		writeError(w, http.StatusGone, "this invite link has expired or was already used")
 	case errors.Is(err, store.ErrNameTaken):

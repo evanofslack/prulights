@@ -18,13 +18,12 @@ interface Auth {
     me: MeResponse | null | undefined;
     signIn: () => Promise<MeResponse>;
     // register makes a passkey for someone new (or a re-invite), from an
-    // invite link, the family code, or the code of a frame marked for a new
-    // person.
+    // invite link or the family code.
     register: (from: RegisterFrom, name: string) => Promise<MeResponse>;
     signOut: () => Promise<void>;
 }
 
-type RegisterFrom = { invite: string } | { code: string } | { claim_code: string };
+type RegisterFrom = { invite: string } | { code: string };
 
 const AuthContext = createContext<Auth | undefined>(undefined);
 
@@ -85,4 +84,11 @@ export function passkeyError(e: unknown): string {
         return e.message;
     }
     return "Something went wrong.";
+}
+
+// nextPath is where to go after signing in or up: ?next= when it's a path on
+// this site, else tonight.
+export function nextPath(): string {
+    const next = new URLSearchParams(window.location.search).get("next") ?? "";
+    return next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : "/";
 }

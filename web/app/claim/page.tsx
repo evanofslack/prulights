@@ -4,55 +4,33 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Alert, Button, Skeleton, TextInput } from "@mantine/core";
-import { IconCircleCheck, IconFingerprint, IconPlugConnected } from "@tabler/icons-react";
-import type { ClaimStatus, DeviceInfo } from "@/interfaces/api";
+import { IconCircleCheck, IconPlugConnected } from "@tabler/icons-react";
+import type { ClaimStatus, DeviceInfo, SignupInfo } from "@/interfaces/api";
 import { api, useApi } from "@/lib/api";
-import { passkeyError, useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
 import { Shell } from "@/components/Shell";
 
 // /claim?code= is where a frame's QR code lands. Signed in, it connects the
-// frame to you. Signed out, a frame marked for someone new makes your account
-// and connects it in one go (name, then a passkey); any other frame asks you
-// to sign in, or for an invite.
+// frame to you. Signed out, it asks you to sign in (or join) and come back.
 
 const clean = (code: string) => code.toUpperCase().replace(/[^A-Z0-9]/g, "");
 
 function Claim() {
-    const { me, register } = useAuth();
+    const { me } = useAuth();
     const params = useSearchParams();
     const [code, setCode] = useState("");
     const [frameName, setFrameName] = useState("Frame");
-    const [name, setName] = useState("");
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string>();
     const [claimed, setClaimed] = useState<DeviceInfo>();
-    const [joined, setJoined] = useState<string>();
 
     useEffect(() => setCode(params.get("code") ?? ""), [params]);
     const complete = clean(code).length === 6;
     const { data: status } = useApi<ClaimStatus>(complete ? `/devices/claim/${clean(code)}` : null);
+    const { data: signup } = useApi<SignupInfo>(me === null ? "/auth/signup" : null);
 
     if (me === undefined) return <Skeleton height={240} radius="lg" />;
 
-    if (joined) {
-        return (
-            <>
-                <h1 className="flex items-center gap-2 text-3xl font-bold">
-                    <IconCircleCheck size={32} className="text-accent" /> Welcome, {joined}
-                </h1>
-                <p className="text-lg">
-                    Your frame is connected. It shows tonight&apos;s colors within a couple of minutes, or
-                    press its button twice to update it now.
-                </p>
-                <p className="text-lg text-muted">
-                    This phone is signed in too: tap &ldquo;I saw it&rdquo; on any night you see the crown.
-                </p>
-                <Button component={Link} href="/" size="lg">
-                    See tonight
-                </Button>
-            </>
-        );
-    }
     if (claimed) {
         return (
             <>
@@ -139,63 +117,8 @@ function Claim() {
         );
     }
 
-    // signed out, and the frame invites: name, passkey, done
-    if (complete && status?.invites) {
-        const join = async (e: React.FormEvent) => {
-            e.preventDefault();
-            setBusy(true);
-            setError(undefined);
-            try {
-                const u = await register({ claim_code: clean(code) }, name);
-                setJoined(u.name);
-            } catch (err) {
-                setError(passkeyError(err));
-            } finally {
-                setBusy(false);
-            }
-        };
-        return (
-            <form onSubmit={join} className="flex flex-col gap-5">
-                <h1 className="text-3xl font-bold">Set up your frame</h1>
-                <p className="text-lg text-muted">
-                    Pick a name, then make a passkey: no password, just your face, fingerprint or passcode.
-                    Your frame connects when you&apos;re done.
-                </p>
-                <TextInput
-                    size="lg"
-                    label="Your name"
-                    autoComplete="given-name"
-                    value={name}
-                    onChange={(e) => setName(e.currentTarget.value)}
-                    maxLength={40}
-                    required
-                />
-                <Button
-                    type="submit"
-                    size="lg"
-                    leftSection={<IconFingerprint />}
-                    loading={busy}
-                    disabled={!name.trim()}
-                >
-                    Create passkey
-                </Button>
-                {fail}
-                <p className="text-muted">
-                    Already have an account?{" "}
-                    <Link
-                        className="underline"
-                        href={`/login?next=${encodeURIComponent(`/claim?code=${clean(code)}`)}`}
-                    >
-                        Sign in
-                    </Link>{" "}
-                    and connect it to that instead.
-                </p>
-            </form>
-        );
-    }
-
-    // signed out, and the frame doesn't invite (or there's no code yet)
-    const back = `/claim${complete ? `?code=${clean(code)}` : ""}`;
+    // signed out: sign in (or join) and come back here
+    const back = encodeURIComponent(`/claim${complete ? `?code=${clean(code)}` : ""}`);
     return (
         <div className="flex flex-col gap-5">
             <h1 className="text-3xl font-bold">Connect a frame</h1>
@@ -203,15 +126,22 @@ function Claim() {
                 codeField
             ) : status.waiting ? (
                 <p className="text-lg text-muted">
-                    Sign in to connect this frame to your account. New here? This frame needs an invite: ask
-                    the person who gave it to you.
+                    Sign in to connect this frame to your account.{" "}
+                    {signup?.open
+                        ? "New here? Join with the family code first."
+                        : "New here? Ask the person who gave it to you for an invite."}
                 </p>
             ) : (
                 codeField
             )}
-            <Button component={Link} href={`/login?next=${encodeURIComponent(back)}`} size="lg">
+            <Button component={Link} href={`/login?next=${back}`} size="lg">
                 Sign in
             </Button>
+            {signup?.open && (
+                <Button component={Link} href={`/join?next=${back}`} size="lg" variant="default">
+                    Join with the family code
+                </Button>
+            )}
         </div>
     );
 }

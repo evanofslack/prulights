@@ -19,8 +19,9 @@ import (
 
 // frameCmd prepares frames for flashing:
 //
-//	prulights frame new [-invite] [-out frame.json]
-//	    on the server: make a frame's identity (token, claim code, hotspot)
+//	prulights frame new [-for-user NAME] [-out frame.json]
+//	    on the server: make a frame's identity (token, claim code, hotspot),
+//	    given to that person straight away
 //	prulights frame config -from frame.json -wifi "SSID:password" [-wifi …] -out dir
 //	    anywhere, no database: the files to flash, with your Wi-Fi networks
 func frameCmd(ctx context.Context, args []string) error {
@@ -38,7 +39,7 @@ func frameCmd(ctx context.Context, args []string) error {
 
 func frameNew(ctx context.Context, args []string) error {
 	fs := flag.NewFlagSet("frame new", flag.ExitOnError)
-	invite := fs.Bool("invite", true, "mark it for a new person: scanning its code makes an account and claims it")
+	forUser := fs.String("for-user", "", "give it to this person (their name); without it, whoever scans its code gets it")
 	out := fs.String("out", "", "write the frame's identity here instead of stdout")
 	fs.Parse(args)
 
@@ -48,7 +49,15 @@ func frameNew(ctx context.Context, args []string) error {
 		return err
 	}
 	defer st.Close()
-	fc, err := server.New(cfg, st).PrepareFrame(ctx, 0, *invite)
+	var userID int64
+	if *forUser != "" {
+		u, err := st.UserByName(ctx, *forUser)
+		if err != nil {
+			return fmt.Errorf("no one named %q: %w", *forUser, err)
+		}
+		userID = u.ID
+	}
+	fc, err := server.New(cfg, st).PrepareFrame(ctx, userID)
 	if err != nil {
 		return err
 	}

@@ -79,7 +79,7 @@ commands:
   backfill   fetch and apply every source page, ignoring what's cached
   render     draw a frame view to a png (-view, -date, -palette, -out)
   invite     make an invite link and QR code (-admin, -for-user NAME)
-  frame new  prepare a frame's identity for flashing (-invite, -out FILE)
+  frame new  prepare a frame's identity for flashing (-for-user NAME, -out FILE)
   frame config  the files to flash: -from FILE -wifi "SSID:password" … -out DIR
   version    print the version`)
 }

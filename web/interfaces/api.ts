@@ -104,11 +104,6 @@ export interface InviteInfo {
 export interface RegisterBegin {
   invite?: string;
   /**
-   * ClaimCode is a frame marked for a new person: its code is the invite,
-   * and the new person gets the frame.
-   */
-  claim_code?: string;
-  /**
    * Code is the family code (SIGNUP_CODE): anyone with it can sign up.
    */
   code?: string;
@@ -336,27 +331,34 @@ export interface DeviceUpdate {
  */
 export interface AdminDevice extends DeviceInfo {
   owner: string;
+  /**
+   * OwnerID is who has it, 0 while it waits to be claimed.
+   */
+  owner_id: number /* int64 */;
   claim_code?: string;
   created_at: string;
-  /**
-   * InviteUntil is set while the frame is marked for a new person.
-   */
-  invite_until?: string;
 }
 /**
  * ClaimStatus is GET /api/v1/devices/claim/{code}: whether a frame is waiting
- * for that code, and whether the code also makes an account.
+ * for that code.
  */
 export interface ClaimStatus {
   waiting: boolean;
-  invites: boolean;
 }
 /**
  * PrepareFrame is POST /api/v1/admin/devices: make a frame's identity before
- * flashing it. Invite marks it for a new person.
+ * flashing it. ForUserID gives it to that person straight away; without it
+ * the frame waits for someone to scan its code.
  */
 export interface PrepareFrame {
-  invite: boolean;
+  for_user_id?: number /* int64 */;
+}
+/**
+ * AssignFrame is PUT /api/v1/admin/devices/{id}/owner: give a frame to
+ * someone. DELETE sends it back to its setup screen.
+ */
+export interface AssignFrame {
+  user_id: number /* int64 */;
 }
 /**
  * FrameAP is a frame's own setup hotspot.

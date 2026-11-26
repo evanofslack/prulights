@@ -7,11 +7,12 @@ import { Alert, Button, Skeleton, TextInput } from "@mantine/core";
 import { IconFingerprint } from "@tabler/icons-react";
 import type { SignupInfo } from "@/interfaces/api";
 import { useApi } from "@/lib/api";
-import { passkeyError, useAuth } from "@/lib/auth";
+import { nextPath, passkeyError, useAuth } from "@/lib/auth";
 import { Shell } from "@/components/Shell";
 
 // Join signs someone up with the family code (SIGNUP_CODE): a name, then a
-// passkey. ?code= fills the code in, so a link or QR is all it takes.
+// passkey. ?code= fills the code in, so a link or QR is all it takes; ?next=
+// is where to go after, as on /login.
 function Join() {
     const params = useSearchParams();
     const { data: info } = useApi<SignupInfo>("/auth/signup");
@@ -38,7 +39,7 @@ function Join() {
         setError(undefined);
         try {
             await register({ code }, name);
-            router.push("/");
+            router.push(nextPath());
         } catch (err) {
             setError(passkeyError(err));
         } finally {
@@ -89,7 +90,10 @@ function Join() {
             )}
             <p className="text-muted">
                 Already joined?{" "}
-                <Link href="/login" className="text-accent underline">
+                <Link
+                    href={`/login${params.get("next") ? `?next=${encodeURIComponent(params.get("next")!)}` : ""}`}
+                    className="text-accent underline"
+                >
                     Sign in
                 </Link>
             </p>
