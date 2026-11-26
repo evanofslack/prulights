@@ -21,7 +21,8 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   (`.env`, `web/node_modules`, `e2e/node_modules`) from the main checkout, then `just install`. The dev
   db isn't copied; `just seed` fills a fresh one.
 - `just e2e` installs its own chromium at the pinned `playwright-core` version (`e2e/run.sh`). Never
-  `npx playwright install`: an unpinned playwright sweeps the shared browser cache.
+  `npx playwright install`: an unpinned playwright sweeps the shared browser cache. An old pin can break on
+  a new Node (1.57's installer hangs on Node 26), so bump `e2e/package.json` when the install fails.
 - Ports are fixed (:8080, :3000, :8099, :8097), so run `just start` or `just e2e` in one worktree at a time.
 
 ## Architecture
