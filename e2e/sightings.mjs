@@ -69,6 +69,37 @@ check(
         (await mom.locator('[aria-label="Your rating"] input[value="4"]').isChecked()),
 );
 
+// logging a night never moves its title: the panel only grows downward
+// (its place on the page, not on screen: clicks scroll the phone)
+const h1y = () => mom.evaluate(() => document.querySelector("h1").getBoundingClientRect().top + scrollY);
+for (const [label, size] of [
+    ["desktop", { width: 1280, height: 800 }],
+    ["phone", { width: 390, height: 844 }],
+]) {
+    await mom.setViewportSize(size);
+    await mom.goto(`${URL}/night?d=${addDays(tonight, -1)}`);
+    await mom.waitForSelector(btn("I saw it"));
+    const before = await h1y();
+    await shot(mom, `sightings-button-${label}`);
+    await mom.click(btn("I saw it"));
+    await mom.waitForSelector("text=You saw it");
+    const seen = await h1y();
+    await rate(mom, 3);
+    await mom.waitForSelector(btn("Clear stars"));
+    const rated = await h1y();
+    await shot(mom, `sightings-rated-${label}`);
+    await mom.click(btn("Clear stars"));
+    await mom.waitForSelector('[aria-label="Your note"]', { state: "detached" });
+    const cleared = await h1y();
+    check(
+        `${label}: the title stays put while logging`,
+        [seen, rated, cleared].every((y) => Math.abs(y - before) < 1),
+        `${before} ${seen} ${rated} ${cleared}`,
+    );
+    await mom.click(btn("Undo"));
+    await mom.waitForSelector(btn("I saw it"));
+}
+
 // last week is still open; eight nights ago isn't
 await mom.goto(`${URL}/night?d=${addDays(tonight, -7)}`);
 await mom.click(btn("I saw it"));

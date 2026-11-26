@@ -40,7 +40,9 @@ export function Night({ lighting: l, tonight, publishedThrough, children }: Nigh
                 />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-20 bg-linear-to-b from-transparent to-surface dark:block sm:dark:hidden" />
             </div>
-            <div className="flex w-full flex-col justify-center gap-3 text-center sm:text-left">
+            {/* the text keeps a fixed top: centering it would move it each time the
+                "I saw it" panel under it grows */}
+            <div className="flex w-full flex-col gap-3 text-center sm:pt-16 sm:text-left">
                 <p className="text-lg text-muted">
                     <span className="font-bold text-fg">{when}</span>
                     {when === "Tonight" || when === "Tomorrow" || when === "Last night"
