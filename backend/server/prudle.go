@@ -73,7 +73,7 @@ func (s *Server) getMyPrudle(w http.ResponseWriter, r *http.Request) {
 		}
 		won := map[schedule.Date]bool{}
 		for _, g := range games {
-			out.Games = append(out.Games, PrudleResult{Date: g.Date, Status: string(g.Status), Turns: g.Turns, Misses: g.Misses})
+			out.Games = append(out.Games, PrudleResult{Date: g.Date, Status: string(g.Status), Turns: g.Turns})
 			if g.Status == store.PrudleWon {
 				out.Won++
 				won[g.Date] = true
@@ -176,7 +176,7 @@ func (s *Server) postPrudleGuess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	g.Guesses = append(g.Guesses, req.Colors)
-	g.Turns, g.Misses = len(game.Turns), game.Misses
+	g.Turns, g.Misses = len(game.Turns), float64(game.Wrong())
 	switch {
 	case game.Solved():
 		g.Status = store.PrudleWon
@@ -228,15 +228,13 @@ func (s *Server) writePrudle(w http.ResponseWriter, l schedule.Lighting, g store
 		return
 	}
 	out := PrudleState{
-		Date: l.Date, Cause: l.Cause, Budget: prudle.Budget, MaxPicks: prudle.MaxPicks,
+		Date: l.Date, Cause: l.Cause, Tries: prudle.Tries, MaxPicks: prudle.MaxPicks,
 		Status: string(g.Status), Turns: turnsOf(game.Turns), Found: game.Found, Out: []PrudlePick{},
-		Misses: game.Misses, Lo: game.Lo, Hi: game.Hi, Bands: game.Bands,
 	}
 	over := g.Status != store.PrudlePlaying || l.Date < tonight
 	out.CanPlay = !over
 	if over {
 		out.Answer = game.Answer
-		out.Bands = true
 	}
 	for k, m := range game.Out {
 		out.Out = append(out.Out, PrudlePick{Key: k, Mark: string(m)})
@@ -251,19 +249,19 @@ func turnsOf(ts []prudle.Turn) []PrudleTurn {
 	for i, t := range ts {
 		picks := make([]PrudlePick, len(t.Picks))
 		for j, p := range t.Picks {
-			picks[j] = PrudlePick{Key: p.Key, Mark: string(p.Mark)}
+			picks[j] = PrudlePick{Key: p.Key, Mark: string(p.Mark), Carried: p.Carried}
 		}
 		out[i] = PrudleTurn{Picks: picks, Size: t.Size, Count: string(t.Count)}
 	}
 	return out
 }
 
-// rowsOf is a game's guesses as marks only: found colors, then the new ones
-// good news first (web/lib/prudle.ts's row).
+// rowsOf is a game's guesses as marks only, good news first
+// (web/lib/prudle.ts's glyphs).
 func rowsOf(ts []prudle.Turn) []PrudleRow {
 	out := make([]PrudleRow, len(ts))
 	for i, t := range ts {
-		marks := slices.Repeat([]string{string(prudle.Hit)}, t.Size-len(t.Picks))
+		marks := []string{}
 		for _, m := range []prudle.Mark{prudle.Hit, prudle.Close, prudle.Miss} {
 			for _, p := range t.Picks {
 				if p.Mark == m {
@@ -307,7 +305,7 @@ func (s *Server) getPrudleNight(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			out.Players = append(out.Players, PrudlePlayer{Name: g.Name, Mine: g.UserID == me.ID,
-				Status: string(g.Status), Misses: g.Misses, Rows: rowsOf(game.Turns)})
+				Status: string(g.Status), Rows: rowsOf(game.Turns)})
 		}
 	}
 	w.Header().Set("Cache-Control", "no-store")

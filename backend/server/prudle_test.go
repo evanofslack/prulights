@@ -27,7 +27,7 @@ func TestPrudleGame(t *testing.T) {
 
 	rec := call(t, s, "GET", "/api/v1/me/prudle/2026-12-12", "", mom)
 	st := decodeAs[PrudleState](t, rec.Body.Bytes())
-	if rec.Code != 200 || !st.CanPlay || st.Answer != nil || !strings.HasPrefix(st.Cause, "The Gillian") || st.Budget != 5 {
+	if rec.Code != 200 || !st.CanPlay || st.Answer != nil || !strings.HasPrefix(st.Cause, "The Gillian") || st.Tries != 6 {
 		t.Fatalf("fresh game = %d %+v", rec.Code, st)
 	}
 	if strings.Contains(rec.Body.String(), "pink") {
@@ -35,28 +35,29 @@ func TestPrudleGame(t *testing.T) {
 	}
 
 	st, _ = guessAs(t, s, mom, "2026-12-12", `["blue","red","green"]`)
-	if st.Turns[0].Count != "exact" || st.Misses != 1.5 || !slices.Equal(st.Found, []schedule.ColorKey{"blue"}) ||
-		len(st.Out) != 2 || st.Answer != nil || !st.Bands || st.Lo != 3 {
+	if st.Turns[0].Count != "exact" || !slices.Equal(st.Found, []schedule.ColorKey{"blue"}) ||
+		len(st.Out) != 2 || st.Answer != nil || st.Status != "playing" {
 		t.Errorf("first guess = %+v", st)
 	}
 	for _, c := range []struct {
 		body string
 		want int
 	}{
-		{`[]`, 400},
 		{`["blue"]`, 400}, // found
 		{`["red"]`, 400},  // out
 		{`["mauve"]`, 400},
 		{`["a","b","c"]`, 400},
-		{`["pink","gold"]`, 200},
-		{`["teal"]`, 422}, // over
+		{`["pink","gold","teal"]`, 400}, // blue rides along: 4
+		{`["pink"]`, 200},               // blue and pink: not yet
+		{`["gold"]`, 200},               // blue, pink and gold
+		{`["teal"]`, 422},               // over
 	} {
 		if _, code := guessAs(t, s, mom, "2026-12-12", c.body); code != c.want {
 			t.Errorf("guess %s = %d, want %d", c.body, code, c.want)
 		}
 	}
 	st = decodeAs[PrudleState](t, call(t, s, "GET", "/api/v1/me/prudle/2026-12-12", "", mom).Body.Bytes())
-	if st.Status != "won" || st.CanPlay || len(st.Answer) != 3 || len(st.Turns) != 2 {
+	if st.Status != "won" || st.CanPlay || len(st.Answer) != 3 || len(st.Turns) != 3 || !st.Turns[2].Picks[0].Carried {
 		t.Errorf("won = %+v", st)
 	}
 
@@ -83,10 +84,10 @@ func TestPrudleGame(t *testing.T) {
 func TestPrudleLoseAndPass(t *testing.T) {
 	s := seeded(t)
 	_, evan := person(t, s, "Evan", false)
-	// tonight is blue, pink, gold: five misses still play, the sixth loses
+	// tonight is blue, pink, gold: five wrong guesses still play, the sixth loses
 	for i, c := range []string{"green", "teal", "black", "white", "silver"} {
 		st, _ := guessAs(t, s, evan, "2026-12-12", `["`+c+`"]`)
-		if st.Status != "playing" || st.Misses != float64(i+1) {
+		if st.Status != "playing" || len(st.Turns) != i+1 {
 			t.Fatalf("miss %d = %+v", i+1, st)
 		}
 	}
@@ -165,7 +166,7 @@ func TestPrudleNight(t *testing.T) {
 	if n.Locked || len(n.Players) != 2 || n.Players[0].Name != "Mom" || n.Players[0].Mine || !n.Players[1].Mine {
 		t.Fatalf("after = %+v", n)
 	}
-	if !slices.Equal(n.Players[0].Rows[0].Marks, []string{"hit", "close"}) ||
+	if !slices.Equal(n.Players[0].Rows[0].Marks, []string{"hit", "close"}) || len(n.Players[0].Rows) != 2 ||
 		!slices.Equal(n.Players[0].Rows[1].Marks, []string{"hit", "hit", "hit"}) {
 		t.Errorf("rows = %+v", n.Players[0].Rows)
 	}

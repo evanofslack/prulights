@@ -1,18 +1,34 @@
 [
   {
-    "name": "one at a time, close then hit",
+    "name": "close then hit",
     "answer": ["red"],
     "guesses": [["pink"], ["red"]],
     "turns": ["◐ exact 1", "● exact 1"],
-    "misses": 0.5,
+    "wrong": 1,
     "solved": true
   },
   {
-    "name": "found colors carry, fewer then exact",
-    "answer": ["blue", "gold"],
-    "guesses": [["blue", "green", "white"], ["gold"]],
-    "turns": ["●○○ fewer 3", "●● exact 2"],
-    "misses": 2,
+    "name": "a guess with extra colors doesn't win",
+    "answer": ["red"],
+    "guesses": [["red", "pink"], []],
+    "turns": ["●◐ fewer 2", "● exact 1"],
+    "wrong": 1,
+    "solved": true
+  },
+  {
+    "name": "found colors carry, the count narrows",
+    "answer": ["purple", "gold"],
+    "guesses": [["purple", "gold", "blue"], []],
+    "turns": ["●●◐ fewer 3", "●● exact 2"],
+    "wrong": 1,
+    "solved": true
+  },
+  {
+    "name": "too few colors, then the rest",
+    "answer": ["blue", "pink", "gold"],
+    "guesses": [["blue"], ["pink", "yellow"], ["gold"]],
+    "turns": ["● more 1", "●●◐ exact 3", "●●● exact 3"],
+    "wrong": 2,
     "solved": true
   },
   {
@@ -20,24 +36,15 @@
     "answer": ["green", "green", "white"],
     "guesses": [["green", "white"]],
     "turns": ["●● exact 2"],
-    "misses": 0,
+    "wrong": 0,
     "solved": true
   },
   {
-    "name": "five misses still plays, the sixth loses",
+    "name": "six wrong guesses lose",
     "answer": ["rainbow"],
     "guesses": [["red"], ["blue"], ["green"], ["white"], ["yellow"], ["black"]],
     "turns": ["○ exact 1", "○ exact 1", "○ exact 1", "○ exact 1", "○ exact 1", "○ exact 1"],
-    "misses": 6,
-    "solved": false,
-    "lost": true
-  },
-  {
-    "name": "half misses: 5.5 loses",
-    "answer": ["maroon"],
-    "guesses": [["blue"], ["green"], ["white"], ["yellow"], ["black"], ["red"]],
-    "turns": ["○ exact 1", "○ exact 1", "○ exact 1", "○ exact 1", "○ exact 1", "◐ exact 1"],
-    "misses": 5.5,
+    "wrong": 6,
     "solved": false,
     "lost": true
   }

@@ -9,7 +9,7 @@ import { api, useApi } from "@/lib/api";
 import { usePrudle } from "@/lib/blackout";
 import { colorNames } from "@/lib/format";
 import { usePalette } from "@/lib/palette";
-import { Swatch } from "./Prudle";
+import { ColorGrid } from "./Prudle";
 
 const MAX_COLORS = 6;
 
@@ -38,7 +38,8 @@ export function Reports({ date }: { date: string }) {
         <div className="flex flex-col gap-2 border-t border-line pt-3">
             {others.map((r) => (
                 <p key={r.name} className="text-muted">
-                    <span className="font-bold text-fg">{r.name}</span> says it was {colorNames(r.colors, palette)}
+                    <span className="font-bold text-fg">{r.name}</span> says it was{" "}
+                    {colorNames(r.colors, palette)}
                     {r.note && <> &ldquo;{r.note}&rdquo;</>}
                 </p>
             ))}
@@ -54,7 +55,11 @@ export function Reports({ date }: { date: string }) {
                             >
                                 Change
                             </button>
-                            <button type="button" className="min-h-11 px-1 underline hover:text-fg" onClick={withdraw}>
+                            <button
+                                type="button"
+                                className="min-h-11 px-1 underline hover:text-fg"
+                                onClick={withdraw}
+                            >
                                 Take back
                             </button>
                         </>
@@ -131,26 +136,18 @@ function ReportModal({
     };
 
     return (
-        <Modal opened={opened} onClose={onClose} title="What colors was it?" centered size="lg">
+        <Modal opened={opened} onClose={onClose} title="What colors was it?" centered size="md">
             <div className="flex flex-col gap-4">
                 <p className="text-muted">Pick the colors you saw.</p>
                 {palette && (
-                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                        {[...palette.values()].map((c) => (
-                            <Swatch
-                                key={c.key}
-                                c={c}
-                                palette={palette}
-                                mark={undefined}
-                                picked={picked.includes(c.key)}
-                                hint={false}
-                                onClick={() => toggle(c.key)}
-                            />
-                        ))}
-                    </div>
+                    <ColorGrid palette={palette} picked={(k) => picked.includes(k)} onClick={toggle} />
                 )}
                 <p className="min-h-7 text-lg" aria-live="polite">
-                    {picked.length > 0 ? colorNames(picked, palette) : <span className="text-muted">Nothing picked</span>}
+                    {picked.length > 0 ? (
+                        colorNames(picked, palette)
+                    ) : (
+                        <span className="text-muted">Nothing picked</span>
+                    )}
                 </p>
                 <Textarea
                     aria-label="A note"

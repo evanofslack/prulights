@@ -14,11 +14,10 @@ import (
 
 var glyph = map[Mark]string{Hit: "●", Close: "◐", Miss: "○"}
 
-// rowOf is a turn the way web/lib/prudle.ts's row and the share text draw
-// it: carried colors on, then the new picks good news first, then the count.
+// rowOf is a turn the way web/lib/prudle.ts's glyphs and the share text draw
+// it: the whole guess good news first, then the count.
 func rowOf(t Turn) string {
 	var b strings.Builder
-	b.WriteString(strings.Repeat(glyph[Hit], t.Size-len(t.Picks)))
 	for _, m := range []Mark{Hit, Close, Miss} {
 		for _, p := range t.Picks {
 			if p.Mark == m {
@@ -40,7 +39,7 @@ func TestGames(t *testing.T) {
 		Answer  []schedule.ColorKey
 		Guesses [][]schedule.ColorKey
 		Turns   []string
-		Misses  float64
+		Wrong   int
 		Solved  bool
 		Lost    bool
 	}
@@ -60,8 +59,8 @@ func TestGames(t *testing.T) {
 			if !slices.Equal(rows, c.Turns) {
 				t.Errorf("turns = %q, want %q", rows, c.Turns)
 			}
-			if g.Misses != c.Misses || g.Solved() != c.Solved || g.Lost() != c.Lost {
-				t.Errorf("misses %v solved %v lost %v", g.Misses, g.Solved(), g.Lost())
+			if g.Wrong() != c.Wrong || g.Solved() != c.Solved || g.Lost() != c.Lost {
+				t.Errorf("wrong %v solved %v lost %v", g.Wrong(), g.Solved(), g.Lost())
 			}
 		})
 	}
@@ -73,34 +72,37 @@ func TestCheck(t *testing.T) {
 		picks []schedule.ColorKey
 		want  error
 	}{
-		{nil, ErrEmpty},
 		{[]schedule.ColorKey{"red"}, ErrRepeat},  // found
 		{[]schedule.ColorKey{"pink"}, ErrRepeat}, // out
 		{[]schedule.ColorKey{"blue", "blue"}, ErrRepeat},
 		{[]schedule.ColorKey{"mauve"}, ErrUnknown},
-		{[]schedule.ColorKey{"blue", "gold", "green", "teal"}, ErrTooMany}, // red carries: 5
-		{[]schedule.ColorKey{"blue", "gold", "green"}, nil},
+		{[]schedule.ColorKey{"blue", "gold", "green"}, ErrTooMany}, // red carries: 4
+		{nil, nil}, // red alone is a new guess
+		{[]schedule.ColorKey{"blue", "green"}, nil},
 	} {
 		if err := g.Check(c.picks); !errors.Is(err, c.want) {
 			t.Errorf("%v: %v, want %v", c.picks, err, c.want)
 		}
 	}
-	won, _ := g.Guess([]schedule.ColorKey{"blue", "gold"})
-	if !won.Solved() || !won.Bands {
+	if err := New([]schedule.ColorKey{"red"}).Check(nil); !errors.Is(err, ErrEmpty) {
+		t.Errorf("empty first guess: %v", err)
+	}
+	alone, _ := g.Guess(nil)
+	if alone.Won || alone.Turns[1].Count != More {
+		t.Fatalf("red alone: %+v", alone)
+	}
+	if err := alone.Check(nil); !errors.Is(err, ErrRepeat) {
+		t.Errorf("red alone again: %v", err)
+	}
+	won, _ := alone.Guess([]schedule.ColorKey{"blue", "gold"})
+	if !won.Solved() || won.Known() != 3 || won.Wrong() != 2 {
 		t.Fatalf("not solved: %+v", won)
 	}
 	if _, err := won.Guess([]schedule.ColorKey{"green"}); !errors.Is(err, ErrOver) {
 		t.Errorf("after solved: %v", err)
 	}
-	if g.Turns[0].Count != More || g.Lo != 3 || len(g.Out) != 1 {
-		t.Errorf("first turn: %+v lo %d", g.Turns[0], g.Lo)
-	}
-}
-
-func TestCountBounds(t *testing.T) {
-	g, _ := Replay([]schedule.ColorKey{"red"}, [][]schedule.ColorKey{{"blue", "green", "white"}, {"black", "silver"}})
-	if g.Hi != 1 || g.Lo != 1 || g.Bands {
-		t.Errorf("lo %d hi %d bands %v", g.Lo, g.Hi, g.Bands)
+	if p := won.Turns[2].Picks[0]; !p.Carried || p.Key != "red" {
+		t.Errorf("carried: %+v", won.Turns[2].Picks)
 	}
 }
 

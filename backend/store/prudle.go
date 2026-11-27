@@ -28,7 +28,7 @@ type PrudleGame struct {
 	Answer     []schedule.ColorKey
 	Guesses    [][]schedule.ColorKey
 	Status     PrudleStatus
-	Misses     float64
+	Misses     float64 // wrong guesses
 	Turns      int
 	CreatedAt  time.Time
 	FinishedAt time.Time // zero while playing

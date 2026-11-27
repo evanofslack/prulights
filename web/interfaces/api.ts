@@ -418,7 +418,6 @@ export interface PrudleResult {
    */
   status: string;
   turns: number /* int */;
-  misses: number /* float64 */;
 }
 /**
  * PrudleSummary is GET /api/v1/me/prudle: whether you play tonight, and
@@ -451,15 +450,16 @@ export interface PrudleSummary {
   streak: number /* int */; // nights won in a row, through tonight or last night
 }
 /**
- * PrudlePick is one new color of a guess and what it was: "hit", "close" or "miss".
+ * PrudlePick is one color of a guess and what it was: "hit", "close" or "miss".
  */
 export interface PrudlePick {
   key: any /* schedule.ColorKey */;
   mark: string;
+  carried?: boolean; // found on before this guess
 }
 /**
- * PrudleTurn is one guess: its new colors, its whole size (colors already
- * found ride along) and the count: "fewer", "more" or "exact".
+ * PrudleTurn is one guess: the whole set (colors already found first), its
+ * size and the count: "fewer", "more" or "exact".
  */
 export interface PrudleTurn {
   picks: PrudlePick[];
@@ -473,7 +473,7 @@ export interface PrudleTurn {
 export interface PrudleState {
   date: schedule.Date;
   cause: string;
-  budget: number /* int */; // misses allowed; one more loses
+  tries: number /* int */; // guesses allowed; the last wrong one loses
   max_picks: number /* int */; // the most colors in one guess
   status: string;
   can_play: boolean; // tonight, and not over
@@ -483,16 +483,6 @@ export interface PrudleState {
    * Out are the colors guessed and not on, with their mark.
    */
   out: PrudlePick[];
-  misses: number /* float64 */;
-  /**
-   * Lo and Hi are what's known of how many colors; Hi is 0 until a "fewer".
-   */
-  lo: number /* int */;
-  hi: number /* int */;
-  /**
-   * Bands is whether the count is known (then it's Lo).
-   */
-  bands: boolean;
   answer?: any /* schedule.ColorKey */[];
 }
 /**
@@ -524,7 +514,6 @@ export interface PrudlePlayer {
   name: string;
   mine: boolean;
   status: string;
-  misses: number /* float64 */;
   rows: PrudleRow[];
 }
 /**

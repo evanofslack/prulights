@@ -8,24 +8,17 @@ import type { Lighting } from "@/interfaces/schedule";
 import { api, useMeta } from "@/lib/api";
 import { usePalette } from "@/lib/palette";
 import { addDays } from "@/lib/format";
-import {
-    type BandsRule,
-    type CloseRule,
-    type CountRule,
-    type Rules,
-    DEFAULT_RULES,
-    rulesKey,
-    shuffled,
-} from "@/lib/prudle";
+import { type CloseRule, type CountRule, type Rules, DEFAULT_RULES, rulesKey, shuffled } from "@/lib/prudle";
 import { Shell, ErrorNote } from "@/components/Shell";
 import { Board, type Played } from "./Board";
 import { Stats } from "./Stats";
 
 // /prudle-lab is a dev page for tuning Prudle: it deals every listed night in
-// the schedule as a game, with the rules in the url, and keeps each result in
-// localStorage per rule set so the stats can say whether the budget is right.
+// the schedule as a game, laid out as it would be on /, with the rules in the
+// url and tucked under the board. Each result is kept in localStorage per rule
+// set so the stats can say whether the limit is right.
 
-const STORE = "prulights.prudle-lab.v1";
+const STORE = "prulights.prudle-lab.v2";
 const CHUNK = 400; // maxRange in server/public.go
 
 interface Settings extends Rules {
@@ -46,11 +39,10 @@ function read(q: URLSearchParams): Settings {
         return xs.includes(v) ? v : d;
     };
     return {
-        budget: num("budget", 1, 8, DEFAULT_RULES.budget),
-        maxPicks: num("picks", 4, 6, DEFAULT_RULES.maxPicks),
+        tries: num("tries", 3, 8, DEFAULT_RULES.tries),
+        maxPicks: num("picks", 3, 4, DEFAULT_RULES.maxPicks),
         count: pick<CountRule>("count", ["dir", "exact"], DEFAULT_RULES.count),
-        close: pick<CloseRule>("close", ["none", "half", "full"], DEFAULT_RULES.close),
-        bands: pick<BandsRule>("bands", ["exact", "known"], DEFAULT_RULES.bands),
+        close: pick<CloseRule>("close", ["hint", "none"], DEFAULT_RULES.close),
         cause: q.get("cause") !== "0",
         seed: num("seed", 1, 1e9, 1),
         program: pick("program", ["", "regular", "31nights"] as const, ""),
@@ -61,11 +53,10 @@ function read(q: URLSearchParams): Settings {
 
 function write(s: Settings): string {
     const q = new URLSearchParams();
-    if (s.budget !== DEFAULT_RULES.budget) q.set("budget", String(s.budget));
+    if (s.tries !== DEFAULT_RULES.tries) q.set("tries", String(s.tries));
     if (s.maxPicks !== DEFAULT_RULES.maxPicks) q.set("picks", String(s.maxPicks));
     if (s.count !== DEFAULT_RULES.count) q.set("count", s.count);
     if (s.close !== DEFAULT_RULES.close) q.set("close", s.close);
-    if (s.bands !== DEFAULT_RULES.bands) q.set("bands", s.bands);
     if (!s.cause) q.set("cause", "0");
     if (s.seed !== 1) q.set("seed", String(s.seed));
     if (s.program) q.set("program", s.program);
@@ -139,11 +130,14 @@ function Lab() {
         () =>
             shuffled(
                 (nights ?? []).filter(
-                    (n) => (!s.program || n.program === s.program) && (!s.year || n.date.startsWith(s.year)),
+                    (n) =>
+                        new Set(n.colors).size <= s.maxPicks &&
+                        (!s.program || n.program === s.program) &&
+                        (!s.year || n.date.startsWith(s.year)),
                 ),
                 s.seed,
             ),
-        [nights, s.program, s.year, s.seed],
+        [nights, s.program, s.year, s.seed, s.maxPicks],
     );
 
     const [saved, setSaved] = useState<Saved>({});
@@ -184,14 +178,30 @@ function Lab() {
     const rules: Rules = s;
 
     return (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,28rem)_1fr]">
+        <div className="flex flex-col gap-8">
             <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between text-sm text-muted">
                     <span>
                         Night {i + 1} of {deck.length}
                         {playedHere && " · played"}
                     </span>
-                    <span>Enter guess · ← → · ⌫ clear</span>
+                    <span className="hidden sm:inline">Enter guess · ← → nights · ⌫ clear</span>
+                    <span className="flex gap-1 sm:hidden">
+                        <Button
+                            size="compact-sm"
+                            variant="subtle"
+                            onClick={() => set({ i: (i - 1 + deck.length) % deck.length })}
+                        >
+                            ‹ back
+                        </Button>
+                        <Button
+                            size="compact-sm"
+                            variant="subtle"
+                            onClick={() => set({ i: (i + 1) % deck.length })}
+                        >
+                            next ›
+                        </Button>
+                    </span>
                 </div>
                 <Board
                     key={`${night.date}-${key}-${s.i}`}
@@ -205,83 +215,79 @@ function Lab() {
                 />
             </div>
 
-            <div className="flex flex-col gap-6">
-                <section className="flex flex-col gap-3 rounded-xl bg-panel p-4">
-                    <h1 className="text-xl font-bold">Prudle lab</h1>
-                    <Knob
-                        label="Misses allowed"
-                        value={String(s.budget)}
-                        data={["2", "3", "4", "5", "6"]}
-                        onChange={(v) => set({ budget: Number(v) })}
-                    />
-                    <Knob
-                        label="Colors per guess"
-                        value={String(s.maxPicks)}
-                        data={["4", "5"]}
-                        onChange={(v) => set({ maxPicks: Number(v), i: 0 })}
-                    />
-                    <Knob
-                        label="Count feedback"
-                        value={s.count}
-                        data={[
-                            { value: "dir", label: "fewer / more / exact" },
-                            { value: "exact", label: "exact only" },
-                        ]}
-                        onChange={(v) => set({ count: v as CountRule })}
-                    />
-                    <Knob
-                        label="Close colors"
-                        value={s.close}
-                        data={[
-                            { value: "half", label: "½ miss" },
-                            { value: "full", label: "hint, 1 miss" },
-                            { value: "none", label: "plain miss" },
-                        ]}
-                        onChange={(v) => set({ close: v as CloseRule })}
-                    />
-                    <Knob
-                        label="Empty bands show"
-                        value={s.bands}
-                        data={[
-                            { value: "exact", label: "on an exact count" },
-                            { value: "known", label: "once count is known" },
-                        ]}
-                        onChange={(v) => set({ bands: v as BandsRule })}
-                    />
-                    <Knob
-                        label="Cause"
-                        value={s.cause ? "1" : "0"}
-                        data={[
-                            { value: "1", label: "shown" },
-                            { value: "0", label: "hidden" },
-                        ]}
-                        onChange={(v) => set({ cause: v === "1" })}
-                    />
-                    <Knob
-                        label="Nights"
-                        value={s.program}
-                        data={[
-                            { value: "", label: "all" },
-                            { value: "regular", label: "regular" },
-                            { value: "31nights", label: "31 Nights" },
-                        ]}
-                        onChange={(v) => set({ program: v as Settings["program"], i: 0 })}
-                    />
-                    <Knob
-                        label="Year"
-                        value={s.year}
-                        data={[{ value: "", label: "all" }, ...years.map((y) => ({ value: y, label: y }))]}
-                        onChange={(v) => set({ year: v, i: 0 })}
-                    />
+            <div className="flex flex-col gap-2 border-t border-line pt-4">
+                <Fold title="Lab settings" note={key}>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <Knob
+                            label="Guesses allowed"
+                            value={String(s.tries)}
+                            data={["3", "4", "5", "6", "7", "8"]}
+                            onChange={(v) => set({ tries: Number(v) })}
+                        />
+                        <Knob
+                            label="Colors per guess"
+                            value={String(s.maxPicks)}
+                            data={["3", "4"]}
+                            onChange={(v) => set({ maxPicks: Number(v), i: 0 })}
+                        />
+                        <Knob
+                            label="Count feedback"
+                            value={s.count}
+                            data={[
+                                { value: "dir", label: "fewer / more / right" },
+                                { value: "exact", label: "right or not" },
+                            ]}
+                            onChange={(v) => set({ count: v as CountRule })}
+                        />
+                        <Knob
+                            label="Close colors"
+                            value={s.close}
+                            data={[
+                                { value: "hint", label: "marked close" },
+                                { value: "none", label: "just off" },
+                            ]}
+                            onChange={(v) => set({ close: v as CloseRule })}
+                        />
+                        <Knob
+                            label="Cause"
+                            value={s.cause ? "1" : "0"}
+                            data={[
+                                { value: "1", label: "shown" },
+                                { value: "0", label: "hidden" },
+                            ]}
+                            onChange={(v) => set({ cause: v === "1" })}
+                        />
+                        <Knob
+                            label="Nights"
+                            value={s.program}
+                            data={[
+                                { value: "", label: "all" },
+                                { value: "regular", label: "regular" },
+                                { value: "31nights", label: "31 Nights" },
+                            ]}
+                            onChange={(v) => set({ program: v as Settings["program"], i: 0 })}
+                        />
+                        <Knob
+                            label="Year"
+                            value={s.year}
+                            data={[
+                                { value: "", label: "all" },
+                                ...years.map((y) => ({ value: y, label: y })),
+                            ]}
+                            onChange={(v) => set({ year: v, i: 0 })}
+                        />
+                    </div>
                     <div className="flex flex-wrap gap-2 pt-1">
                         <Button
                             variant="default"
+                            size="xs"
                             onClick={() => set({ seed: Math.floor(Math.random() * 1e9) + 1, i: 0 })}
                         >
                             Reshuffle
                         </Button>
                         <Button
                             variant="default"
+                            size="xs"
                             onClick={() =>
                                 navigator.clipboard.writeText(
                                     JSON.stringify({ rules: key, results }, null, 1),
@@ -293,6 +299,7 @@ function Lab() {
                         <Button
                             variant="subtle"
                             color="red"
+                            size="xs"
                             onClick={() => {
                                 const next = { ...saved };
                                 delete next[key];
@@ -303,13 +310,29 @@ function Lab() {
                         </Button>
                     </div>
                     <p className="text-xs text-muted">
-                        Results are kept per rule set ({key}); misses allowed is applied after, so changing it
-                        keeps them.
+                        Results are kept per rule set; guesses allowed is applied after, so changing it keeps
+                        them.
                     </p>
-                </section>
-                <Stats results={results} rules={rules} answers={answers} colors={colors} />
+                </Fold>
+                <Fold title="Results" note={`${results.length} played`}>
+                    <Stats results={results} rules={rules} answers={answers} colors={colors} />
+                </Fold>
             </div>
         </div>
+    );
+}
+
+// Fold is a closed section under the board.
+function Fold({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
+    return (
+        <details className="group rounded-xl bg-panel">
+            <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 select-none [&::-webkit-details-marker]:hidden">
+                <span className="text-muted transition group-open:rotate-90">›</span>
+                <span className="font-bold">{title}</span>
+                {note && <span className="ml-auto truncate text-xs text-muted">{note}</span>}
+            </summary>
+            <div className="flex flex-col gap-3 px-4 pb-4">{children}</div>
+        </details>
     );
 }
 
@@ -334,7 +357,7 @@ function Knob({
 
 export default function Page() {
     return (
-        <Shell wide>
+        <Shell>
             <Suspense fallback={<Skeleton height={600} radius="lg" />}>
                 <Lab />
             </Suspense>

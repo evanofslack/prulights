@@ -11,9 +11,8 @@ import (
 type PrudleResult struct {
 	Date schedule.Date `json:"date"`
 	// Status is "playing", "won", "lost" or "passed" ("just show me").
-	Status string  `json:"status"`
-	Turns  int     `json:"turns"`
-	Misses float64 `json:"misses"`
+	Status string `json:"status"`
+	Turns  int    `json:"turns"`
 }
 
 // PrudleSummary is GET /api/v1/me/prudle: whether you play tonight, and
@@ -35,14 +34,15 @@ type PrudleSummary struct {
 	Streak int            `json:"streak"` // nights won in a row, through tonight or last night
 }
 
-// PrudlePick is one new color of a guess and what it was: "hit", "close" or "miss".
+// PrudlePick is one color of a guess and what it was: "hit", "close" or "miss".
 type PrudlePick struct {
-	Key  schedule.ColorKey `json:"key"`
-	Mark string            `json:"mark"`
+	Key     schedule.ColorKey `json:"key"`
+	Mark    string            `json:"mark"`
+	Carried bool              `json:"carried,omitempty"` // found on before this guess
 }
 
-// PrudleTurn is one guess: its new colors, its whole size (colors already
-// found ride along) and the count: "fewer", "more" or "exact".
+// PrudleTurn is one guess: the whole set (colors already found first), its
+// size and the count: "fewer", "more" or "exact".
 type PrudleTurn struct {
 	Picks []PrudlePick `json:"picks"`
 	Size  int          `json:"size"`
@@ -54,20 +54,14 @@ type PrudleTurn struct {
 type PrudleState struct {
 	Date     schedule.Date       `json:"date"`
 	Cause    string              `json:"cause"`
-	Budget   int                 `json:"budget"`    // misses allowed; one more loses
+	Tries    int                 `json:"tries"`     // guesses allowed; the last wrong one loses
 	MaxPicks int                 `json:"max_picks"` // the most colors in one guess
 	Status   string              `json:"status"`
 	CanPlay  bool                `json:"can_play"` // tonight, and not over
 	Turns    []PrudleTurn        `json:"turns"`
 	Found    []schedule.ColorKey `json:"found"`
 	// Out are the colors guessed and not on, with their mark.
-	Out    []PrudlePick `json:"out"`
-	Misses float64      `json:"misses"`
-	// Lo and Hi are what's known of how many colors; Hi is 0 until a "fewer".
-	Lo int `json:"lo"`
-	Hi int `json:"hi"`
-	// Bands is whether the count is known (then it's Lo).
-	Bands  bool                `json:"bands"`
+	Out    []PrudlePick        `json:"out"`
 	Answer []schedule.ColorKey `json:"answer,omitempty"`
 }
 
@@ -95,7 +89,6 @@ type PrudlePlayer struct {
 	Name   string      `json:"name"`
 	Mine   bool        `json:"mine"`
 	Status string      `json:"status"`
-	Misses float64     `json:"misses"`
 	Rows   []PrudleRow `json:"rows"`
 }
 

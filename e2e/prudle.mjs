@@ -1,8 +1,9 @@
 // Prudle end to end, on its own server whose clock says Dec 10, 2026 (Red,
 // for Dress for Success): signed out you see the colors and an invite to play;
-// signed in tonight is a game and December's colors are hidden; a close then
-// a hit wins and shows them; someone else peeks and sees the first player's
-// marks, never colors; turning Prudle off shows the rest of December.
+// signed in tonight is a game and December's colors are hidden; red and pink
+// doesn't win, red alone does and shows them; someone else peeks and sees the
+// first player's marks, never colors; turning Prudle off shows the rest of
+// December.
 import { btn, check, finish, launch, open, shot } from "./lib.mjs";
 
 const URL = process.env.PRUDLE_URL || "http://localhost:8097";
@@ -52,13 +53,15 @@ check("later nights are hidden on the calendar", true);
 check("no colors named in the week", !(await wren.locator("#week").textContent()).includes("Red"));
 await shot(wren, "prudle-board");
 
-await wren.click('button[aria-label="Pink"]');
-await wren.click(btn("Guess 1"));
-await wren.waitForSelector('[aria-live=polite] >> text=Close');
-check("pink is close to red", true);
-check("close costs half a miss", await wren.locator("text=0.5/5 misses").isVisible());
+// red and pink holds the answer but isn't it: no win, and red stays in
 await wren.click('button[aria-label="Red"]');
-await wren.click(btn("Guess 1"));
+await wren.click('button[aria-label="Pink"]');
+await wren.click(btn("Guess 2 colors"));
+await wren.waitForSelector('[aria-live=polite] >> text=Close');
+check("a guess with an extra color doesn't win", await wren.locator("text=Fewer than 2 colors tonight.").isVisible());
+check("pink is close to red", await wren.locator('button[aria-label="Pink: Close"]').isVisible());
+check("a guess is a try", await wren.locator("text=1/6").isVisible());
+await wren.click(btn("Guess 1 color"));
 await wren.waitForSelector("text=Prudle: got it in 2 guesses");
 check("solving shows tonight's colors", (await wren.locator("h1").first().textContent()).includes("Red"));
 check("tonight shows on the calendar", (await wren.locator(`${night("2026-12-10")} [data-mark=hidden]`).count()) === 0);
@@ -71,11 +74,11 @@ await opal.goto(URL);
 await opal.waitForSelector("[aria-label=\"Tonight's Prudle\"]");
 const locked = await (await opal.request.get(`${URL}/api/v1/prudle/2026-12-10`)).json();
 check("the family board waits until you've played", locked.locked && locked.players.length === 0);
-await opal.click("text=Just show me ›");
+await opal.click("text=Just show me");
 await opal.click(btn("Show me"));
 await opal.waitForSelector("text=Prudle: you peeked");
 check("peeking shows the colors", (await opal.locator("h1").first().textContent()).includes("Red"));
-await opal.waitForSelector("text=Tonight, everyone");
+await opal.waitForSelector('[aria-label="Tonight, everyone"]');
 const family = await opal.locator("#prudle").textContent();
 check("the family board shows Wren", family.includes("Wren") && family.includes("got it"), family);
 check("the family board names no colors", !/Red|Pink/.test(family), family);

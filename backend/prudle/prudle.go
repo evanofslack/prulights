@@ -1,28 +1,32 @@
 // Package prudle is the December game: guess the night's colors, with its
-// cause as the clue. Each turn is a whole guess, a set of colors; the ones
-// already found stay in it for free. Every new color comes back a hit, close
-// (another color of its family is on, see Close) or a miss, and the guess's
-// size comes back against the night's count: fewer, more or exact. Misses
-// cost 1, close ½, hits nothing; more than Budget misses loses. Pure, no I/O.
+// cause as the clue. A guess is a whole set of colors and wins only when it
+// is the answer, no more and no fewer. Every color in it comes back a hit,
+// close (another color of its family is on, see Families) or a miss, and its
+// size comes back against the night's count: fewer, more or exact, so the
+// count is narrowed, never shown. Colors found on ride along in the next
+// guess, since leaving one out can never win. Each guess is a try; Tries
+// wrong ones lose. Pure, no I/O.
 //
-// It is web/lib/prudle.ts's guess at the rules the lab settled on
-// (maxPicks 4, count "dir", close "half", bands "exact"), and the server's
-// copy is the one that counts: testdata/games.json keeps the two in step.
+// web/lib/prudle.ts plays the same rules (the lab tunes them there); the
+// server's copy is the one that counts: testdata/games.json keeps the two in
+// step.
 package prudle
 
 import (
 	"errors"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/evanofslack/prulights/schedule"
 )
 
 const (
-	// Budget is how many misses a game can take: one more loses.
-	Budget = 5
-	// MaxPicks is the most colors in one guess, found ones included.
-	MaxPicks = 4
+	// Tries is how many guesses a game takes: the last wrong one loses.
+	Tries = 6
+	// MaxPicks is the most colors in one guess, found ones included. No
+	// December night has had more than three.
+	MaxPicks = 3
 )
 
 // InSeason is whether a night has a Prudle: December only.
@@ -72,14 +76,15 @@ func IsClose(a, b schedule.ColorKey) bool {
 	return false
 }
 
-// Pick is one new color of a guess and what it was.
+// Pick is one color of a guess and what it was.
 type Pick struct {
-	Key  schedule.ColorKey `json:"key"`
-	Mark Mark              `json:"mark"`
+	Key     schedule.ColorKey `json:"key"`
+	Mark    Mark              `json:"mark"`
+	Carried bool              `json:"carried"` // found on before this guess
 }
 
-// Turn is one guess: its new colors, its whole size (found colors
-// included) and the count.
+// Turn is one guess: the whole set (carried colors first, then the new
+// ones), its size and the count.
 type Turn struct {
 	Picks []Pick `json:"picks"`
 	Size  int    `json:"size"`
@@ -92,9 +97,7 @@ type Game struct {
 	Turns  []Turn
 	Found  []schedule.ColorKey // in the order found
 	Out    map[schedule.ColorKey]Mark
-	Misses float64
-	Lo, Hi int  // what the guesser knows of the count; Hi 0 until a "fewer"
-	Bands  bool // the crown shows its empty bands (the count is known)
+	Won    bool
 }
 
 // New starts a game on a night's colors.
@@ -105,28 +108,56 @@ func New(answer []schedule.ColorKey) Game {
 			a = append(a, k)
 		}
 	}
-	return Game{Answer: a, Turns: []Turn{}, Found: []schedule.ColorKey{}, Out: map[schedule.ColorKey]Mark{}, Lo: 1}
+	return Game{Answer: a, Turns: []Turn{}, Found: []schedule.ColorKey{}, Out: map[schedule.ColorKey]Mark{}}
 }
 
-// Solved is whether every color is found.
-func (g Game) Solved() bool { return len(g.Answer) > 0 && len(g.Found) == len(g.Answer) }
+// Solved is whether a guess was the answer.
+func (g Game) Solved() bool { return g.Won }
 
-// Lost is whether the misses went past the budget.
-func (g Game) Lost() bool { return !g.Solved() && g.Misses > Budget }
+// Lost is whether the tries ran out.
+func (g Game) Lost() bool { return !g.Won && len(g.Turns) >= Tries }
 
 // Over is whether the game takes no more guesses.
 func (g Game) Over() bool { return g.Solved() || g.Lost() }
+
+// Wrong is how many guesses missed.
+func (g Game) Wrong() int {
+	if g.Won {
+		return len(g.Turns) - 1
+	}
+	return len(g.Turns)
+}
+
+// Known is the count once a guess was its size, else 0.
+func (g Game) Known() int {
+	for _, t := range g.Turns {
+		if t.Count == Exact {
+			return t.Size
+		}
+	}
+	return 0
+}
 
 var (
 	ErrOver     = errors.New("the game is over")
 	ErrEmpty    = errors.New("pick a color")
 	ErrUnknown  = errors.New("not a color")
 	ErrRepeat   = errors.New("already guessed")
-	ErrTooMany  = errors.New("at most 4 colors")
+	ErrTooMany  = errors.New("at most 3 colors")
 	errNoAnswer = errors.New("no colors to guess")
 )
 
-// Check says why picks aren't a guess yet, or nil when they are.
+func setKey(keys []schedule.ColorKey) string {
+	s := make([]string, len(keys))
+	for i, k := range keys {
+		s[i] = string(k)
+	}
+	slices.Sort(s)
+	return strings.Join(s, ",")
+}
+
+// Check says why picks (the new colors; found ones ride along) aren't a
+// guess yet, or nil when they are.
 func (g Game) Check(picks []schedule.ColorKey) error {
 	if len(g.Answer) == 0 {
 		return errNoAnswer
@@ -134,7 +165,7 @@ func (g Game) Check(picks []schedule.ColorKey) error {
 	if g.Over() {
 		return ErrOver
 	}
-	if len(picks) == 0 {
+	if len(g.Found)+len(picks) == 0 {
 		return ErrEmpty
 	}
 	for i, k := range picks {
@@ -151,6 +182,16 @@ func (g Game) Check(picks []schedule.ColorKey) error {
 	if len(g.Found)+len(picks) > MaxPicks {
 		return ErrTooMany
 	}
+	key := setKey(append(slices.Clone(g.Found), picks...))
+	for _, t := range g.Turns {
+		keys := make([]schedule.ColorKey, len(t.Picks))
+		for i, p := range t.Picks {
+			keys[i] = p.Key
+		}
+		if setKey(keys) == key {
+			return ErrRepeat
+		}
+	}
 	return nil
 }
 
@@ -165,43 +206,37 @@ func (g Game) Guess(picks []schedule.ColorKey) (Game, error) {
 	for k, m := range g.Out {
 		next.Out[k] = m
 	}
-	turn := Turn{Picks: make([]Pick, len(picks)), Size: len(g.Found) + len(picks)}
-	for i, k := range picks {
+	turn := Turn{Picks: []Pick{}, Size: len(g.Found) + len(picks)}
+	for _, k := range g.Found {
+		turn.Picks = append(turn.Picks, Pick{Key: k, Mark: Hit, Carried: true})
+	}
+	hits := len(g.Found)
+	for _, k := range picks {
 		mark := Miss
 		if slices.Contains(g.Answer, k) {
 			mark = Hit
 		} else if slices.ContainsFunc(g.Answer, func(a schedule.ColorKey) bool { return IsClose(a, k) }) {
 			mark = Close
 		}
-		switch mark {
-		case Hit:
+		if mark == Hit {
 			next.Found = append(next.Found, k)
-		case Close:
+			hits++
+		} else {
 			next.Out[k] = mark
-			next.Misses += 0.5
-		default:
-			next.Out[k] = mark
-			next.Misses++
 		}
-		turn.Picks[i] = Pick{Key: k, Mark: mark}
+		turn.Picks = append(turn.Picks, Pick{Key: k, Mark: mark})
 	}
 	n := len(g.Answer)
 	switch {
 	case turn.Size == n:
 		turn.Count = Exact
-		next.Lo, next.Hi = n, n
 	case turn.Size > n:
 		turn.Count = Fewer
-		if next.Hi == 0 || turn.Size-1 < next.Hi {
-			next.Hi = turn.Size - 1
-		}
 	default:
 		turn.Count = More
-		next.Lo = max(next.Lo, turn.Size+1)
 	}
-	next.Lo = max(next.Lo, len(next.Found))
+	next.Won = turn.Size == n && hits == n
 	next.Turns = append(slices.Clone(g.Turns), turn)
-	next.Bands = g.Bands || turn.Count == Exact || next.Solved()
 	return next, nil
 }
 
