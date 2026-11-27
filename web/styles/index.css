@@ -30,6 +30,8 @@
     --color-accent: var(--mantine-color-gold-4);
     --color-on-accent: var(--mantine-color-dark-9);
     --color-danger: var(--mantine-color-red-6);
+    --color-pop: var(--mantine-color-pink-6); /* the one loud thing: the Prudle card's sticker */
+    --color-on-pop: #ffffff;
     --color-tower: #2a2e3e; /* the tower's body */
     --color-tower-line: #464b5e;
     --color-window: #3a3f52;
@@ -159,6 +161,30 @@
 }
 @media (prefers-reduced-motion: reduce) {
     .beacon {
+        animation: none;
+    }
+}
+
+/* the Prudle card's "Play now!" sticker: tilted, with a little wiggle now and then */
+@keyframes sticker {
+    0%,
+    86%,
+    100% {
+        transform: rotate(-8deg);
+    }
+    90% {
+        transform: rotate(-2deg) scale(1.08);
+    }
+    94% {
+        transform: rotate(-12deg) scale(1.08);
+    }
+}
+.sticker {
+    transform: rotate(-8deg);
+    animation: sticker 4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+    .sticker {
         animation: none;
     }
 }

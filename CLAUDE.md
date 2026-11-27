@@ -105,7 +105,8 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   `/docs` (stock Swagger UI from `swagger-ui-dist`, copied to `public/swagger` by `npm run swagger` before
   dev/build; don't bundle swagger-ui through next, its OpenAPI 3.1 support breaks), `/emulator` (frame
   previews; only when `/meta` says `dev`, settings live in the url), `/claim?code=` (a frame's setup QR
-  lands here), `/settings` (Prudle; your frames only once you have one, admins always). `/login?next=` returns to a path after signing in; `/join` signs up with the family code. Data via `useApi` in `web/lib/api.ts`; dates are Boston calendar strings, formatted in
+  lands here), `/settings` (Prudle; your frames only once you have one, admins always), `/prudle` (practice,
+  below). `/login?next=` returns to a path after signing in; `/join` signs up with the family code. Data via `useApi` in `web/lib/api.ts`; dates are Boston calendar strings, formatted in
   `web/lib/format.ts` at noon UTC so no time zone shifts them.
 - `just e2e` loads the scraper fixtures into a fresh db and runs `e2e/*.mjs` against :8099
   (`SHOTS=dir` for screenshots). Fixture dates: Dec 2026 is known (Dec 10 = Red, Dress for Success).
@@ -171,6 +172,15 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   always show colors. The board is `components/Prudle.tsx` (its small-chip `ColorGrid` is also the report picker), the game and the small Prudle card (wins, streak, tonight's family badges) are
   `components/PrudleGame.tsx`. e2e `prudle.mjs` runs on a second server on :8097 with `DEV_NOW` (only with
   `DEV=1`) set to Dec 10, 2026.
+- Practice Prudle (`/prudle`, `lib/practice.ts`): the last year's past nights (not December, 1–3 colors), minus any
+  cause this December lists (`sameCause`, loose: typos, "/ Save the Harbor"), graded in the browser by
+  `guess()` in `lib/prudle.ts` (Go's `Guess`, checked against `games.json`). Opens on a game, the board at
+  tonight's size (`PrudleBoard scene`). Easy start (default) ramps by finished games (`most`: one color for 3,
+  two through 8, then any); Random is any night. Show me ends a game, Skip moves on (played, but not toward the
+  ramp). Signed out is fine; the played dates, count and mode are kept in localStorage. The home page's
+  `PracticeCard` (outside December; under Your nights signed in, under This week signed out) shows the game as
+  three marked swatches (`MarkedSwatch`) with a tilted "Play now!" sticker (`.sticker`, the `pop` token, the one
+  loud color). Tonight's December board is the same big scene. e2e `practice.mjs`.
 - Frame setup: an unclaimed frame's bundle is the welcome screen (`setup`, tonight + 6) plus `wifi`; a
   claimed one adds `wifi` (empty date) to its views. A frame gets an owner by its code on `/claim`
   (signed in; signed out it offers sign in or `/join`), or from an admin: `PUT /admin/devices/{id}/owner`

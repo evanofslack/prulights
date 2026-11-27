@@ -12,15 +12,19 @@ func TestRename(t *testing.T) {
 	person(t, s, "Dad", false)
 	call(t, s, "PUT", "/api/v1/me/sightings/2026-12-12", `{"rating":4}`, mom)
 
-	for body, want := range map[string]int{
-		`{"name":"   "}`: 400,
-		`{"name":"` + strings.Repeat("a", 41) + `"}`: 400,
-		`{"name":"dad"}`:             409, // names ignore case
-		`{"name":"mom"}`:             200, // your own name in new case is fine
-		`{"name":"  Grandma   Jo "}`: 200,
+	// in order: the last rename is the name that sticks
+	for _, c := range []struct {
+		body string
+		want int
+	}{
+		{`{"name":"   "}`, 400},
+		{`{"name":"` + strings.Repeat("a", 41) + `"}`, 400},
+		{`{"name":"dad"}`, 409},             // names ignore case
+		{`{"name":"mom"}`, 200},             // your own name in new case is fine
+		{`{"name":"  Grandma   Jo "}`, 200}, // last
 	} {
-		if rec := call(t, s, "PUT", "/api/v1/me/name", body, mom); rec.Code != want {
-			t.Errorf("%s = %d, want %d: %s", body, rec.Code, want, rec.Body.String())
+		if rec := call(t, s, "PUT", "/api/v1/me/name", c.body, mom); rec.Code != c.want {
+			t.Errorf("%s = %d, want %d: %s", c.body, rec.Code, c.want, rec.Body.String())
 		}
 	}
 	if me := decodeAs[MeResponse](t, call(t, s, "GET", "/api/v1/me", "", mom).Body.Bytes()); me.Name != "Grandma Jo" {
@@ -40,14 +44,18 @@ func TestFeedback(t *testing.T) {
 	s := seeded(t)
 	_, mom := person(t, s, "Mom", false)
 	_, evan := person(t, s, "Evan", true)
-	for body, want := range map[string]int{
-		`{"text":"  "}`: 400,
-		`{"text":"` + strings.Repeat("é", 2001) + `"}`: 400,
-		`{"text":"  a bigger font please "}`:           204,
-		`{"text":"show the moon"}`:                     204,
+	// in order: the list is newest first
+	for _, c := range []struct {
+		body string
+		want int
+	}{
+		{`{"text":"  "}`, 400},
+		{`{"text":"` + strings.Repeat("é", 2001) + `"}`, 400},
+		{`{"text":"  a bigger font please "}`, 204},
+		{`{"text":"show the moon"}`, 204},
 	} {
-		if rec := call(t, s, "POST", "/api/v1/me/feedback", body, mom); rec.Code != want {
-			t.Errorf("%.30s = %d, want %d", body, rec.Code, want)
+		if rec := call(t, s, "POST", "/api/v1/me/feedback", c.body, mom); rec.Code != c.want {
+			t.Errorf("%.30s = %d, want %d", c.body, rec.Code, c.want)
 		}
 	}
 	if rec := call(t, s, "POST", "/api/v1/me/feedback", `{"text":"hi"}`, ""); rec.Code != http.StatusUnauthorized {

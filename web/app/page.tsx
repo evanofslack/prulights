@@ -11,7 +11,13 @@ import { Month } from "@/components/Month";
 import { MyNights } from "@/components/MyNights";
 import { Lately } from "@/components/Lately";
 import { ErrorNote, Shell } from "@/components/Shell";
-import { PrudleBoard, PrudleResult, PrudleSection, PrudleSignIn } from "@/components/PrudleGame";
+import {
+    PracticeCard,
+    PrudleBoard,
+    PrudleResult,
+    PrudleSection,
+    PrudleSignIn,
+} from "@/components/PrudleGame";
 import { inSeason, usePrudle } from "@/lib/blackout";
 
 // / is the whole site on one page: tonight, the week, signed in your nights,
@@ -68,11 +74,13 @@ export default function HomePage() {
                         >
                             <h2 className="text-2xl font-bold">This week</h2>
                             <Upcoming nights={data.upcoming} tonight={data.date} />
+                            {!season && me === null && <PracticeCard />}
                         </section>
                         {me && (
                             <div className="flex min-w-0 flex-col gap-12 lg:col-start-2 lg:row-span-2 lg:row-start-1">
                                 <PrudleSection tonight={data.date} />
                                 <MyNights />
+                                {!season && <PracticeCard />}
                                 <Lately tonight={data.date} />
                             </div>
                         )}

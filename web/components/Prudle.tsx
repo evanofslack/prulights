@@ -20,7 +20,7 @@ import {
 } from "@/lib/prudle";
 import { Tower } from "./Tower";
 
-// The Prudle board, played on / (PrudleGame.tsx). It's laid out like tonight on /: the tower on the left (on a
+// The Prudle board, played on / (PrudleGame.tsx) and /prudle (practice). It's laid out like tonight on /: the tower on the left (on a
 // phone, on top) and the game beside it. The crown fills in as colors are
 // found; the count line says what the guesses said of how many; the grid is
 // small chips, a family to a row, marked on, close or off.
@@ -67,6 +67,8 @@ export function crown(
 interface BoardProps {
     date: string;
     label: string; // "Tonight's Prudle"
+    when?: string; // the date as shown, else longDate (practice says the year)
+    scene?: boolean; // the whole scene at tonight's size on / (practice)
     cause: string;
     bands: string[];
     palette: Map<ColorKey, Color>;
@@ -87,6 +89,8 @@ interface BoardProps {
     result?: React.ReactNode;
     // under the game: a failed guess
     note?: React.ReactNode;
+    // last in the game column, playing or over: practice's mode
+    foot?: React.ReactNode;
 }
 
 export function PrudleBoard(p: BoardProps) {
@@ -95,12 +99,24 @@ export function PrudleBoard(p: BoardProps) {
     const size = p.on.length + p.picks.length;
     const g = { on: p.on, out: p.out, won: p.over };
     return (
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-8">
-            <div className="relative overflow-hidden rounded-2xl shadow-lg sm:sticky sm:top-4 sm:shrink-0">
+        <div
+            className={`flex flex-col gap-5 sm:flex-row sm:items-start ${p.scene ? "sm:gap-10" : "sm:gap-8"}`}
+        >
+            <div
+                className={`relative overflow-hidden rounded-2xl shadow-lg sm:sticky sm:top-4 sm:shrink-0 ${
+                    p.scene
+                        ? "sm:self-start dark:-mx-4 dark:-mt-8 dark:rounded-none dark:shadow-none sm:dark:mx-0 sm:dark:mt-0 sm:dark:rounded-2xl"
+                        : ""
+                }`}
+            >
                 <Tower
                     bands={p.bands}
                     night={p.date}
-                    className="block h-[34dvh] min-h-[220px] w-full sm:h-[clamp(420px,64dvh,620px)] sm:w-[calc(clamp(420px,64dvh,620px)*480/760)]"
+                    className={
+                        p.scene
+                            ? "scene block"
+                            : "block h-[34dvh] min-h-[220px] w-full sm:h-[clamp(420px,64dvh,620px)] sm:w-[calc(clamp(420px,64dvh,620px)*480/760)]"
+                    }
                     title={
                         p.over ? "The Prudential Tower" : "The Prudential Tower, its colors still to guess"
                     }
@@ -110,7 +126,7 @@ export function PrudleBoard(p: BoardProps) {
             <div className="flex w-full min-w-0 flex-col gap-4 sm:pt-4">
                 <div>
                     <p className="text-lg text-muted">
-                        <span className="font-bold text-fg">{p.label}</span> · {longDate(p.date)}
+                        <span className="font-bold text-fg">{p.label}</span> · {p.when ?? longDate(p.date)}
                     </p>
                     <h1 className="text-3xl leading-tight font-bold sm:text-4xl">{p.cause}</h1>
                 </div>
@@ -162,6 +178,7 @@ export function PrudleBoard(p: BoardProps) {
                         {p.turns.length > 1 && <History turns={p.turns} />}
                     </>
                 )}
+                {p.foot}
             </div>
         </div>
     );
@@ -240,27 +257,41 @@ function Chip({
                       : "hover:bg-panel"
             } ${mark === "miss" ? "opacity-40" : mark === "close" ? "opacity-70" : "active:scale-95"}`}
         >
-            <span
-                className="relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-line sm:h-8 sm:w-8"
-                style={{ background: swatch(c, palette) }}
-            >
-                {mark === "miss" && (
-                    <svg
-                        className="absolute inset-0 h-full w-full text-fg/70"
-                        viewBox="0 0 10 10"
-                        aria-hidden
-                    >
-                        <line x1="1" y1="9" x2="9" y2="1" stroke="currentColor" strokeWidth="0.8" />
-                    </svg>
-                )}
-                {mark && mark !== "miss" && (
-                    <span className="rounded-full bg-surface/80 p-0.5 text-fg">
-                        <Light mark={mark} size={12} />
-                    </span>
-                )}
-            </span>
+            <MarkedSwatch c={c} palette={palette} mark={mark} className="h-7 w-7 sm:h-8 sm:w-8" />
             <span className="truncate">{c.label}</span>
         </button>
+    );
+}
+
+// MarkedSwatch is a color's swatch with its mark on it: struck through for
+// off, a lamp for on or close. The home page's Prudle card draws with it too.
+export function MarkedSwatch({
+    c,
+    palette,
+    mark,
+    className,
+}: {
+    c: Color;
+    palette: Map<ColorKey, Color>;
+    mark: Mark | undefined;
+    className: string;
+}) {
+    return (
+        <span
+            className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-line ${className}`}
+            style={{ background: swatch(c, palette) }}
+        >
+            {mark === "miss" && (
+                <svg className="absolute inset-0 h-full w-full text-fg/70" viewBox="0 0 10 10" aria-hidden>
+                    <line x1="1" y1="9" x2="9" y2="1" stroke="currentColor" strokeWidth="0.8" />
+                </svg>
+            )}
+            {mark && mark !== "miss" && (
+                <span className="rounded-full bg-surface/80 p-0.5 text-fg">
+                    <Light mark={mark} size={12} />
+                </span>
+            )}
+        </span>
     );
 }
 
@@ -288,7 +319,7 @@ function Tries({ used, tries }: { used: number; tries: number }) {
             {Array.from({ length: tries }, (_, i) => (
                 <Light key={i} mark={i < used ? "hit" : "miss"} size={12} />
             ))}
-            <span className="ml-1 tabular-nums">{`${used}/${tries}`}</span>
+            <span className="ml-1 tabular-nums">{`${used}/${tries} guesses`}</span>
         </span>
     );
 }
