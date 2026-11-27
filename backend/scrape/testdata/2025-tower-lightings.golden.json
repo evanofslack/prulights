@@ -1,0 +1,1023 @@
+{
+  "url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+  "title": "2025 Tower Lightings",
+  "year": 2025,
+  "program": "regular",
+  "lightings": [
+    {
+      "date": "2025-11-08",
+      "colors": [
+        "teal",
+        "gold"
+      ],
+      "colors_raw": "Teal \u0026 Gold",
+      "cause": "Bottom Line",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-11-11",
+      "colors": [
+        "red",
+        "white",
+        "blue"
+      ],
+      "colors_raw": "Red, White \u0026 Blue–",
+      "cause": "Veterans Day",
+      "kind": "civic",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-11-14",
+      "colors": [
+        "blue"
+      ],
+      "colors_raw": "Blue–",
+      "cause": "New England Center for Children",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-11-16",
+      "colors": [
+        "blue",
+        "white"
+      ],
+      "colors_raw": "Blue \u0026 White–",
+      "cause": "Massachusetts DECA",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-11-17",
+      "colors": [
+        "purple"
+      ],
+      "colors_raw": "Purple-",
+      "cause": "March of Dimes",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-11-18",
+      "colors": [
+        "green"
+      ],
+      "colors_raw": "Green-",
+      "cause": "National Injury Prevention Day",
+      "kind": "civic",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-11-27",
+      "colors": [
+        "orange",
+        "gold"
+      ],
+      "colors_raw": "Orange \u0026 Gold",
+      "cause": "Thanksgiving",
+      "kind": "holiday",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-01-20",
+      "colors": [
+        "red",
+        "black",
+        "green"
+      ],
+      "colors_raw": "Red, Black and Green",
+      "cause": "Martin Luther King Jr. Day",
+      "kind": "civic",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-01-29",
+      "colors": [
+        "red",
+        "gold"
+      ],
+      "colors_raw": "Red \u0026 Gold",
+      "cause": "Lunar New Year",
+      "kind": "holiday",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-02-01",
+      "colors": [
+        "red",
+        "black",
+        "green"
+      ],
+      "colors_raw": "Red, Black and Green",
+      "cause": "Black History Month",
+      "kind": "civic",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-02-06",
+      "colors": [
+        "blue",
+        "orange"
+      ],
+      "colors_raw": "Blue and Orange",
+      "cause": "World Cancer Week",
+      "cause_url": "https://www.worldcancerday.org/",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-02-07",
+      "colors": [
+        "red"
+      ],
+      "colors_raw": "Red",
+      "cause": "American Heart Association’s National Wear Red Day",
+      "cause_url": "https://www.goredforwomen.org/en/",
+      "kind": "civic",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-02-14",
+      "colors": [
+        "pink",
+        "red"
+      ],
+      "colors_raw": "Pink and Red",
+      "cause": "Valentine’s Day",
+      "kind": "holiday",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-02-17",
+      "colors": [
+        "red",
+        "white",
+        "blue"
+      ],
+      "colors_raw": "Red, White \u0026 Blue",
+      "cause": "Presidents Day",
+      "kind": "civic",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-03-01",
+      "colors": [
+        "red",
+        "white",
+        "blue"
+      ],
+      "colors_raw": "Red, White \u0026 Blue",
+      "cause": "Revolution Opening Home Game",
+      "kind": "sports",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-03-02",
+      "colors": [
+        "purple",
+        "green",
+        "white"
+      ],
+      "colors_raw": "Purple, Green \u0026 White",
+      "cause": "Women’s History Month",
+      "kind": "civic",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-03-09",
+      "colors": [
+        "orange"
+      ],
+      "colors_raw": "Orange",
+      "cause": "National MS Society",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-03-17",
+      "colors": [
+        "green",
+        "white",
+        "orange"
+      ],
+      "colors_raw": "Green, White \u0026 Orange",
+      "cause": "St. Patrick’s Day",
+      "kind": "holiday",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-03-21",
+      "colors": [
+        "teal"
+      ],
+      "colors_raw": "Teal",
+      "cause": "NIDCAP Federation International, Inc",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-03-29",
+      "colors": [
+        "teal",
+        "orange"
+      ],
+      "colors_raw": "Teal \u0026 Orange",
+      "cause": "Raising Harts",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-04-04",
+      "colors": [
+        "red",
+        "white",
+        "blue"
+      ],
+      "colors_raw": "Red, White \u0026 Blue",
+      "cause": "Red Sox Opening Home Opener",
+      "kind": "sports",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-04-10",
+      "colors": [
+        "blue",
+        "green"
+      ],
+      "colors_raw": "Blue \u0026 Green",
+      "cause": "Mass General \u0026 National Donate Life Month",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-04-17",
+      "colors": [
+        "purple"
+      ],
+      "colors_raw": "Purple",
+      "cause": "IBS Awareness Month",
+      "kind": "civic",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-04-19",
+      "colors": [
+        "blue",
+        "yellow"
+      ],
+      "colors_raw": "Blue \u0026 Yellow",
+      "cause": "129th Boston Marathon",
+      "kind": "sports",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-04-20",
+      "colors": [
+        "blue",
+        "yellow"
+      ],
+      "colors_raw": "Blue \u0026 Yellow",
+      "cause": "129th Boston Marathon",
+      "kind": "sports",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-04-21",
+      "colors": [
+        "blue",
+        "yellow"
+      ],
+      "colors_raw": "Blue \u0026 Yellow",
+      "cause": "129th Boston Marathon",
+      "kind": "sports",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-04-26",
+      "colors": [
+        "green"
+      ],
+      "colors_raw": "Green",
+      "cause": "SunDay",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-04-29",
+      "colors": [
+        "orange"
+      ],
+      "colors_raw": "Orange",
+      "cause": "AllPaths and National Infertility Awareness Week",
+      "kind": "civic",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-05-01",
+      "colors": [
+        "red"
+      ],
+      "colors_raw": "Red",
+      "cause": "ALS Awareness Month",
+      "kind": "civic",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-05-02",
+      "colors": [
+        "red",
+        "pink",
+        "orange"
+      ],
+      "colors_raw": "Red, Pink \u0026 Orange",
+      "cause": "Native Hawaiian and Pacific Islander Heritage Month",
+      "kind": "civic",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-05-06",
+      "colors": [
+        "blue"
+      ],
+      "colors_raw": "Blue-",
+      "cause": "Credit Unions Kids at Heart",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-05-09",
+      "colors": [
+        "green"
+      ],
+      "colors_raw": "Green-",
+      "cause": "Mental Health Awareness Month",
+      "kind": "civic",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-05-11",
+      "colors": [
+        "purple"
+      ],
+      "colors_raw": "Purple-",
+      "cause": "Louis D. Brown Peace Institute",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-05-12",
+      "colors": [
+        "teal"
+      ],
+      "colors_raw": "Teal-",
+      "cause": "Asthma and Allergy Awareness Month",
+      "kind": "civic",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-05-15",
+      "colors": [
+        "blue"
+      ],
+      "colors_raw": "Blue-",
+      "cause": "National Brain Tumor Society",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-05-16",
+      "colors": [
+        "orange"
+      ],
+      "colors_raw": "Orange-",
+      "cause": "Bladder Cancer Advocacy Network (BCAN)",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-05-19",
+      "colors": [
+        "orange",
+        "blue"
+      ],
+      "colors_raw": "Orange \u0026 Blue-",
+      "cause": "National EMS Week",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-05-20",
+      "colors": [
+        "gold"
+      ],
+      "colors_raw": "Gold-",
+      "cause": "Boston Public Art Triennial",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-05-21",
+      "colors": [
+        "green"
+      ],
+      "colors_raw": "Green-",
+      "cause": "Trustees of Reservation",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-05-26",
+      "colors": [
+        "red",
+        "white",
+        "blue"
+      ],
+      "colors_raw": "Red, White \u0026 Blue",
+      "cause": "Memorial Day",
+      "kind": "civic",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-05-27",
+      "colors": [
+        "blue",
+        "orange"
+      ],
+      "colors_raw": "Blue, Orange-",
+      "cause": "BUILD Boston",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-06-01",
+      "colors": [
+        "rainbow"
+      ],
+      "colors_raw": "Rainbow-",
+      "cause": "LQBTQ Pride Month",
+      "kind": "civic",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-06-19",
+      "colors": [
+        "red",
+        "black",
+        "green"
+      ],
+      "colors_raw": "Red, Black \u0026 Green",
+      "cause": "Juneteenth",
+      "kind": "civic",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-06-20",
+      "colors": [
+        "red"
+      ],
+      "colors_raw": "Red-",
+      "cause": "Massachusetts Sickle Cell Association",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-07-04",
+      "colors": [
+        "red",
+        "white",
+        "blue"
+      ],
+      "colors_raw": "Red, White \u0026 Blue-",
+      "cause": "Independence Day/ Miles for Military",
+      "cause_url": "https://www.milesformilitary.org/",
+      "kind": "holiday",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-07-22",
+      "colors": [
+        "teal"
+      ],
+      "colors_raw": "Teal-",
+      "cause": "FRAXA Research Foundation",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-09-01",
+      "colors": [
+        "red",
+        "white",
+        "blue"
+      ],
+      "colors_raw": "Red, White \u0026 Blue",
+      "cause": "Labor Day",
+      "kind": "civic",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-09-07",
+      "colors": [
+        "red",
+        "silver",
+        "blue"
+      ],
+      "colors_raw": "Red, Silver \u0026 Navy Blue-",
+      "cause": "New England Patriots Opening Home Game",
+      "kind": "sports",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-09-11",
+      "colors": [
+        "blue"
+      ],
+      "colors_raw": "Blue-",
+      "cause": "9/11 Memorial \u0026 Museum “Tribute in Light”",
+      "cause_url": "https://www.911memorial.org/visit/memorial/tribute-light",
+      "kind": "civic",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-09-15",
+      "colors": [
+        "red",
+        "green",
+        "yellow",
+        "orange"
+      ],
+      "colors_raw": "Red, Green, Yellow, Orange-",
+      "cause": "Hispanic/Latino Heritage Month",
+      "kind": "civic",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-09-19",
+      "colors": [
+        "teal",
+        "purple"
+      ],
+      "colors_raw": "Teal \u0026 Purple-",
+      "cause": "Empty Arms Bereavement Support",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-10-03",
+      "colors": [
+        "pink",
+        "white"
+      ],
+      "colors_raw": "Pink \u0026 White–",
+      "cause": "Runway for Recovery",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-10-04",
+      "colors": [
+        "red",
+        "gold"
+      ],
+      "colors_raw": "Red \u0026 Gold–",
+      "cause": "Jimmy Fund",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-10-05",
+      "colors": [
+        "teal",
+        "gold"
+      ],
+      "colors_raw": "Teal \u0026 Gold",
+      "cause": "Three Squares New England",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-10-09",
+      "colors": [
+        "black",
+        "gold",
+        "white"
+      ],
+      "colors_raw": "Black, Gold \u0026 White",
+      "cause": "Bruins Opening Home Game 2025",
+      "kind": "sports",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-10-10",
+      "colors": [
+        "green"
+      ],
+      "colors_raw": "Green–",
+      "cause": "Look. Foundation",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-10-13",
+      "colors": [
+        "red",
+        "white",
+        "green"
+      ],
+      "colors_raw": "Red, White \u0026 Green–",
+      "cause": "Indigenous Peoples’ Day",
+      "kind": "civic",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-10-15",
+      "colors": [
+        "blue",
+        "pink"
+      ],
+      "colors_raw": "Blue \u0026 Pink–",
+      "cause": "Angel Babies",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-10-16",
+      "colors": [
+        "pink"
+      ],
+      "colors_raw": "Pink–",
+      "cause": "Ellie Fund",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-10-17",
+      "colors": [
+        "blue"
+      ],
+      "colors_raw": "Blue–",
+      "cause": "Boston Police Foundation",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-10-18",
+      "colors": [
+        "blue",
+        "white"
+      ],
+      "colors_raw": "Blue \u0026 White",
+      "cause": "60th Head of the Charles Regatta",
+      "kind": "sports",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-10-22",
+      "colors": [
+        "green",
+        "gold",
+        "white",
+        "black"
+      ],
+      "colors_raw": "Green, Gold, White \u0026 Black-",
+      "cause": "Celtics Opening Home Game 2025",
+      "kind": "sports",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-10-23",
+      "colors": [
+        "blue",
+        "green"
+      ],
+      "colors_raw": "Blue \u0026 Green–",
+      "cause": "Health Equity International",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-10-25",
+      "colors": [
+        "blue"
+      ],
+      "colors_raw": "Blue",
+      "cause": "Spina Bifida Association of New England",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-10-26",
+      "colors": [
+        "purple"
+      ],
+      "colors_raw": "Purple–",
+      "cause": "Alzheimer’s Association, MA/NH Chapter",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-10-31",
+      "colors": [
+        "orange"
+      ],
+      "colors_raw": "Orange",
+      "cause": "Halloween",
+      "kind": "holiday",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-11-02",
+      "colors": [
+        "gold",
+        "blue"
+      ],
+      "colors_raw": "Gold \u0026 Blue",
+      "cause": "GMA’s 50th Anniversary and America’s 250th birthday",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-11-03",
+      "colors": [
+        "teal"
+      ],
+      "colors_raw": "Teal–",
+      "cause": "Alzheimer’s Foundation of America",
+      "kind": "nonprofit",
+      "program": "regular",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    }
+  ]
+}

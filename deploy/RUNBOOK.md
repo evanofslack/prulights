@@ -44,7 +44,8 @@ VPS=user@host just backup   # writes backups/prulights-<date>.db
 ```
 It runs `prulights backup -out FILE` in the container (sqlite's `VACUUM INTO`, a consistent copy while the
 server runs) and copies the result down. Don't `docker cp` the live file: it can miss writes still in the WAL.
-The scraped schedule can always be rebuilt with `prulights backfill`. Sightings, users and devices can't, so back them up.
+The scraped schedule can always be rebuilt: `prulights backfill` for what the site shows now, and the archived
+2025 and Dec 2024 nights load themselves on the next start. Sightings, users and devices can't, so back them up.
 
 ## Settings (environment variables)
 

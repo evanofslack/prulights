@@ -108,6 +108,11 @@ backfill:
 scrape-snapshot:
     ./backend/scrape/snapshot.sh
 
+# download the Wayback Machine copies backend/history/manifest.json lists
+[group('scrape')]
+history-fetch:
+    ./backend/history/fetch.sh
+
 # draw a frame view from sample data to backend/tmp/render-<view>.png
 [group('frames')]
 render view="tonight" date="2026-12-12" palette="measured" *args="":

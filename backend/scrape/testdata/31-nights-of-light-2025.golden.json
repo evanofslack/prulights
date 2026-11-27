@@ -1,0 +1,492 @@
+{
+  "url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+  "title": "31 Nights of Light",
+  "year": 2025,
+  "program": "31nights",
+  "lightings": [
+    {
+      "date": "2025-12-01",
+      "colors": [
+        "blue",
+        "white",
+        "red"
+      ],
+      "colors_raw": "Blue, White \u0026 Red",
+      "cause": "Team Hoyt/The Hoyt Foundation",
+      "cause_url": "https://teamhoyt.com/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-02",
+      "colors": [
+        "teal",
+        "purple"
+      ],
+      "colors_raw": "Teal \u0026 Purple",
+      "cause": "New England Musicians Resource Fund",
+      "cause_url": "https://www.nemrf.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-03",
+      "colors": [
+        "blue",
+        "red"
+      ],
+      "colors_raw": "Blue \u0026 Red",
+      "cause": "Boston Court Appointed Special Advocates",
+      "cause_url": "https://bostoncasa.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-04",
+      "colors": [
+        "blue",
+        "purple",
+        "gold"
+      ],
+      "colors_raw": "Blue, Purple \u0026 Gold",
+      "cause": "Joey Fund/The Cystic Fibrosis Association",
+      "cause_url": "https://joeyfund.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-05",
+      "colors": [
+        "pink",
+        "green"
+      ],
+      "colors_raw": "Pink \u0026 Green",
+      "cause": "Den Org., Inc",
+      "cause_url": "https://thedenorg.org/about/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-06",
+      "colors": [
+        "blue",
+        "orange"
+      ],
+      "colors_raw": "Blue \u0026 Orange",
+      "cause": "National Psoriasis Foundation",
+      "cause_url": "https://www.psoriasis.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-07",
+      "colors": [
+        "blue",
+        "teal"
+      ],
+      "colors_raw": "Blue \u0026 Teal",
+      "cause": "Linclusion",
+      "cause_url": "https://www.linclusion.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-08",
+      "colors": [
+        "purple"
+      ],
+      "colors_raw": "Purple",
+      "cause": "Herren Project",
+      "cause_url": "https://herrenproject.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-09",
+      "colors": [
+        "rainbow"
+      ],
+      "colors_raw": "Rainbow",
+      "cause": "Gay for Good",
+      "cause_url": "https://gayforgood.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-10",
+      "colors": [
+        "pink"
+      ],
+      "colors_raw": "Pink",
+      "cause": "Give ‘n Glow",
+      "cause_url": "https://www.givenglow.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-11",
+      "colors": [
+        "teal",
+        "white"
+      ],
+      "colors_raw": "Teal \u0026 White",
+      "cause": "Winter Walk Inc",
+      "cause_url": "https://winterwalk.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-12",
+      "colors": [
+        "red",
+        "purple"
+      ],
+      "colors_raw": "Red \u0026 Purple",
+      "cause": "Voices of Hope",
+      "cause_url": "https://www.vohboston.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-13",
+      "colors": [
+        "green"
+      ],
+      "colors_raw": "Green",
+      "cause": "G-PACT",
+      "cause_url": "https://www.g-pact.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-14",
+      "colors": [
+        "blue"
+      ],
+      "colors_raw": "Blue",
+      "cause": "Hanukkah",
+      "kind": "holiday",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-15",
+      "colors": [
+        "blue",
+        "green"
+      ],
+      "colors_raw": "Blue \u0026 Green",
+      "cause": "HEADstrong Foundation, Nick’s House Boston",
+      "cause_url": "https://www.headstrong.org/nicks-house/boston",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-16",
+      "colors": [
+        "teal"
+      ],
+      "colors_raw": "Teal",
+      "cause": "Ovations for the Cure",
+      "cause_url": "https://ovationsforthecure.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-17",
+      "colors": [
+        "blue",
+        "green",
+        "purple"
+      ],
+      "colors_raw": "Blue, Green \u0026 Purple",
+      "cause": "MAB Community Services",
+      "cause_url": "https://www.mabcommunity.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-18",
+      "colors": [
+        "blue",
+        "teal"
+      ],
+      "colors_raw": "Blue \u0026 Teal",
+      "cause": "American Lung Association",
+      "cause_url": "https://lung.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-19",
+      "colors": [
+        "blue",
+        "pink",
+        "gold"
+      ],
+      "colors_raw": "Blue, Pink \u0026 Gold",
+      "cause": "Gillian Reny Stepping Strong Center for Trauma Innovation",
+      "cause_url": "https://steppingstrong.bwh.harvard.edu/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-20",
+      "colors": [
+        "orange"
+      ],
+      "colors_raw": "Orange",
+      "cause": "Easterseals Massachusetts Inc",
+      "cause_url": "https://www.eastersealsma.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-21",
+      "colors": [
+        "purple"
+      ],
+      "colors_raw": "Purple",
+      "cause": "Rett Syndrome Angels/Rett Syndrome Association of Massachusetts",
+      "cause_url": "https://rsangels.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-22",
+      "colors": [
+        "blue",
+        "red"
+      ],
+      "colors_raw": "Blue \u0026 Red",
+      "cause": "Dave McGillivray Finish Strong Foundation",
+      "cause_url": "https://www.davemcgillivrayfoundation.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-23",
+      "colors": [
+        "red"
+      ],
+      "colors_raw": "Red",
+      "cause": "Red Cross of Massachusetts",
+      "cause_url": "https://redcross.org/MA",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-24",
+      "colors": [
+        "teal"
+      ],
+      "colors_raw": "Teal",
+      "cause": "Asthma and Allergy Foundation of America New England Chapter",
+      "cause_url": "https://asthmaandallergies.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-25",
+      "colors": [
+        "red",
+        "green"
+      ],
+      "colors_raw": "Red \u0026 Green",
+      "cause": "Christmas",
+      "kind": "holiday",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-26",
+      "colors": [
+        "teal"
+      ],
+      "colors_raw": "Teal",
+      "cause": "International OCD Foundation",
+      "cause_url": "https://iocdf.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-27",
+      "colors": [
+        "orange",
+        "gold"
+      ],
+      "colors_raw": "Orange \u0026 Gold",
+      "cause": "Appendix Cancer PMP Research Foundation (ACPMP)",
+      "cause_url": "https://acpmp.org/",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-28",
+      "colors": [
+        "purple"
+      ],
+      "colors_raw": "Purple",
+      "cause": "VITFriends Vitiligo Support Group, IncTo",
+      "cause_url": "https://www.vitfriends.org/lit4vit",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-29",
+      "colors": [
+        "teal",
+        "blue"
+      ],
+      "colors_raw": "Teal \u0026 Blue",
+      "cause": "Foundation Fighting Blindness",
+      "cause_url": "https://www.fightingblindness.org/our-mission",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-30",
+      "colors": [
+        "blue",
+        "gold"
+      ],
+      "colors_raw": "Blue \u0026 Gold",
+      "cause": "Swirls Around the World Foundation",
+      "cause_url": "https://www.swirlsaroundtheworld.org",
+      "kind": "nonprofit",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    },
+    {
+      "date": "2025-12-31",
+      "colors": [
+        "gold"
+      ],
+      "colors_raw": "Gold",
+      "cause": "New Year’s Eve",
+      "kind": "holiday",
+      "program": "31nights",
+      "scheduled": true,
+      "source_url": "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/",
+      "lights_on": "0001-01-01T00:00:00Z",
+      "lights_on_source": ""
+    }
+  ]
+}

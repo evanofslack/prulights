@@ -27,6 +27,11 @@ func TestParseGolden(t *testing.T) {
 		{"2024-tower-lighting-schedule", "https://www.prudentialcenter.com/experiences/events/2024-tower-lighting-schedule/", 2024, schedule.ProgramRegular, 62},
 		{"2026-tower-lightings", "https://www.prudentialcenter.com/experiences/events/2026-tower-lightings/", 2026, schedule.ProgramRegular, 77},
 		{"31-nights-of-light", "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/", 2026, schedule.ProgramNights, 31},
+		// archived pages (Wayback Machine): the 2025 schedule, and 31 Nights as
+		// it was laid out in 2024–25
+		{"2025-tower-lightings", "https://www.prudentialcenter.com/experiences/events/2025-tower-lightings/", 2025, schedule.ProgramRegular, 68},
+		{"31-nights-of-light-2024", "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/", 2024, schedule.ProgramNights, 31},
+		{"31-nights-of-light-2025", "https://www.prudentialcenter.com/experiences/events/31-nights-of-light/", 2025, schedule.ProgramNights, 31},
 	}
 	for _, pg := range pages {
 		t.Run(pg.file, func(t *testing.T) {
@@ -129,6 +134,10 @@ func TestFindColors(t *testing.T) {
 		{[]string{"PURPLE", "MSPCC"}, "PURPLE", "MSPCC"},
 		{[]string{"IMPACT Melanoma Blue & Gold"}, "Blue & Gold", "IMPACT Melanoma"},
 		{[]string{"Team Impact"}, "", "Team Impact"},
+		{[]string{"Blue-9/11 Memorial"}, "Blue-", "9/11 Memorial"},
+		{splitDash([]string{"Team Hoyt/The Hoyt Foundation – Blue, White & Red"}), "Blue, White & Red", "Team Hoyt/The Hoyt Foundation"},
+		{splitDash([]string{"Red, White & Blue – Red Sox Home Opener"}), "Red, White & Blue", "Red Sox Home Opener"},
+		{splitDash([]string{"Spina Bifida – New England"}), "", "Spina Bifida – New England"},
 	}
 	for _, c := range cases {
 		colors, cause := findColors(c.parts)
