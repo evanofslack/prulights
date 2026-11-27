@@ -87,13 +87,13 @@ export function Month({ tonight }: { tonight: string }) {
                               >
                                   <span className="flex items-start justify-between px-1.5 pt-1">
                                       <span
-                                          className={`text-sm sm:text-base ${isTonight ? "font-bold text-accent" : "text-muted"}`}
+                                          className={`text-base ${isTonight ? "font-bold text-accent" : "text-muted"}`}
                                       >
                                           {dayOfMonth(l.date)}
                                       </span>
                                       {noted ? (
                                           <IconMessage
-                                              size={12}
+                                              size={14}
                                               className="mt-1 text-muted"
                                               aria-label="your note"
                                               data-mark="note"
@@ -101,7 +101,7 @@ export function Month({ tonight }: { tonight: string }) {
                                       ) : (
                                           saw && (
                                               <span
-                                                  className="mt-1.5 size-1.5 rounded-full bg-muted"
+                                                  className="mt-1.5 size-2 rounded-full bg-muted"
                                                   aria-label="you saw it"
                                                   data-mark="seen"
                                               />

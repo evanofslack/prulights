@@ -47,7 +47,7 @@ function Log() {
     const favorites = data.nights.some((n) => hidden(n.date)) ? [] : st.favorites;
     return (
         <>
-            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
                 <Tile label="Nights seen" value={String(st.seen)} />
                 <Tile label="Streak" value={String(st.streak)} />
                 <Tile label="Average" value={st.rated ? `★ ${st.average.toFixed(1)}` : "–"} />

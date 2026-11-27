@@ -10,6 +10,11 @@ import { useSky } from "@/lib/sky";
 import { HIDDEN, HIDDEN_NAME, usePrudle } from "@/lib/blackout";
 import { Crown, Tower } from "./Tower";
 
+// the tower scene's box, the drawing's own shape (480×760, see Tower) so nothing is
+// cut off: full width on a phone, and on a computer as tall as fits, width to match
+const SCENE =
+    "aspect-[480/760] w-full sm:h-[clamp(400px,64dvh,640px)] sm:w-[calc(clamp(400px,64dvh,640px)*480/760)]";
+
 interface NightProps {
     lighting: Lighting;
     tonight?: string;
@@ -29,22 +34,23 @@ export function Night({ lighting: l, tonight, publishedThrough, children }: Nigh
     const sky = useSky(l, tonight);
     return (
         <section className="flex flex-col gap-5 sm:flex-row sm:items-stretch sm:gap-10">
-            {/* at night the tower runs to the phone's edges and fades into the page; on
-                paper it's a night picture in a card */}
-            <div className="relative overflow-hidden rounded-2xl shadow-lg sm:w-[46%] sm:shrink-0 sm:self-start dark:-mx-4 dark:-mt-8 dark:rounded-none dark:shadow-none sm:dark:mx-0 sm:dark:mt-0 sm:dark:rounded-2xl">
+            {/* the whole scene, never cropped: its box keeps the drawing's shape. At night
+                the tower runs to the phone's edges and fades into the page; on paper it's a
+                night picture in a card */}
+            <div className="relative overflow-hidden rounded-2xl shadow-lg sm:shrink-0 sm:self-start dark:-mx-4 dark:-mt-8 dark:rounded-none dark:shadow-none sm:dark:mx-0 sm:dark:mt-0 sm:dark:rounded-2xl">
                 <Tower
                     bands={bands}
                     sky={sky}
                     night={l.date}
                     live={l.date === tonight}
-                    className="block h-[64dvh] max-h-[640px] min-h-[400px] w-full"
+                    className={`block ${SCENE}`}
                     title={
                         hidden
                             ? "The Prudential Tower, its colors hidden for Prudle"
                             : `The Prudential Tower, crown lit ${names}`
                     }
                 />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-20 bg-linear-to-b from-transparent to-surface dark:block sm:dark:hidden" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-8 bg-linear-to-b from-transparent to-surface dark:block sm:dark:hidden" />
             </div>
             {/* the text keeps a fixed top: centering it would move it each time the
                 "I saw it" panel under it grows */}
@@ -104,7 +110,7 @@ export function Night({ lighting: l, tonight, publishedThrough, children }: Nigh
 export function NightSkeleton() {
     return (
         <section className="flex flex-col gap-5 sm:flex-row sm:items-end sm:gap-10">
-            <Skeleton className="h-[64dvh] max-h-[640px] min-h-[400px] sm:!w-[46%]" radius="lg" />
+            <Skeleton className={`${SCENE} sm:shrink-0`} radius="lg" />
             <div className="flex w-full flex-col gap-3">
                 <Skeleton height={20} width="50%" />
                 <Skeleton height={44} width="80%" />

@@ -95,11 +95,11 @@ export function PrudleBoard(p: BoardProps) {
     const g = { on: p.on, out: p.out, won: p.over };
     return (
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-8">
-            <div className="relative overflow-hidden rounded-2xl shadow-lg sm:sticky sm:top-4 sm:w-[42%] sm:shrink-0">
+            <div className="relative overflow-hidden rounded-2xl shadow-lg sm:sticky sm:top-4 sm:shrink-0">
                 <Tower
                     bands={p.bands}
                     night={p.date}
-                    className="block h-[34dvh] min-h-[220px] w-full sm:h-[64dvh] sm:max-h-[620px] sm:min-h-[420px]"
+                    className="block h-[34dvh] min-h-[220px] w-full sm:h-[clamp(420px,64dvh,620px)] sm:w-[calc(clamp(420px,64dvh,620px)*480/760)]"
                     title={
                         p.over ? "The Prudential Tower" : "The Prudential Tower, its colors still to guess"
                     }
