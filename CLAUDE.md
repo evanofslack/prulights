@@ -7,6 +7,8 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
 ## Commands
 - Dev: `just start` (go on :8080 with hot reload, next on :3000 passing `/api` through to go).
   `just serve` runs the production-like build on :8080. `just` lists all recipes.
+- Prod backups: `VPS=user@host just backup` (`prulights backup -out FILE`, sqlite `VACUUM INTO`; never copy the
+  live file, see `deploy/RUNBOOK.md`).
 - `just check` runs exactly what CI runs:
   - Backend (from `backend/`): `gofmt -l .` (must be empty), `go vet ./...`, `./types-current.sh`,
     `go test -race ./...`
@@ -40,7 +42,7 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   (`go test ./scrape -update` after reviewing a diff; `just scrape-snapshot` refreshes the pages).
 - `backend/metrics`: the one Prometheus registry.
 - `backend/server`: chi. `/api/...` is JSON; anything else is the static export from `STATIC_DIR`
-  (`/calendar` is served from `calendar.html`, unknown paths fall back to `index.html`).
+  (`/night` is served from `night.html`, unknown paths fall back to `index.html`).
   `/healthz`, `/readyz`; Prometheus on `METRICS_ADDR`, never the public port.
 - Public api (`server/public.go`): `/api/v1/{tonight,lightings,lightings/{date},palette,meta,calendar.ics}`.
   Open, rate limited per client (`PUBLIC_RATE_LIMIT`, client IP from Cloudflare headers when
@@ -89,13 +91,10 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   its own windows. The red beacons blink in their own svg layer (`.beacon`), so blinking never repaints the scene.
 - Web pages: `/` is the whole site on one page, in sections: tonight, `#week`, `#nights` (signed in only,
   `MyNights.tsx`) and `#calendar` (`Month.tsx`, month in `?m=`, changed with `router.replace`, no scroll; your
-  nights get a dot, a noted one links to `/night?d=…#note`). `/calendar` and `/log` only redirect there. Then `/night?d=`, `/display` (always-on, no chrome; Esc leaves),
+  nights get a dot, a noted one links to `/night?d=…#note`). Then `/night?d=`, `/display` (always-on, no chrome; Esc leaves),
   `/docs` (stock Swagger UI from `swagger-ui-dist`, copied to `public/swagger` by `npm run swagger` before
   dev/build; don't bundle swagger-ui through next, its OpenAPI 3.1 support breaks), `/emulator` (frame
-  previews; only when `/meta` says `dev`, settings live in the url), `/prudle-lab` (dev only: plays every listed night as Prudle in the
-  browser with `lib/prudle.ts` and the home page's board, to tune the rules; settings and stats fold under it and live
-  in the url. Games run past the limit so stats show win rates at any limit, results in localStorage per rule set,
-  bots for a baseline), `/claim?code=` (a frame's setup QR
+  previews; only when `/meta` says `dev`, settings live in the url), `/claim?code=` (a frame's setup QR
   lands here), `/settings` (Prudle; your frames only once you have one, admins always). `/login?next=` returns to a path after signing in; `/join` signs up with the family code. Data via `useApi` in `web/lib/api.ts`; dates are Boston calendar strings, formatted in
   `web/lib/format.ts` at noon UTC so no time zone shifts them.
 - `just e2e` loads the scraper fixtures into a fresh db and runs `e2e/*.mjs` against :8099
@@ -149,14 +148,14 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   playable. A guess is a whole set (at most 3) and wins only when it is the answer exactly; each color comes back on,
   close (same family) or off; colors found on ride along in the next guess; the count is never shown, only "more
   than"/"fewer than" each guess (`countText`), and a number once a guess was that size; 6 guesses. Rules in
-  `backend/prudle` (pure; the copy that counts, `testdata/games.json` keeps `web/lib/prudle.ts` in step). `server/prudle.go`: `/me/prudle`
+  `backend/prudle` (pure; `testdata/games.json` pins them; the server grades every guess, `web/lib/prudle.ts` only
+  draws the board and checks a guess before sending). `server/prudle.go`: `/me/prudle`
   (summary), `/me/prudle/{date}` (never the answer before the game ends), `…/guesses`, `…/pass` ("just show me"),
   `/me/prudle/settings` (`users.prudle_off`), `/prudle/{date}` (family marks, no colors, locked until you've
   played). The answer is kept from the first guess (`prudle_games`). The blackout is web only
   (`lib/blackout.tsx`, `usePrudle().hidden(date)`): signed in, December nights from tonight on stay hidden until
   tonight's game ends; signed out sees colors and a sign-in card. `/display`, frames, admin and the public api
-  always show colors. The board is `components/Prudle.tsx` (shared with the lab; its small-chip `ColorGrid` is also
-  the report picker), the game and the small Prudle card (wins, streak, tonight's family badges) are
+  always show colors. The board is `components/Prudle.tsx` (its small-chip `ColorGrid` is also the report picker), the game and the small Prudle card (wins, streak, tonight's family badges) are
   `components/PrudleGame.tsx`. e2e `prudle.mjs` runs on a second server on :8097 with `DEV_NOW` (only with
   `DEV=1`) set to Dec 10, 2026.
 - Frame setup: an unclaimed frame's bundle is the welcome screen (`setup`, tonight + 6) plus `wifi`; a

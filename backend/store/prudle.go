@@ -28,8 +28,6 @@ type PrudleGame struct {
 	Answer     []schedule.ColorKey
 	Guesses    [][]schedule.ColorKey
 	Status     PrudleStatus
-	Misses     float64 // wrong guesses
-	Turns      int
 	CreatedAt  time.Time
 	FinishedAt time.Time // zero while playing
 }
@@ -52,15 +50,15 @@ func (s *Store) SavePrudleGame(ctx context.Context, g PrudleGame) error {
 		finished = sql.NullString{String: fmtTime(g.FinishedAt), Valid: true}
 	}
 	_, err = s.DB.ExecContext(ctx, `insert into prudle_games
-		(user_id, date, answer, guesses, status, misses, turns, created_at, finished_at)
-		values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		(user_id, date, answer, guesses, status, created_at, finished_at)
+		values (?, ?, ?, ?, ?, ?, ?)
 		on conflict (user_id, date) do update set guesses = excluded.guesses, status = excluded.status,
-			misses = excluded.misses, turns = excluded.turns, finished_at = excluded.finished_at`,
-		g.UserID, g.Date, string(answer), string(guesses), g.Status, g.Misses, g.Turns, fmtTime(g.CreatedAt), finished)
+			finished_at = excluded.finished_at`,
+		g.UserID, g.Date, string(answer), string(guesses), g.Status, fmtTime(g.CreatedAt), finished)
 	return err
 }
 
-const prudleCols = `g.user_id, u.name, g.date, g.answer, g.guesses, g.status, g.misses, g.turns,
+const prudleCols = `g.user_id, u.name, g.date, g.answer, g.guesses, g.status,
 	g.created_at, coalesce(g.finished_at, '') from prudle_games g join users u on u.id = g.user_id`
 
 func (s *Store) prudleGames(ctx context.Context, query string, args ...any) ([]PrudleGame, error) {
@@ -73,7 +71,7 @@ func (s *Store) prudleGames(ctx context.Context, query string, args ...any) ([]P
 	for rows.Next() {
 		var g PrudleGame
 		var answer, guesses, created, finished string
-		if err := rows.Scan(&g.UserID, &g.Name, &g.Date, &answer, &guesses, &g.Status, &g.Misses, &g.Turns, &created, &finished); err != nil {
+		if err := rows.Scan(&g.UserID, &g.Name, &g.Date, &answer, &guesses, &g.Status, &created, &finished); err != nil {
 			return nil, err
 		}
 		if err := json.Unmarshal([]byte(answer), &g.Answer); err != nil {

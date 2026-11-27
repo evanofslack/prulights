@@ -60,8 +60,8 @@ func defaultSettings() DeviceSettings {
 		Theme: themeDark, Scene: string(render.SceneSkyline), Words: string(render.WordsCause)}
 }
 
-// withDefaults fills in the choices that were left out (older settings, or
-// a client that doesn't know them).
+// withDefaults fills in the choices that were left out (a client that
+// doesn't send them).
 func (set DeviceSettings) withDefaults() DeviceSettings {
 	def := defaultSettings()
 	if set.Theme == "" {
@@ -485,7 +485,7 @@ func (s *Server) getCompatPNG(w http.ResponseWriter, r *http.Request) {
 func (s *Server) frameData(r *http.Request, d store.Device, tonight schedule.Date) (render.Data, error) {
 	// the month views of every night in the bundle, and the week after the last
 	from := firstOfMonth(tonight)
-	if back := tonight.AddDays(-logWindow); back < from {
+	if back := tonight.AddDays(-LogWindow); back < from {
 		from = back
 	}
 	last := tonight.AddDays(bundleNights) // the stale picture's night

@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 // newTest opens a fresh in-memory store for a test.
@@ -17,23 +18,6 @@ func newTest(t *testing.T) *Store {
 	return s
 }
 
-func TestMeta(t *testing.T) {
-	ctx := context.Background()
-	s := newTest(t)
-	if v, err := s.Meta(ctx, "missing"); err != nil || v != "" {
-		t.Fatalf("missing = %q, %v", v, err)
-	}
-	if err := s.SetMeta(ctx, "k", "a"); err != nil {
-		t.Fatal(err)
-	}
-	if err := s.SetMeta(ctx, "k", "b"); err != nil {
-		t.Fatal(err)
-	}
-	if v, _ := s.Meta(ctx, "k"); v != "b" {
-		t.Fatalf("k = %q, want b", v)
-	}
-}
-
 func TestMigrateTwice(t *testing.T) {
 	ctx := context.Background()
 	file := filepath.Join(t.TempDir(), "p.db")
@@ -42,9 +26,38 @@ func TestMigrateTwice(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := s.SetMeta(ctx, "k", "v"); err != nil {
-			t.Fatal(err)
+		var n int
+		if err := s.DB.QueryRowContext(ctx, `select count(*) from migrations`).Scan(&n); err != nil || n != 1 {
+			t.Fatalf("migrations = %d, %v", n, err)
 		}
 		s.Close()
+	}
+}
+
+func TestBackup(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	s, err := Open(ctx, filepath.Join(dir, "p.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	if _, err := s.SignUp(ctx, NewHandle(), "Mom", []byte("cred"), []byte("{}"), time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	out := filepath.Join(dir, "backup.db")
+	if err := s.Backup(ctx, out); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Backup(ctx, out); err == nil {
+		t.Error("backed up over an existing file")
+	}
+	b, err := Open(ctx, out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer b.Close()
+	if u, err := b.UserByName(ctx, "Mom"); err != nil || u.Name != "Mom" {
+		t.Errorf("backup has %+v, %v", u, err)
 	}
 }

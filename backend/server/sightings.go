@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	// logWindow is how many nights back "I saw it" stays open, besides tonight.
-	logWindow = 7
+	// LogWindow is how many nights back "I saw it" stays open, besides tonight.
+	LogWindow = 7
 	// recentLimit is how many sightings "Lately" shows.
 	recentLimit = 8
 	maxNoteLen  = 280
@@ -54,7 +54,7 @@ func (s *Server) mountAdmin(r chi.Router) {
 // canLog is whether a night is open for "I saw it": tonight and the week
 // before it.
 func canLog(d, tonight schedule.Date) bool {
-	return d <= tonight && d >= tonight.AddDays(-logWindow)
+	return d <= tonight && d >= tonight.AddDays(-LogWindow)
 }
 
 func dateParam(w http.ResponseWriter, r *http.Request) (schedule.Date, bool) {
@@ -146,7 +146,7 @@ func (s *Server) getNightSightings(w http.ResponseWriter, r *http.Request) {
 func (s *Server) getRecentSightings(w http.ResponseWriter, r *http.Request) {
 	me := userFrom(r.Context()).ID
 	tonight := schedule.Tonight(s.now())
-	xs, err := s.store.RecentSightings(r.Context(), me, tonight.AddDays(-logWindow), tonight, recentLimit)
+	xs, err := s.store.RecentSightings(r.Context(), me, tonight.AddDays(-LogWindow), tonight, recentLimit)
 	if err != nil {
 		s.internalError(w, err)
 		return
@@ -213,7 +213,7 @@ func (s *Server) getMyStats(w http.ResponseWriter, r *http.Request) {
 
 // statsOf sums up logged nights (newest first).
 func statsOf(nights []LoggedNight, tonight schedule.Date) MyStats {
-	st := MyStats{Seen: len(nights), Favorites: []ColorCount{}, LogFrom: tonight.AddDays(-logWindow), Tonight: tonight}
+	st := MyStats{Seen: len(nights), Favorites: []ColorCount{}, LogFrom: tonight.AddDays(-LogWindow), Tonight: tonight}
 	sum := 0
 	counts := map[schedule.ColorKey]int{}
 	seen := map[schedule.Date]bool{}

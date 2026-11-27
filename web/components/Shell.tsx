@@ -11,16 +11,13 @@ import { SchemeToggle } from "./SchemeToggle";
 
 // Shell is the page frame: a slim header, the page, and a one-line footer of
 // icons. The site is one page, and settings are in the account menu, so the
-// header only links the dev tools (emulator, Prudle lab), hidden on phones.
+// header only links the dev tool (the emulator), hidden on phones.
 export function Shell({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
     const path = usePathname();
     const meta = useMeta();
     const links = [
         ...(meta?.dev || path.startsWith("/emulator")
             ? [{ href: "/emulator", label: "Emulator", active: path.startsWith("/emulator") }]
-            : []),
-        ...(meta?.dev || path.startsWith("/prudle-lab")
-            ? [{ href: "/prudle-lab", label: "Prudle", active: path.startsWith("/prudle-lab") }]
             : []),
     ];
     const width = wide ? "max-w-6xl" : "max-w-3xl";

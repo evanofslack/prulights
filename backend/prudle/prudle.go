@@ -7,9 +7,8 @@
 // guess, since leaving one out can never win. Each guess is a try; Tries
 // wrong ones lose. Pure, no I/O.
 //
-// web/lib/prudle.ts plays the same rules (the lab tunes them there); the
-// server's copy is the one that counts: testdata/games.json keeps the two in
-// step.
+// testdata/games.json pins the rules. web/lib/prudle.ts only draws the board
+// and checks a guess before it's sent.
 package prudle
 
 import (

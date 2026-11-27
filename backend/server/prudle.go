@@ -73,7 +73,7 @@ func (s *Server) getMyPrudle(w http.ResponseWriter, r *http.Request) {
 		}
 		won := map[schedule.Date]bool{}
 		for _, g := range games {
-			out.Games = append(out.Games, PrudleResult{Date: g.Date, Status: string(g.Status), Turns: g.Turns})
+			out.Games = append(out.Games, PrudleResult{Date: g.Date, Status: string(g.Status), Turns: len(g.Guesses)})
 			if g.Status == store.PrudleWon {
 				out.Won++
 				won[g.Date] = true
@@ -176,7 +176,6 @@ func (s *Server) postPrudleGuess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	g.Guesses = append(g.Guesses, req.Colors)
-	g.Turns, g.Misses = len(game.Turns), float64(game.Wrong())
 	switch {
 	case game.Solved():
 		g.Status = store.PrudleWon
@@ -190,7 +189,7 @@ func (s *Server) postPrudleGuess(w http.ResponseWriter, r *http.Request) {
 		s.internalError(w, err)
 		return
 	}
-	slog.Info("prudle guess", "user", me.ID, "date", l.Date, "turn", g.Turns, "status", g.Status)
+	slog.Info("prudle guess", "user", me.ID, "date", l.Date, "turn", len(g.Guesses), "status", g.Status)
 	s.writePrudle(w, l, g, tonight)
 }
 

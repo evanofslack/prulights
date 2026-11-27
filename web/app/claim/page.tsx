@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Alert, Button, Skeleton, TextInput } from "@mantine/core";
 import { IconCircleCheck, IconPlugConnected } from "@tabler/icons-react";
-import type { ClaimStatus, DeviceInfo, SignupInfo } from "@/interfaces/api";
-import { api, useApi } from "@/lib/api";
+import type { ClaimRequest, ClaimStatus, DeviceInfo, SignupInfo } from "@/interfaces/api";
+import { api, json, useApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Shell } from "@/components/Shell";
 
@@ -82,7 +82,7 @@ function Claim() {
                 setClaimed(
                     await api<DeviceInfo>("/devices/claim", {
                         method: "POST",
-                        body: JSON.stringify({ code, name: frameName }),
+                        body: json<ClaimRequest>({ code, name: frameName }),
                     }),
                 );
             } catch (err) {

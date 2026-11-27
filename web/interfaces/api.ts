@@ -453,7 +453,7 @@ export interface PrudleSummary {
  * PrudlePick is one color of a guess and what it was: "hit", "close" or "miss".
  */
 export interface PrudlePick {
-  key: any /* schedule.ColorKey */;
+  key: schedule.ColorKey;
   mark: string;
   carried?: boolean; // found on before this guess
 }
@@ -478,19 +478,19 @@ export interface PrudleState {
   status: string;
   can_play: boolean; // tonight, and not over
   turns: PrudleTurn[];
-  found: any /* schedule.ColorKey */[];
+  found: schedule.ColorKey[];
   /**
    * Out are the colors guessed and not on, with their mark.
    */
   out: PrudlePick[];
-  answer?: any /* schedule.ColorKey */[];
+  answer?: schedule.ColorKey[];
 }
 /**
  * PrudleGuess is POST /api/v1/me/prudle/{date}/guesses: the new colors of a
  * guess (the ones already found ride along on their own).
  */
 export interface PrudleGuess {
-  colors: any /* schedule.ColorKey */[];
+  colors: schedule.ColorKey[];
 }
 /**
  * PrudleSettings is PUT /api/v1/me/prudle/settings.
@@ -597,7 +597,7 @@ export interface MySightings {
  * ColorCount is how many of your nights had a color.
  */
 export interface ColorCount {
-  color: any /* schedule.ColorKey */;
+  color: schedule.ColorKey;
   count: number /* int */;
 }
 /**
@@ -626,13 +626,13 @@ export interface MyStats {
  * OverrideBody is PUT /api/v1/admin/overrides/{date}: a correction to a night.
  */
 export interface OverrideBody {
-  colors: any /* schedule.ColorKey */[];
+  colors: schedule.ColorKey[];
   cause: string;
   cause_url: string;
   /**
    * Kind is worked out from the cause when empty.
    */
-  kind: any /* schedule.Kind */;
+  kind?: schedule.Kind;
   note: string;
 }
 /**
@@ -682,7 +682,7 @@ export interface ScrapeStatus {
  * tonight and any night after it.
  */
 export interface ReportRequest {
-  colors: any /* schedule.ColorKey */[];
+  colors: schedule.ColorKey[];
   note: string;
 }
 /**
@@ -692,7 +692,7 @@ export interface Report {
   date: schedule.Date;
   name: string;
   mine: boolean;
-  colors: any /* schedule.ColorKey */[];
+  colors: schedule.ColorKey[];
   note: string;
   status: 'open' | 'accepted' | 'dismissed';
   at: string;
@@ -720,7 +720,7 @@ export interface ReportedNight {
   /**
    * Suggested is the colors the most reports agree on.
    */
-  suggested: any /* schedule.ColorKey */[];
+  suggested: schedule.ColorKey[];
 }
 /**
  * AdminReports is GET /api/v1/admin/reports: the open reports, newest night first.
@@ -733,5 +733,5 @@ export interface AdminReports {
  * to correct the night to (empty: the suggested ones).
  */
 export interface AcceptReportBody {
-  colors: any /* schedule.ColorKey */[];
+  colors: schedule.ColorKey[];
 }

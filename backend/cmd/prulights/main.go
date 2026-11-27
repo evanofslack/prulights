@@ -59,6 +59,8 @@ func main() {
 		err = frameCmd(ctx, args)
 	case "seed":
 		err = seedCmd(ctx, args)
+	case "backup":
+		err = backupCmd(ctx, args)
 	case "version", "--version":
 		fmt.Println(version)
 	case "help", "-h", "--help":
@@ -84,6 +86,7 @@ commands:
   invite     make an invite link and QR code (-admin, -for-user NAME)
   frame new  prepare a frame's identity for flashing (-for-user NAME, -out FILE)
   frame config  the files to flash: -from FILE -wifi "SSID:password" … -out DIR
+  backup     a consistent copy of the database, safe while serving (-out FILE)
   seed       dev only: made-up people's sightings (-names Logan,Shiv -reset -seed N)
   version    print the version`)
 }

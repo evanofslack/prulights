@@ -16,3 +16,5 @@ packages:
       schedule.Lighting: "schedule.Lighting"
       schedule.Color: "schedule.Color"
       schedule.Program: "schedule.Program"
+      schedule.ColorKey: "schedule.ColorKey"
+      schedule.Kind: "schedule.Kind"

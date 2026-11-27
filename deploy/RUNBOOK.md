@@ -38,11 +38,12 @@ VPS=user@host just logs
 
 ## Backups
 
-The database is `/data/prulights.db` inside the volume. For a one-off copy:
+The database is `/data/prulights.db` inside the volume, photos included. From your machine:
 ```sh
-docker compose exec prulights sh -c 'sqlite3 /data/prulights.db ".backup /data/backup.db"' # if sqlite3 is installed
-docker cp prulights:/data/prulights.db ./prulights-$(date +%F).db                          # or copy the file
+VPS=user@host just backup   # writes backups/prulights-<date>.db
 ```
+It runs `prulights backup -out FILE` in the container (sqlite's `VACUUM INTO`, a consistent copy while the
+server runs) and copies the result down. Don't `docker cp` the live file: it can miss writes still in the WAL.
 The scraped schedule can always be rebuilt with `prulights backfill`. Sightings, users and devices can't, so back them up.
 
 ## Settings (environment variables)
@@ -55,6 +56,7 @@ The scraped schedule can always be rebuilt with `prulights backfill`. Sightings,
 | `SCRAPE_ENABLED` / `SCRAPE_INTERVAL` | `true` / `6h` | |
 | `METRICS_ADDR` | `:2112` | Prometheus; not published by compose |
 | `LOG_LEVEL` | `info` | `debug`, `warn`, `error` |
+| `PUBLIC_RATE_LIMIT` | `60` | Public api requests per minute per client |
 | `AUTH_RATE_LIMIT` | `30` | Sign-in attempts per minute per client |
 | `SIGNUP_CODE` | empty | The family code: anyone with it signs up at `/join` (or `/join?code=…`). Set it in `.env`; empty is invite only. Case and spacing don't matter. |
 | `RP_ID` / `RP_ORIGINS` | from `BASE_URL` | Only for unusual setups |

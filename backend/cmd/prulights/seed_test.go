@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/evanofslack/prulights/schedule"
+	"github.com/evanofslack/prulights/server"
 	"github.com/evanofslack/prulights/store"
 )
 
@@ -67,7 +68,7 @@ func TestSeed(t *testing.T) {
 			t.Errorf("%s (%d) logged more than %s (%d)", s.Name, s.Nights, first[0].Name, first[0].Nights)
 		}
 	}
-	open, err := st.RecentSightings(ctx, me.ID, tonight.AddDays(-seedWindow), tonight, 1000)
+	open, err := st.RecentSightings(ctx, me.ID, tonight.AddDays(-server.LogWindow), tonight, 1000)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -6,14 +6,18 @@ import { Badge, Button, MultiSelect, Select, Skeleton, Table, TextInput } from "
 import { IconRefresh, IconTrash } from "@tabler/icons-react";
 import type {
     AdminDevice,
+    AcceptReportBody,
     AdminReports,
+    AssignFrame,
     FrameConfig,
+    OverrideBody,
     OverrideInfo,
     PaletteResponse,
+    PrepareFrame,
     ScrapeStatus,
     UserInfo,
 } from "@/interfaces/api";
-import { api, useApi } from "@/lib/api";
+import { api, json, useApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { colorNames, shortDate } from "@/lib/format";
 import { bandsOf, usePalette } from "@/lib/palette";
@@ -158,7 +162,7 @@ function ReportedNightRow({
         try {
             await api(`/admin/reports/${l.date}/${what}`, {
                 method: "POST",
-                ...(what === "accept" ? { body: JSON.stringify({ colors: picked }) } : {}),
+                ...(what === "accept" ? { body: json<AcceptReportBody>({ colors: picked }) } : {}),
             });
             onDone(what === "accept");
         } catch (err) {
@@ -226,7 +230,7 @@ function Corrections() {
         try {
             await api(`/admin/overrides/${date}`, {
                 method: "PUT",
-                body: JSON.stringify({ colors: picked, cause, cause_url: url, note }),
+                body: json<OverrideBody>({ colors: picked, cause, cause_url: url, note }),
             });
             setDate("");
             setPicked([]);
@@ -419,7 +423,7 @@ function Frames() {
         try {
             await api(`/admin/devices/${id}/owner`, {
                 method: userID ? "PUT" : "DELETE",
-                body: userID ? JSON.stringify({ user_id: Number(userID) }) : undefined,
+                body: userID ? json<AssignFrame>({ user_id: Number(userID) }) : undefined,
             });
         } catch (e) {
             setError((e as Error).message);
@@ -433,7 +437,7 @@ function Frames() {
         try {
             const fc = await api<FrameConfig>("/admin/devices", {
                 method: "POST",
-                body: JSON.stringify(forUser ? { for_user_id: Number(forUser) } : {}),
+                body: json<PrepareFrame>(forUser ? { for_user_id: Number(forUser) } : {}),
             });
             const url = URL.createObjectURL(
                 new Blob([JSON.stringify(fc, null, 2) + "\n"], { type: "application/json" }),

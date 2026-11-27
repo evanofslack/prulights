@@ -15,6 +15,9 @@ export class ApiError extends Error {
     }
 }
 
+// json is a request body, checked against its api type: json<SightingRequest>({...}).
+export const json = <B>(body: B) => JSON.stringify(body);
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     const res = await fetch(`/api/v1${path}`, {
         ...init,

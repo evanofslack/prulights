@@ -7,6 +7,7 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -52,7 +53,7 @@ func (s *Store) Close() error { return s.DB.Close() }
 func (s *Store) Ping(ctx context.Context) error { return s.DB.PingContext(ctx) }
 
 // migrate applies the migrations not yet applied, in order. Each is named for
-// its version, like 001_meta.sql.
+// its version, like 001_init.sql.
 func (s *Store) migrate(ctx context.Context) error {
 	if _, err := s.DB.ExecContext(ctx, `create table if not exists migrations (version integer primary key)`); err != nil {
 		return err
@@ -104,19 +105,13 @@ func (s *Store) Tx(ctx context.Context, fn func(*sql.Tx) error) error {
 	return tx.Commit()
 }
 
-// Meta reads a value from the meta table, "" when it's missing.
-func (s *Store) Meta(ctx context.Context, key string) (string, error) {
-	var v string
-	err := s.DB.QueryRowContext(ctx, `select value from meta where key = ?`, key).Scan(&v)
-	if err == sql.ErrNoRows {
-		return "", nil
+// Backup writes a consistent copy of the database to file, which must not
+// exist yet. It's safe while the server runs: sqlite's VACUUM INTO reads one
+// snapshot, WAL included.
+func (s *Store) Backup(ctx context.Context, file string) error {
+	if _, err := os.Stat(file); err == nil {
+		return fmt.Errorf("%s already exists", file)
 	}
-	return v, err
-}
-
-// SetMeta writes a value to the meta table.
-func (s *Store) SetMeta(ctx context.Context, key, value string) error {
-	_, err := s.DB.ExecContext(ctx, `insert into meta (key, value) values (?, ?)
-		on conflict (key) do update set value = excluded.value`, key, value)
+	_, err := s.DB.ExecContext(ctx, `vacuum into ?`, file)
 	return err
 }

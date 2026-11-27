@@ -144,7 +144,7 @@ func (s *Server) mountStatus() {
 }
 
 // mountStatic serves the web app's static export. A path that isn't a file
-// tries path.html (next's export writes /calendar as calendar.html), then
+// tries path.html (next's export writes /night as night.html), then
 // falls back to index.html.
 func (s *Server) mountStatic() {
 	dir := s.cfg.StaticDir

@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Button, CopyButton, Modal, Switch } from "@mantine/core";
 import { QRCodeSVG } from "qrcode.react";
-import type { InviteLink } from "@/interfaces/api";
-import { api } from "@/lib/api";
+import type { CreateInvite, InviteLink } from "@/interfaces/api";
+import { api, json } from "@/lib/api";
 
 // InviteModal makes an invite link, with a QR code to scan from a phone. With
 // forUser it's a re-invite: the link adds a passkey to that person.
@@ -31,7 +31,9 @@ export function InviteModal({
             setLink(
                 await api<InviteLink>("/admin/invites", {
                     method: "POST",
-                    body: JSON.stringify(forUser ? { for_user_id: forUser.id } : { is_admin: admin }),
+                    body: json<CreateInvite>(
+                        forUser ? { is_admin: false, for_user_id: forUser.id } : { is_admin: admin },
+                    ),
                 }),
             );
         } catch (e) {
