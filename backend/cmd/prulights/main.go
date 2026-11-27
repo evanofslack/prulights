@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/evanofslack/prulights/config"
+	"github.com/evanofslack/prulights/history"
 	"github.com/evanofslack/prulights/scrape"
 	"github.com/evanofslack/prulights/server"
 	"github.com/evanofslack/prulights/store"
@@ -121,6 +122,16 @@ func serve(ctx context.Context) error {
 		return err
 	}
 	defer st.Close()
+
+	// before the scraper starts: the schedule the site no longer shows, once
+	// per database (no network; a failure here is the database's)
+	done, applied, err := history.Apply(ctx, st, time.Now())
+	if err != nil {
+		return fmt.Errorf("history: %w", err)
+	}
+	if done {
+		slog.Info("history imported", "name", history.Name, "added", applied.Added, "changed", applied.Changed, "removed", applied.Removed)
+	}
 
 	s := server.New(cfg, st)
 	if cfg.ScrapeEnabled {

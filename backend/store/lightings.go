@@ -43,6 +43,16 @@ type lightingKey struct {
 func (s *Store) ApplyPage(ctx context.Context, sourceURL string, year int, ls []schedule.Lighting, now time.Time) (Applied, error) {
 	var out Applied
 	err := s.Tx(ctx, func(tx *sql.Tx) error {
+		var err error
+		out, err = applyPage(ctx, tx, sourceURL, year, ls, now)
+		return err
+	})
+	return out, err
+}
+
+func applyPage(ctx context.Context, tx *sql.Tx, sourceURL string, year int, ls []schedule.Lighting, now time.Time) (Applied, error) {
+	var out Applied
+	err := func() error {
 		rows, err := tx.QueryContext(ctx, `select id, date, cause, colors, colors_raw, cause_url, kind, program, removed_at
 			from lightings where source_url = ?`, sourceURL)
 		if err != nil {
@@ -112,7 +122,7 @@ func (s *Store) ApplyPage(ctx context.Context, sourceURL string, year int, ls []
 			out.Removed++
 		}
 		return nil
-	})
+	}()
 	return out, err
 }
 
@@ -313,4 +323,45 @@ func (s *Store) LastSuccess(ctx context.Context) (time.Time, error) {
 	var t sql.NullString
 	err := s.DB.QueryRowContext(ctx, `select max(finished_at) from scrape_runs where error = ''`).Scan(&t)
 	return parseTime(t.String), err
+}
+
+// ImportPage is one archived copy of a source page, applied as of At.
+type ImportPage struct {
+	URL       string
+	Year      int
+	Lightings []schedule.Lighting
+	At        time.Time
+}
+
+// Import applies archived pages in order, the way ApplyPage would have when
+// each was live, and records name, all in one transaction. It does nothing
+// (done false) when name was imported before.
+func (s *Store) Import(ctx context.Context, name string, pages []ImportPage, now time.Time) (done bool, out Applied, err error) {
+	err = s.Tx(ctx, func(tx *sql.Tx) error {
+		var n int
+		if err := tx.QueryRowContext(ctx, `select count(*) from imports where name = ?`, name).Scan(&n); err != nil {
+			return err
+		}
+		if n > 0 {
+			return nil
+		}
+		for _, p := range pages {
+			a, err := applyPage(ctx, tx, p.URL, p.Year, p.Lightings, p.At)
+			if err != nil {
+				return fmt.Errorf("%s %s: %w", p.URL, p.At.Format(time.DateOnly), err)
+			}
+			out.Added += a.Added
+			out.Changed += a.Changed
+			out.Removed += a.Removed
+		}
+		if _, err := tx.ExecContext(ctx, `insert into imports (name, applied_at) values (?, ?)`, name, fmtTime(now)); err != nil {
+			return err
+		}
+		done = true
+		return nil
+	})
+	if err != nil {
+		return false, Applied{}, err
+	}
+	return done, out, nil
 }

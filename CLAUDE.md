@@ -35,11 +35,15 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   to keys; unknown words come back for a warning, never dropped), `Tonight` (Boston, rolls at 04:00),
   `LightsOn` (source time > sunset > 5pm), `Fill` (unlisted nights are white), `Merge`, `Classify`.
 - `backend/scrape`: reads prudentialcenter.com. `ParsePage` handles the yearly page
-  (`date | colors for cause`) and 31 Nights (`date | cause | colors`, with the site's typos). `Scraper.Run`
+  (`date | colors for cause`) and 31 Nights (`date | cause | colors`; 2024–25 used `<p>date | cause – colors</p>`; with the site's typos). `Scraper.Run`
   reads `event-sitemap.xml`, fetches changed pages 10s apart (robots.txt), and applies them with
   `store.ApplyPage`; a page that parses empty or to under half its nights is rejected and the last
   good data kept. Tests run against saved pages in `scrape/testdata` with golden JSON
   (`go test ./scrape -update` after reviewing a diff; `just scrape-snapshot` refreshes the pages).
+- `backend/history`: the schedule the site has since overwritten (2025, Dec 2024), as Wayback Machine copies
+  embedded from `history/pages/` in `manifest.json`'s order. `serve` applies them once per db at startup
+  (`store.Import`, marked in `imports` by `history.Name`; change the name when the manifest changes).
+  `just history-fetch` downloads what the manifest lists.
 - `backend/metrics`: the one Prometheus registry.
 - `backend/server`: chi. `/api/...` is JSON; anything else is the static export from `STATIC_DIR`
   (`/night` is served from `night.html`, unknown paths fall back to `index.html`).

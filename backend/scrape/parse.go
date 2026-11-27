@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/evanofslack/prulights/schedule"
@@ -36,7 +37,8 @@ var (
 	dateRe   = regexp.MustCompile(`^(?i)(?:(?:mon|tues|wednes|thurs|fri|satur|sun)day,?\s+)?(` + months + `)\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,\s*(\d{4}))?(?:\s*[-–—]\s*(?:(` + months + `)\.?\s+)?(\d{1,2})(?:st|nd|rd|th)?)?(?:,\s*(\d{4}))?$`)
 	itemRe   = regexp.MustCompile(`^(?i)(?:(?:mon|tues|wednes|thurs|fri|satur|sun)day,?\s+)?(?:` + months + `)\b`)
 	yearRe   = regexp.MustCompile(`\b(20\d\d)\b`)
-	schedRe  = regexp.MustCompile(`(?i)\b(20\d\d)\s+(?:lighting schedule|lighting partners|tower lighting|upcoming lightings)`)
+	schedRe  = regexp.MustCompile(`(?i)\b(20\d\d)\s+(?:lighting schedule|(?:holiday\s+)?lighting partners|tower lighting|upcoming lightings)`)
+	dashRe   = regexp.MustCompile(`\s[-–—]\s`)
 	spacesRe = regexp.MustCompile(`\s+`)
 )
 
@@ -52,7 +54,8 @@ var connectors = []string{
 
 // ParsePage reads a tower lighting page: the yearly schedule
 // (<li><strong>October 1</strong> | Pink for the Ellie Fund</li>) or 31 Nights
-// of Light (<li>December 10 | <a href>Dress for Success</a> | Red</li>).
+// of Light (<li>December 10 | <a href>Dress for Success</a> | Red</li>, or in
+// 2024–25 <p>December 1 | <a href>Team Hoyt</a> – Blue, White & Red</p>).
 // Items it can't read become warnings, never errors; an error means the page
 // isn't a lighting page at all.
 func ParsePage(url string, body []byte, lastMod time.Time) (Page, error) {
@@ -80,8 +83,8 @@ func ParsePage(url string, body []byte, lastMod time.Time) (Page, error) {
 	}
 
 	var items []entry
-	doc.Find("li").Each(func(_ int, li *goquery.Selection) {
-		if li.Find("li").Length() > 0 {
+	doc.Find("li, p").Each(func(_ int, li *goquery.Selection) {
+		if li.Find("li, p").Length() > 0 {
 			return // a wrapper around the real items
 		}
 		text := clean(li.Text())
@@ -136,7 +139,7 @@ func (p *Page) parseEntry(e entry) ([]schedule.Lighting, string) {
 		return nil, fmt.Sprintf("%q: %v", e.text, err)
 	}
 
-	colorsRaw, cause := findColors(parts[1:])
+	colorsRaw, cause := findColors(splitDash(parts[1:]))
 	colors, unknown := schedule.ParseColors(colorsRaw)
 	if len(colors) == 0 {
 		return nil, fmt.Sprintf("%q: no colors", e.text)
@@ -163,6 +166,24 @@ func (p *Page) parseEntry(e entry) ([]schedule.Lighting, string) {
 		out = append(out, l)
 	}
 	return out, warn
+}
+
+// splitDash splits a lone part at a spaced dash when one side is only colors:
+// "Team Hoyt – Blue, White & Red" (31 Nights, 2024–25) or "Red, White & Blue –
+// Red Sox Home Opener". Anything else is left as it was.
+func splitDash(parts []string) []string {
+	if len(parts) != 1 {
+		return parts
+	}
+	for _, loc := range dashRe.FindAllStringIndex(parts[0], -1) {
+		left, right := strings.TrimSpace(parts[0][:loc[0]]), strings.TrimSpace(parts[0][loc[1]:])
+		for _, side := range []string{left, right} {
+			if keys, unknown := schedule.ParseColors(side); len(keys) > 0 && len(unknown) == 0 {
+				return []string{left, right}
+			}
+		}
+	}
+	return parts
 }
 
 // findColors finds the colors in the parts of an item after its date, which
@@ -217,6 +238,15 @@ func splitColors(s string) (colors, rest string) {
 		case schedule.IsColorWord(w):
 			i++
 		default:
+			// a color glued to the cause by a dash ("Blue-9/11 Memorial")
+			if j := strings.IndexAny(words[i], "-–—"); j > 0 && schedule.IsColorWord(words[i][:j]) {
+				_, n := utf8.DecodeRuneInString(words[i][j:])
+				words = slices.Insert(words, i+1, words[i][j+n:])
+				words[i] = words[i][:j+n]
+				i++
+				end = i
+				continue
+			}
 			return strings.Join(words[:end], " "), strings.Join(words[end:], " ")
 		}
 		end = i
