@@ -59,7 +59,7 @@ func TestSightings(t *testing.T) {
 	}
 }
 
-// A whole-star rating from before half stars (migration 002) comes through.
+// A whole-star rating from before half stars (migration 007) comes through.
 func TestHalfStarsMigration(t *testing.T) {
 	ctx := context.Background()
 	file := filepath.Join(t.TempDir(), "p.db")
@@ -76,7 +76,7 @@ func TestHalfStarsMigration(t *testing.T) {
 	// back to how 001 left it, with a rating of 4 in the old column
 	for _, q := range []string{
 		`alter table sightings drop column half_stars`,
-		`delete from migrations where version = 2`,
+		`delete from migrations where version = 7`,
 	} {
 		if _, err := s.DB.ExecContext(ctx, q); err != nil {
 			t.Fatal(q, err)

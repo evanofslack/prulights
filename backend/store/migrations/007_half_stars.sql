@@ -1,3 +1,6 @@
+-- 007, not 002: databases from before the migrations were collapsed into
+-- 001_init already count versions 1-6 as applied.
+--
 -- Ratings go in half stars: half_stars is the rating times two (1 is half a
 -- star, 10 is five). It's a new column rather than a rebuilt table because
 -- dropping sightings would cascade to photos (migrations run in a transaction,

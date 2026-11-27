@@ -24,7 +24,7 @@ type Sighting struct {
 }
 
 // SaveSighting records (or updates) that a user saw a night.
-// The rating is kept in half stars (half_stars, migration 002); the old
+// The rating is kept in half stars (half_stars, migration 007); the old
 // whole-star column is cleared.
 func (s *Store) SaveSighting(ctx context.Context, userID int64, date schedule.Date, rating float64, note string, now time.Time) error {
 	var r sql.NullInt64
