@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"io/fs"
 	"path/filepath"
 	"testing"
 	"time"
@@ -21,13 +22,14 @@ func newTest(t *testing.T) *Store {
 func TestMigrateTwice(t *testing.T) {
 	ctx := context.Background()
 	file := filepath.Join(t.TempDir(), "p.db")
+	files, _ := fs.Glob(migrations, "migrations/*.sql")
 	for range 2 {
 		s, err := Open(ctx, file)
 		if err != nil {
 			t.Fatal(err)
 		}
 		var n int
-		if err := s.DB.QueryRowContext(ctx, `select count(*) from migrations`).Scan(&n); err != nil || n != 1 {
+		if err := s.DB.QueryRowContext(ctx, `select count(*) from migrations`).Scan(&n); err != nil || n != len(files) {
 			t.Fatalf("migrations = %d, %v", n, err)
 		}
 		s.Close()

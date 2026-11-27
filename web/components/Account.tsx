@@ -4,7 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Menu } from "@mantine/core";
-import { IconAdjustments, IconLogout, IconSettings, IconUserPlus, IconUserCircle } from "@tabler/icons-react";
+import {
+    IconAdjustments,
+    IconBulb,
+    IconLogout,
+    IconSettings,
+    IconUserPlus,
+    IconUserCircle,
+} from "@tabler/icons-react";
 import { useAuth } from "@/lib/auth";
 import { InviteModal } from "./InviteModal";
 
@@ -56,6 +63,9 @@ export function Account() {
                     )}
                     <Menu.Item component={Link} href="/settings" leftSection={<IconAdjustments size={16} />}>
                         Settings
+                    </Menu.Item>
+                    <Menu.Item component={Link} href="/settings#ideas" leftSection={<IconBulb size={16} />}>
+                        Send an idea
                     </Menu.Item>
                     <Menu.Item
                         leftSection={<IconLogout size={16} />}

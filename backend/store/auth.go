@@ -123,6 +123,23 @@ func (s *Store) CreateUser(ctx context.Context, name string, now time.Time) (Use
 	return u, err
 }
 
+// RenameUser changes a user's display name. Everything they logged is kept
+// by id, so only the name changes; another user with the name (ignoring case)
+// is ErrNameTaken.
+func (s *Store) RenameUser(ctx context.Context, id int64, name string) error {
+	res, err := s.DB.ExecContext(ctx, `update users set name = ? where id = ?`, name, id)
+	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE") {
+			return ErrNameTaken
+		}
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 // DeleteUser forgets a user and everything they logged.
 func (s *Store) DeleteUser(ctx context.Context, id int64) error {
 	_, err := s.DB.ExecContext(ctx, `delete from users where id = ?`, id)

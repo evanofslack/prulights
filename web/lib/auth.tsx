@@ -7,7 +7,7 @@ import {
     type PublicKeyCredentialCreationOptionsJSON,
     type PublicKeyCredentialRequestOptionsJSON,
 } from "@simplewebauthn/browser";
-import type { Ceremony, MeResponse, RegisterBegin } from "@/interfaces/api";
+import type { Ceremony, MeResponse, RegisterBegin, RenameRequest } from "@/interfaces/api";
 import { api, ApiError } from "./api";
 
 // Who's signed in, and the passkey flows. The session is an HttpOnly cookie;
@@ -21,6 +21,8 @@ interface Auth {
     // invite link or the family code.
     register: (from: RegisterFrom, name: string) => Promise<MeResponse>;
     signOut: () => Promise<void>;
+    // rename changes the name everyone sees.
+    rename: (name: string) => Promise<MeResponse>;
 }
 
 type RegisterFrom = { invite: string } | { code: string };
@@ -64,7 +66,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setMe(null);
     }, []);
 
-    return <AuthContext.Provider value={{ me, signIn, register, signOut }}>{children}</AuthContext.Provider>;
+    const rename = useCallback(async (name: string) => {
+        const user = await api<MeResponse>("/me/name", {
+            method: "PUT",
+            body: JSON.stringify({ name } satisfies RenameRequest),
+        });
+        setMe(user);
+        return user;
+    }, []);
+
+    return (
+        <AuthContext.Provider value={{ me, signIn, register, signOut, rename }}>
+            {children}
+        </AuthContext.Provider>
+    );
 }
 
 export function useAuth(): Auth {
