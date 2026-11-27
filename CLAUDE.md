@@ -7,6 +7,8 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
 ## Commands
 - Dev: `just start` (go on :8080 with hot reload, next on :3000 passing `/api` through to go).
   `just serve` runs the production-like build on :8080. `just` lists all recipes.
+- Prod backups: `VPS=user@host just backup` (`prulights backup -out FILE`, sqlite `VACUUM INTO`; never copy the
+  live file, see `deploy/RUNBOOK.md`).
 - `just check` runs exactly what CI runs:
   - Backend (from `backend/`): `gofmt -l .` (must be empty), `go vet ./...`, `./types-current.sh`,
     `go test -race ./...`

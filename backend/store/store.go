@@ -7,6 +7,7 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -102,4 +103,15 @@ func (s *Store) Tx(ctx context.Context, fn func(*sql.Tx) error) error {
 		return err
 	}
 	return tx.Commit()
+}
+
+// Backup writes a consistent copy of the database to file, which must not
+// exist yet. It's safe while the server runs: sqlite's VACUUM INTO reads one
+// snapshot, WAL included.
+func (s *Store) Backup(ctx context.Context, file string) error {
+	if _, err := os.Stat(file); err == nil {
+		return fmt.Errorf("%s already exists", file)
+	}
+	_, err := s.DB.ExecContext(ctx, `vacuum into ?`, file)
+	return err
 }

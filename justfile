@@ -144,6 +144,15 @@ deploy:
     @test -n "{{ vps }}" || (echo "set VPS=user@host" && exit 1)
     ssh {{ vps }} 'cd ~/prulights && docker compose pull && docker compose up -d && docker compose ps'
 
+# copy the live database from the vps to backups/prulights-<date>.db
+[group('ops')]
+backup:
+    @test -n "{{ vps }}" || (echo "set VPS=user@host" && exit 1)
+    mkdir -p backups
+    ssh {{ vps }} 'cd ~/prulights && rm -f backup.db && docker compose exec -T prulights ./prulights backup -out /data/backup.db && docker compose cp prulights:/data/backup.db backup.db && docker compose exec -T prulights rm /data/backup.db'
+    scp {{ vps }}:prulights/backup.db backups/prulights-$(date +%F-%H%M).db
+    ssh {{ vps }} 'rm ~/prulights/backup.db'
+
 # follow the container logs on the vps
 [group('ops')]
 logs:

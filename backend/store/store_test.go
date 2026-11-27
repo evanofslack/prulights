@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 // newTest opens a fresh in-memory store for a test.
@@ -30,5 +31,33 @@ func TestMigrateTwice(t *testing.T) {
 			t.Fatalf("migrations = %d, %v", n, err)
 		}
 		s.Close()
+	}
+}
+
+func TestBackup(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	s, err := Open(ctx, filepath.Join(dir, "p.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	if _, err := s.SignUp(ctx, NewHandle(), "Mom", []byte("cred"), []byte("{}"), time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	out := filepath.Join(dir, "backup.db")
+	if err := s.Backup(ctx, out); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Backup(ctx, out); err == nil {
+		t.Error("backed up over an existing file")
+	}
+	b, err := Open(ctx, out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer b.Close()
+	if u, err := b.UserByName(ctx, "Mom"); err != nil || u.Name != "Mom" {
+		t.Errorf("backup has %+v, %v", u, err)
 	}
 }

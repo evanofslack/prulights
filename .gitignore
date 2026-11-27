@@ -15,6 +15,7 @@ backend/bin/
 *.db-shm
 *.db-wal
 data/
+backups/
 
 # web
 node_modules/
