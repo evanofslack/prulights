@@ -96,7 +96,8 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   `MyNights.tsx`) and `#calendar` (`Month.tsx`, month in `?m=`, changed with `router.replace`, no scroll; your
   nights get a dot, a noted one links to `/night?d=…#note`). On a computer (`wide`, `lg:`) it's two columns under
   tonight: the week over the calendar on the left, Prudle, your nights and lately on the right (signed out, the
-  calendar takes the right). The tower scene is never cropped (`SCENE` in `Night.tsx` keeps 480×760). Then `/night?d=`, `/display` (always-on, no chrome; Esc leaves),
+  calendar takes the right). The tower scene is never cropped (`SCENE` in `Night.tsx` keeps 480×760). In
+  "This week", a run of white nights or of Prudle-hidden nights is one row. Then `/night?d=`, `/display` (always-on, no chrome; Esc leaves),
   `/docs` (stock Swagger UI from `swagger-ui-dist`, copied to `public/swagger` by `npm run swagger` before
   dev/build; don't bundle swagger-ui through next, its OpenAPI 3.1 support breaks), `/emulator` (frame
   previews; only when `/meta` says `dev`, settings live in the url), `/claim?code=` (a frame's setup QR

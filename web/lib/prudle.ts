@@ -103,6 +103,21 @@ export function countMark(t: Turn): string {
     return { fewer: "<", more: ">", exact: "=" }[t.count] + " " + t.size;
 }
 
+// countWords is a turn's count said plainly: "more than 2", "fewer than 3",
+// "exactly 1".
+export function countWords(t: Turn): string {
+    return { fewer: "fewer than", more: "more than", exact: "exactly" }[t.count] + " " + t.size;
+}
+
+// marksLabel is a turn's lights in words, for screen readers: "1 on, 1 close".
+export function marksLabel(t: Turn): string {
+    const words: Record<Mark, string> = { hit: "on", close: "close", miss: "off" };
+    return MARK_ORDER.map((m) => [m, t.picks.filter((p) => p.mark === m).length] as const)
+        .filter(([, n]) => n > 0)
+        .map(([m, n]) => `${n} ${words[m]}`)
+        .join(", ");
+}
+
 // glyphs is a turn as lights, good news first; it names no colors.
 export function glyphs(t: Turn): string {
     return byMark(t)

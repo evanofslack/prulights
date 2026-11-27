@@ -15,7 +15,7 @@ for (const [kind, view] of Object.entries(views)) {
         await p.locator('[role=img][aria-label*="Prudential Tower"]').isVisible(),
     );
     check(`${kind}: tonight names its colors`, (await p.locator("h1").textContent()).length > 2);
-    // runs of plain white nights share a row ("Thu – Mon")
+    // runs of plain white nights share a row ("Thu–Mon")
     const rows = await p.locator("#week ul li a[href^='/night?d=']").allTextContents();
     check(
         `${kind}: the week ahead, white runs grouped`,

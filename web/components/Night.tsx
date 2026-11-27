@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { Anchor, Skeleton } from "@mantine/core";
-import { IconExternalLink } from "@tabler/icons-react";
+import { IconChevronRight, IconExternalLink } from "@tabler/icons-react";
 import type { Lighting } from "@/interfaces/schedule";
 import { bandsOf, usePalette } from "@/lib/palette";
-import { colorNames, longDate, relativeName, shortDate, weekdayAbbr } from "@/lib/format";
+import { colorNames, dayOfMonth, longDate, relativeName, shortDate, weekdayAbbr } from "@/lib/format";
 import { useSky } from "@/lib/sky";
 import { HIDDEN, HIDDEN_NAME, usePrudle } from "@/lib/blackout";
 import { Crown, Tower } from "./Tower";
@@ -121,15 +121,18 @@ export function NightSkeleton() {
 }
 
 // Upcoming lists nights as rows: crown, day, colors and cause. A run of plain
-// white nights is one row, so the special ones stand out. Each opens that
-// night.
+// white nights is one row, so the special ones stand out, and so is a run of
+// nights hidden for Prudle. Each opens that night (a hidden run, the game).
 export function Upcoming({ nights, tonight }: { nights: Lighting[]; tonight?: string }) {
     const palette = usePalette();
     const { hidden } = usePrudle();
     const rows: Lighting[][] = [];
     for (const l of nights) {
         const last = rows[rows.length - 1];
-        if (!l.scheduled && last && !last[0].scheduled) last.push(l);
+        const masked = hidden(l.date);
+        const joins =
+            last && hidden(last[0].date) === masked && (masked || (!l.scheduled && !last[0].scheduled));
+        if (joins) last.push(l);
         else rows.push([l]);
     }
     const dayName = (d: string) => (relativeName(d, tonight) === "Tomorrow" ? "Tomorrow" : weekdayAbbr(d));
@@ -138,36 +141,46 @@ export function Upcoming({ nights, tonight }: { nights: Lighting[]; tonight?: st
             {rows.map((run) => {
                 const l = run[0];
                 const end = run[run.length - 1];
+                const masked = hidden(l.date);
                 return (
                     <li key={l.date}>
                         <Link
-                            href={`/night?d=${l.date}`}
-                            className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-raised dark:hover:bg-line"
+                            href={masked ? "/#prudle" : `/night?d=${l.date}`}
+                            className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-raised sm:gap-4 dark:hover:bg-line"
                         >
                             <Crown
-                                bands={hidden(l.date) ? HIDDEN : bandsOf(l.colors, palette)}
+                                bands={masked ? HIDDEN : bandsOf(l.colors, palette)}
                                 className="h-11 w-11"
                             />
-                            <span className="w-28 shrink-0">
+                            <span className="w-28 shrink-0 whitespace-nowrap">
                                 <span className="block font-bold">
                                     {run.length > 1
-                                        ? `${dayName(l.date)} – ${weekdayAbbr(end.date)}`
+                                        ? `${dayName(l.date)}–${weekdayAbbr(end.date)}`
                                         : dayName(l.date)}
                                 </span>
                                 <span className="block text-sm text-muted">
                                     {run.length > 1
-                                        ? `${shortDate(l.date)} – ${shortDate(end.date)}`
+                                        ? `${shortDate(l.date)}–${
+                                              l.date.slice(0, 7) === end.date.slice(0, 7)
+                                                  ? dayOfMonth(end.date)
+                                                  : shortDate(end.date)
+                                          }`
                                         : shortDate(l.date)}
                                 </span>
                             </span>
                             <span className="min-w-0 flex-1">
                                 <span className="block truncate text-lg">
-                                    {hidden(l.date) ? HIDDEN_NAME : colorNames(l.colors, palette)}
+                                    {masked ? HIDDEN_NAME : colorNames(l.colors, palette)}
                                 </span>
-                                <span className="block truncate text-muted">
-                                    {l.scheduled ? l.cause : "Plain white"}
+                                <span className="line-clamp-2 text-muted">
+                                    {masked
+                                        ? "Until tonight's Prudle is over"
+                                        : l.scheduled
+                                          ? l.cause
+                                          : "Plain white"}
                                 </span>
                             </span>
+                            <IconChevronRight size={18} className="-mr-1 shrink-0 text-subtle" aria-hidden />
                         </Link>
                     </li>
                 );
