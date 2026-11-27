@@ -47,7 +47,7 @@ export function Shell({ children, wide }: { children: React.ReactNode; wide?: bo
                     <Account />
                 </nav>
             </header>
-            <main className={`mx-auto w-full flex-1 px-4 py-6 ${width}`}>{children}</main>
+            <main className={`mx-auto w-full flex-1 px-4 pt-8 pb-14 ${width}`}>{children}</main>
             <Footer width={width} />
         </div>
     );

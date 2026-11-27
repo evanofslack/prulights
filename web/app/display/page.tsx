@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { TonightResponse } from "@/interfaces/api";
 import { useApi } from "@/lib/api";
-import { colorNames, lightsOnTime, longDate, relativeName, shortDate, weekdayAbbr } from "@/lib/format";
+import { colorNames, longDate, relativeName, shortDate, weekdayAbbr } from "@/lib/format";
 import { bandsOf, usePalette } from "@/lib/palette";
 import { Crown, Tower } from "@/components/Tower";
 import { useSky } from "@/lib/sky";
@@ -77,13 +77,6 @@ export default function DisplayPage() {
                                     {data.lighting.scheduled
                                         ? `for ${data.lighting.cause}`
                                         : "No special lighting tonight"}
-                                </p>
-                                <p className="mt-[1vh] text-[2.2vh] text-[#98a1b8]">
-                                    {sky === "night" && data.lighting.date === data.date
-                                        ? "Lit since"
-                                        : "Lights on"}{" "}
-                                    {data.lighting.lights_on_source === "sunset" ? "around " : "at "}
-                                    {lightsOnTime(data.lighting.lights_on)}
                                 </p>
                             </div>
                             <ul className="flex flex-col gap-[1.2vh]">

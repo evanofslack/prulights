@@ -558,6 +558,20 @@ export interface Sighting {
   rating: number /* int */;
   note: string;
   at: string;
+  /**
+   * Photo is their picture of the night, if they added one.
+   */
+  photo?: SightingPhoto;
+}
+/**
+ * SightingPhoto is a sighting's picture, at /api/v1/photos/{sha256}/full.jpg
+ * (or thumb.jpg, 400px), signed in. PUT /api/v1/me/sightings/{date}/photo
+ * takes a jpeg body: one per person per night, a new one replaces it.
+ */
+export interface SightingPhoto {
+  sha256: string;
+  width: number /* int */;
+  height: number /* int */;
 }
 /**
  * NightSightings is GET /api/v1/sightings/{date}: everyone who saw a night.
@@ -672,4 +686,63 @@ export interface ScrapeRunInfo {
 export interface ScrapeStatus {
   running: boolean;
   runs: ScrapeRunInfo[];
+}
+/**
+ * ReportRequest is PUT /api/v1/me/reports/{date}: "the colors were wrong,
+ * they were really these", with an optional note. Open for the week before
+ * tonight and any night after it.
+ */
+export interface ReportRequest {
+  colors: any /* schedule.ColorKey */[];
+  note: string;
+}
+/**
+ * Report is one person's report on a night's colors.
+ */
+export interface Report {
+  date: schedule.Date;
+  name: string;
+  mine: boolean;
+  colors: any /* schedule.ColorKey */[];
+  note: string;
+  status: 'open' | 'accepted' | 'dismissed';
+  at: string;
+}
+/**
+ * NightReports is GET /api/v1/reports/{date}: everyone's reports on a night.
+ */
+export interface NightReports {
+  date: schedule.Date;
+  reports: Report[];
+  /**
+   * CanReport is whether the night still takes reports.
+   */
+  can_report: boolean;
+}
+/**
+ * ReportedNight is a night with open reports, as the admin page lists them.
+ */
+export interface ReportedNight {
+  /**
+   * Lighting is what the night shows now.
+   */
+  lighting: schedule.Lighting;
+  reports: Report[];
+  /**
+   * Suggested is the colors the most reports agree on.
+   */
+  suggested: any /* schedule.ColorKey */[];
+}
+/**
+ * AdminReports is GET /api/v1/admin/reports: the open reports, newest night first.
+ */
+export interface AdminReports {
+  nights: ReportedNight[];
+}
+/**
+ * AcceptReportBody is POST /api/v1/admin/reports/{date}/accept: the colors
+ * to correct the night to (empty: the suggested ones).
+ */
+export interface AcceptReportBody {
+  colors: any /* schedule.ColorKey */[];
 }

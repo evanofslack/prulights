@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { IconCamera } from "@tabler/icons-react";
 import type { RecentSightings } from "@/interfaces/api";
 import { useApi, useOnSightingsChanged } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -41,6 +42,13 @@ function Badges({ tonight }: { tonight: string }) {
                             <span>
                                 <span className="font-bold">{x.name}</span> saw it
                                 {x.rating > 0 && <span className="text-accent"> ★{x.rating}</span>}
+                                {x.photo && (
+                                    <IconCamera
+                                        size={16}
+                                        className="ml-1 inline align-[-2px] text-muted"
+                                        aria-label="with a photo"
+                                    />
+                                )}
                                 <span className="text-muted"> · {relativeName(x.date, tonight)}</span>
                             </span>
                         </Link>

@@ -7,6 +7,9 @@ import { IconCheck, IconEye } from "@tabler/icons-react";
 import type { NightSightings, NightStatsResponse, Sighting } from "@/interfaces/api";
 import { api, sightingsChanged, useApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { usePrudle } from "@/lib/blackout";
+import { MyPhoto, Thumb } from "./Photos";
+import { Reports } from "./Report";
 
 // SawIt is the "I saw it" panel under a night: mark it seen, rate it, leave a
 // note, and see who else saw it. Signed out, it shows the anonymous totals.
@@ -50,6 +53,7 @@ function PublicTotals({ date, tonight }: { date: string; tonight?: string }) {
 
 function Members({ date }: { date: string }) {
     const { data, reload } = useApi<NightSightings>(`/sightings/${date}`);
+    const hidden = usePrudle().hidden(date);
     const mine = data?.sightings.find((x) => x.mine);
     const others = data?.sightings.filter((x) => !x.mine) ?? [];
     const [note, setNote] = useState("");
@@ -186,6 +190,14 @@ function Members({ date }: { date: string }) {
                             &ldquo;{mine.note}&rdquo;
                         </p>
                     )}
+                    <MyPhoto
+                        mine={mine}
+                        canAdd={data.can_log}
+                        onChange={() => {
+                            reload();
+                            sightingsChanged();
+                        }}
+                    />
                 </div>
             )}
             {!data.can_log && !mine && others.length === 0 && (
@@ -195,16 +207,20 @@ function Members({ date }: { date: string }) {
             {others.length > 0 && (
                 <ul className="flex flex-col gap-2 border-t border-line pt-3" aria-label="Also seen by">
                     {others.map((x) => (
-                        <li key={x.name} className="flex flex-col">
-                            <span className="flex items-center gap-2">
-                                <span className="font-bold">{x.name}</span> saw it{" "}
-                                <Stars value={x.rating} size="xs" />
+                        <li key={x.name} className="flex items-start gap-3">
+                            <Thumb sighting={x} covered={hidden} onRemoved={reload} />
+                            <span className="flex min-w-0 flex-col">
+                                <span className="flex items-center gap-2">
+                                    <span className="font-bold">{x.name}</span> saw it{" "}
+                                    <Stars value={x.rating} size="xs" />
+                                </span>
+                                {x.note && <span className="text-muted">&ldquo;{x.note}&rdquo;</span>}
                             </span>
-                            {x.note && <span className="text-muted">&ldquo;{x.note}&rdquo;</span>}
                         </li>
                     ))}
                 </ul>
             )}
+            <Reports date={date} />
         </section>
     );
 }

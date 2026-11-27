@@ -6,6 +6,7 @@ import { Badge, Button, MultiSelect, Select, Skeleton, Table, TextInput } from "
 import { IconRefresh, IconTrash } from "@tabler/icons-react";
 import type {
     AdminDevice,
+    AdminReports,
     FrameConfig,
     OverrideInfo,
     PaletteResponse,
@@ -23,6 +24,8 @@ import { Shell } from "@/components/Shell";
 // /admin: the people, corrections to the schedule, the scraper, and frames.
 export default function AdminPage() {
     const { me } = useAuth();
+    // accepting reports writes a correction: remount the list to show it
+    const [corrected, setCorrected] = useState(0);
     return (
         <Shell wide>
             {me === undefined ? (
@@ -33,7 +36,8 @@ export default function AdminPage() {
                 <div className="flex flex-col gap-10">
                     <h1 className="text-3xl font-bold">Admin</h1>
                     <People />
-                    <Corrections />
+                    <Reports onAccepted={() => setCorrected((n) => n + 1)} />
+                    <Corrections key={corrected} />
                     <Scraper />
                     <Frames />
                 </div>
@@ -110,6 +114,98 @@ function People() {
                 forUser={inviting ?? undefined}
             />
         </section>
+    );
+}
+
+// Reports are members saying a night's colors were wrong. Accepting one
+// writes a correction with the picked colors (the night keeps its cause).
+function Reports({ onAccepted }: { onAccepted: () => void }) {
+    const { data, reload } = useApi<AdminReports>("/admin/reports");
+    if (!data || data.nights.length === 0) return null;
+    return (
+        <section className="flex flex-col gap-3">
+            <h2 className="text-xl font-bold">Reports</h2>
+            <ul className="flex flex-col divide-y divide-line rounded-xl bg-panel" aria-label="Reports">
+                {data.nights.map((n) => (
+                    <ReportedNightRow
+                        key={n.lighting.date}
+                        night={n}
+                        onDone={(accepted) => {
+                            reload();
+                            if (accepted) onAccepted();
+                        }}
+                    />
+                ))}
+            </ul>
+        </section>
+    );
+}
+
+function ReportedNightRow({
+    night,
+    onDone,
+}: {
+    night: AdminReports["nights"][number];
+    onDone: (accepted: boolean) => void;
+}) {
+    const palette = usePalette();
+    const colors = useApi<PaletteResponse>("/palette");
+    const [picked, setPicked] = useState<string[]>(night.suggested);
+    const [error, setError] = useState<string>();
+    const l = night.lighting;
+    const act = async (what: "accept" | "dismiss") => {
+        setError(undefined);
+        try {
+            await api(`/admin/reports/${l.date}/${what}`, {
+                method: "POST",
+                ...(what === "accept" ? { body: JSON.stringify({ colors: picked }) } : {}),
+            });
+            onDone(what === "accept");
+        } catch (err) {
+            setError((err as Error).message);
+        }
+    };
+    return (
+        <li className="flex flex-col gap-3 px-4 py-3">
+            <div className="flex items-center gap-3">
+                <Crown bands={bandsOf(l.colors, palette)} className="h-9 w-9" />
+                <Link href={`/night?d=${l.date}`} className="w-20 shrink-0 font-bold underline">
+                    {shortDate(l.date)}
+                </Link>
+                <span className="min-w-0 flex-1 truncate">
+                    Listed {colorNames(l.colors, palette)}
+                    {l.cause && ` for ${l.cause}`}
+                </span>
+            </div>
+            <ul className="flex flex-col gap-1 pl-12">
+                {night.reports.map((r) => (
+                    <li key={r.name} className="flex items-center gap-2">
+                        <Crown bands={bandsOf(r.colors, palette)} className="h-6 w-6 shrink-0" />
+                        <span>
+                            <span className="font-bold">{r.name}</span>: {colorNames(r.colors, palette)}
+                            {r.note && <span className="text-muted"> &ldquo;{r.note}&rdquo;</span>}
+                        </span>
+                    </li>
+                ))}
+            </ul>
+            <div className="flex flex-wrap items-end gap-3 pl-12">
+                <MultiSelect
+                    label="Correct it to"
+                    data={(colors.data?.colors ?? []).map((c) => ({ value: c.key, label: c.label }))}
+                    value={picked}
+                    onChange={setPicked}
+                    maxValues={6}
+                    className="min-w-60 flex-1"
+                />
+                <Button onClick={() => act("accept")} disabled={picked.length === 0}>
+                    Accept
+                </Button>
+                <Button variant="default" onClick={() => act("dismiss")}>
+                    Dismiss
+                </Button>
+            </div>
+            {error && <span className="pl-12 text-danger">{error}</span>}
+        </li>
     );
 }
 

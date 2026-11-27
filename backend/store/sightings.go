@@ -19,6 +19,7 @@ type Sighting struct {
 	Note      string
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	Photo     *PhotoInfo // nil when there's none
 }
 
 // SaveSighting records (or updates) that a user saw a night.
@@ -54,8 +55,10 @@ func (s *Store) DeleteSighting(ctx context.Context, userID int64, date schedule.
 	return err
 }
 
-const sightingCols = `s.user_id, u.name, s.date, coalesce(s.rating, 0), s.note, s.created_at, s.updated_at
-	from sightings s join users u on u.id = s.user_id`
+const sightingCols = `s.user_id, u.name, s.date, coalesce(s.rating, 0), s.note, s.created_at, s.updated_at,
+	coalesce(p.sha256, ''), coalesce(p.width, 0), coalesce(p.height, 0)
+	from sightings s join users u on u.id = s.user_id
+	left join photos p on p.user_id = s.user_id and p.date = s.date`
 
 func (s *Store) sightings(ctx context.Context, query string, args ...any) ([]Sighting, error) {
 	rows, err := s.DB.QueryContext(ctx, `select `+sightingCols+` `+query, args...)
@@ -67,10 +70,15 @@ func (s *Store) sightings(ctx context.Context, query string, args ...any) ([]Sig
 	for rows.Next() {
 		var x Sighting
 		var created, updated string
-		if err := rows.Scan(&x.UserID, &x.Name, &x.Date, &x.Rating, &x.Note, &created, &updated); err != nil {
+		var p PhotoInfo
+		if err := rows.Scan(&x.UserID, &x.Name, &x.Date, &x.Rating, &x.Note, &created, &updated,
+			&p.SHA256, &p.Width, &p.Height); err != nil {
 			return nil, err
 		}
 		x.CreatedAt, x.UpdatedAt = parseTime(created), parseTime(updated)
+		if p.SHA256 != "" {
+			x.Photo = &p
+		}
 		out = append(out, x)
 	}
 	return out, rows.Err()
