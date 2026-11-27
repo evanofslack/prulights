@@ -11,23 +11,10 @@ import {
     SegmentedControl,
     Skeleton,
     Switch,
-    Textarea,
     TextInput,
 } from "@mantine/core";
-import {
-    IconCheck,
-    IconInfoCircle,
-    IconPlugConnected,
-    IconPlugConnectedX,
-    IconSend,
-} from "@tabler/icons-react";
-import type {
-    DeviceInfo,
-    DeviceSettings,
-    DeviceUpdate,
-    FeedbackRequest,
-    PrudleSettings,
-} from "@/interfaces/api";
+import { IconCheck, IconInfoCircle, IconPlugConnected, IconPlugConnectedX } from "@tabler/icons-react";
+import type { DeviceInfo, DeviceSettings, DeviceUpdate, PrudleSettings } from "@/interfaces/api";
 import { api, json, useApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { usePrudle } from "@/lib/blackout";
@@ -35,7 +22,7 @@ import { Shell } from "@/components/Shell";
 
 // /settings is everyone's settings: your name, whether you play Prudle in
 // December, and, once you have one, your frames (what each shows, quiet hours,
-// pause, and letting one go). Ideas for the site go in the box at the bottom.
+// pause, and letting one go).
 
 const THEMES = [
     { value: "dark", label: "Dark" },
@@ -130,7 +117,6 @@ export default function SettingsPage() {
                         )}
                     </section>
                 )}
-                {me && <Ideas />}
             </div>
         </Shell>
     );
@@ -160,12 +146,15 @@ function NameSetting() {
         }
     };
     return (
-        <section aria-label="Your name" className="flex flex-col gap-3 rounded-xl bg-panel p-5">
-            <h2 className="text-2xl font-bold">Your name</h2>
-            <form onSubmit={save} className="flex flex-col gap-3">
+        <section className="flex flex-col gap-2 rounded-xl bg-panel p-5">
+            <h2 id="username" className="text-lg font-semibold">
+                Username
+            </h2>
+            <form onSubmit={save} className="flex items-start gap-2">
                 <TextInput
                     size="lg"
-                    label="The name your family sees"
+                    aria-labelledby="username"
+                    className="flex-1"
                     value={name}
                     maxLength={40}
                     onChange={(e) => {
@@ -173,88 +162,15 @@ function NameSetting() {
                         setSaved(false);
                     }}
                 />
-                <div className="flex items-center gap-3">
-                    <Button type="submit" size="lg" loading={saving} disabled={!dirty}>
-                        Save name
-                    </Button>
-                    {saved && !dirty && (
-                        <span className="flex items-center gap-1 text-muted">
-                            <IconCheck size={18} /> Saved
-                        </span>
-                    )}
-                </div>
+                <Button type="submit" size="lg" loading={saving} disabled={!dirty}>
+                    Save
+                </Button>
             </form>
-            {error && (
-                <Alert color="red" variant="light">
-                    {error}
-                </Alert>
+            {saved && !dirty && (
+                <span className="flex items-center gap-1 text-muted">
+                    <IconCheck size={18} /> Saved
+                </span>
             )}
-        </section>
-    );
-}
-
-// Ideas is the feedback box: anything you'd like the site to do. The admins
-// read them in /admin.
-function Ideas() {
-    const [text, setText] = useState("");
-    const [sending, setSending] = useState(false);
-    const [sent, setSent] = useState(false);
-    const [error, setError] = useState("");
-    const send = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setSending(true);
-        setError("");
-        try {
-            await api("/me/feedback", { method: "POST", body: json<FeedbackRequest>({ text }) });
-            setText("");
-            setSent(true);
-        } catch (e) {
-            setError((e as Error).message);
-        } finally {
-            setSending(false);
-        }
-    };
-    return (
-        <section
-            id="ideas"
-            aria-label="Ideas"
-            className="flex scroll-mt-24 flex-col gap-3 rounded-xl bg-panel p-5"
-        >
-            <h2 className="text-2xl font-bold">Have an idea?</h2>
-            <p className="text-muted">
-                Something you&apos;d like the site to do, or something that bugs you.
-            </p>
-            <form onSubmit={send} className="flex flex-col gap-3">
-                <Textarea
-                    size="lg"
-                    aria-label="Your idea"
-                    placeholder="I wish it would…"
-                    autosize
-                    minRows={3}
-                    maxLength={2000}
-                    value={text}
-                    onChange={(e) => {
-                        setText(e.currentTarget.value);
-                        setSent(false);
-                    }}
-                />
-                <div className="flex items-center gap-3">
-                    <Button
-                        type="submit"
-                        size="lg"
-                        loading={sending}
-                        disabled={text.trim() === ""}
-                        leftSection={<IconSend size={20} />}
-                    >
-                        Send
-                    </Button>
-                    {sent && (
-                        <span className="flex items-center gap-1 text-muted">
-                            <IconCheck size={18} /> Thanks, we got it.
-                        </span>
-                    )}
-                </div>
-            </form>
             {error && (
                 <Alert color="red" variant="light">
                     {error}

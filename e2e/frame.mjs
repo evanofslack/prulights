@@ -114,7 +114,7 @@ check(
     previews.length === 5 && previews.every((w) => w === 480),
     JSON.stringify(previews),
 );
-await fran.click(btn("Save"));
+await fran.click(`section[aria-label="Your frame"] ${btn("Save")}`);
 await fran.waitForSelector("[role=status]:has-text('Saved')");
 check("settings save", true);
 await fran.setViewportSize({ width: 390, height: 844 });

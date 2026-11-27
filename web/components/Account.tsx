@@ -6,13 +6,14 @@ import { useRouter } from "next/navigation";
 import { Menu } from "@mantine/core";
 import {
     IconAdjustments,
-    IconBulb,
     IconLogout,
+    IconMessage,
     IconSettings,
     IconUserPlus,
     IconUserCircle,
 } from "@tabler/icons-react";
 import { useAuth } from "@/lib/auth";
+import { FeedbackModal } from "./FeedbackModal";
 import { InviteModal } from "./InviteModal";
 
 // Account is the header's corner: "Sign in", or the signed-in person's menu.
@@ -20,6 +21,7 @@ export function Account() {
     const { me, signOut } = useAuth();
     const router = useRouter();
     const [inviting, setInviting] = useState(false);
+    const [feedback, setFeedback] = useState(false);
 
     if (me === undefined) return <span className="w-16" />;
     if (me === null) {
@@ -64,8 +66,8 @@ export function Account() {
                     <Menu.Item component={Link} href="/settings" leftSection={<IconAdjustments size={16} />}>
                         Settings
                     </Menu.Item>
-                    <Menu.Item component={Link} href="/settings#ideas" leftSection={<IconBulb size={16} />}>
-                        Send an idea
+                    <Menu.Item leftSection={<IconMessage size={16} />} onClick={() => setFeedback(true)}>
+                        Send feedback
                     </Menu.Item>
                     <Menu.Item
                         leftSection={<IconLogout size={16} />}
@@ -79,6 +81,7 @@ export function Account() {
                 </Menu.Dropdown>
             </Menu>
             <InviteModal opened={inviting} onClose={() => setInviting(false)} />
+            <FeedbackModal opened={feedback} onClose={() => setFeedback(false)} />
         </>
     );
 }
