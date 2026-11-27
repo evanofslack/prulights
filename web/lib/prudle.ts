@@ -5,9 +5,13 @@ import type { ColorKey } from "@/interfaces/schedule";
 // back on, close (same family, see CLOSE) or off, and the guess's size comes
 // back against the night's count (fewer, more or exact), so the count is
 // narrowed, never shown. Colors found on stay in the next guess, since
-// leaving one out can never win. The server grades every guess
-// (backend/prudle); this file only draws the board and checks a guess before
-// it's sent.
+// leaving one out can never win. The server grades every real guess
+// (backend/prudle); this file draws the board, checks a guess before it's
+// sent, and grades practice games on past nights (guess, the same rules).
+
+// backend/prudle's Tries and MaxPicks, for practice; a real game's come with it.
+export const TRIES = 6;
+export const MAX_PICKS = 3;
 
 export type Mark = "hit" | "close" | "miss";
 export type CountMark = "fewer" | "more" | "exact";
@@ -138,4 +142,51 @@ export function shareText(date: string, turns: Turn[], how: "won" | "lost" | "pa
 // families with a close mark: their open colors are the ones to try
 export function warm(out: Map<ColorKey, Mark>): Set<ColorKey> {
     return new Set(CLOSE.filter((f) => f.some((k) => out.get(k) === "close")).flat());
+}
+
+// Game is a practice game: the answer is known, so guess grades here.
+export interface Game {
+    answer: ColorKey[];
+    turns: Turn[];
+    on: ColorKey[]; // found, in the order found
+    out: Map<ColorKey, Mark>;
+    won: boolean;
+}
+
+export const newGame = (answer: ColorKey[]): Game => ({
+    answer: [...new Set(answer)],
+    turns: [],
+    on: [],
+    out: new Map(),
+    won: false,
+});
+
+export const lost = (g: Game) => !g.won && g.turns.length >= TRIES;
+
+// guess grades picks (the new colors; found ones ride along) the way
+// backend/prudle's Guess does, or returns the game unchanged when they aren't
+// a guess.
+export function guess(g: Game, picks: ColorKey[]): Game {
+    if (lost(g) || guessError(g, picks, MAX_PICKS)) return g;
+    const on = [...g.on];
+    const out = new Map(g.out);
+    const turn: Turn = {
+        picks: g.on.map((key) => ({ key, mark: "hit", carried: true })),
+        size: 0,
+        count: "exact",
+    };
+    for (const key of picks) {
+        const mark: Mark = g.answer.includes(key)
+            ? "hit"
+            : g.answer.some((a) => a !== key && CLOSE.some((f) => f.includes(a) && f.includes(key)))
+              ? "close"
+              : "miss";
+        if (mark === "hit") on.push(key);
+        else out.set(key, mark);
+        turn.picks.push({ key, mark });
+    }
+    turn.size = turn.picks.length;
+    const n = g.answer.length;
+    turn.count = turn.size === n ? "exact" : turn.size > n ? "fewer" : "more";
+    return { ...g, on, out, turns: [...g.turns, turn], won: turn.size === n && on.length === n };
 }

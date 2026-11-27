@@ -332,3 +332,6 @@ palette calibration isn't on the critical path.
 - Lighting-on time outside December: sunset is an assumption. Have her watch a few nights to check it.
 - Whether to publish an OpenAPI spec for the public API (hand-written YAML now, or generated later).
 - Attribution text and a link to prudentialcenter.com on every page and in API `meta`. No Prudential logos or branding.
+- Practice Prudle difficulty: simple/easy/medium/hard. Claude grades each past night once, offline, by guessing
+  its colors from the cause alone (never the answer); a reader bot plays the real rules with that ranking and
+  how it does sets the tier; the grades are checked in. Practice deals from a chosen tier.

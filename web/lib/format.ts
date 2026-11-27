@@ -13,8 +13,10 @@ const weekdayShort = fmt({ weekday: "short" });
 const monthDay = fmt({ month: "long", day: "numeric" });
 const monthDayShort = fmt({ month: "short", day: "numeric" });
 const monthYear = fmt({ month: "long", year: "numeric" });
+const monthDayYear = fmt({ month: "long", day: "numeric", year: "numeric" });
 
 export const longDate = (d: string) => `${weekdayLong.format(at(d))}, ${monthDay.format(at(d))}`;
+export const fullDate = (d: string) => monthDayYear.format(at(d)); // "March 14, 2026"
 export const shortDate = (d: string) => monthDayShort.format(at(d));
 export const weekday = (d: string) => weekdayLong.format(at(d));
 export const weekdayAbbr = (d: string) => weekdayShort.format(at(d));
