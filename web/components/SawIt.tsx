@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button, Rating, Textarea } from "@mantine/core";
 import { IconCheck, IconEye } from "@tabler/icons-react";
-import type { NightSightings, NightStatsResponse, Sighting } from "@/interfaces/api";
-import { api, sightingsChanged, useApi } from "@/lib/api";
+import type { NightSightings, NightStatsResponse, Sighting, SightingRequest } from "@/interfaces/api";
+import { api, json, sightingsChanged, useApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { usePrudle } from "@/lib/blackout";
 import { MyPhoto, Thumb } from "./Photos";
@@ -79,7 +79,7 @@ function Members({ date }: { date: string }) {
         try {
             await api<Sighting>(`/me/sightings/${date}`, {
                 method: "PUT",
-                body: JSON.stringify({ rating: mine?.rating ?? 0, note: mine?.note ?? "", ...change }),
+                body: json<SightingRequest>({ rating: mine?.rating ?? 0, note: mine?.note ?? "", ...change }),
             });
             reload();
             sightingsChanged();

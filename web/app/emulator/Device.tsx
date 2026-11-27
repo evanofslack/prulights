@@ -27,8 +27,11 @@ import type {
     DeviceEventIn,
     DeviceSettings,
     DeviceState,
+    EventsRequest,
+    RegisterRequest,
     RegisterResponse,
 } from "@/interfaces/api";
+import { json } from "@/lib/api";
 import { longDate } from "@/lib/format";
 import {
     HEIGHT,
@@ -247,7 +250,7 @@ export function Device({
         const res = await fetch("/api/device/v1/register", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ firmware: FIRMWARE, ap_ssid: ap.ssid, ap_password: ap.password }),
+            body: json<RegisterRequest>({ firmware: FIRMWARE, ap_ssid: ap.ssid, ap_password: ap.password }),
         });
         if (!res.ok) throw new Error(`register: ${res.status}`);
         const r: RegisterResponse = await res.json();
@@ -293,7 +296,7 @@ export function Device({
             try {
                 const res = await deviceFetch(creds.token, "/events", {
                     method: "POST",
-                    body: JSON.stringify({
+                    body: json<EventsRequest>({
                         events,
                         battery_mv: p.power === "battery" ? p.mv : 0,
                         power: p.power,

@@ -4,8 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { Alert, Button, Checkbox, SegmentedControl, Skeleton, Switch, TextInput } from "@mantine/core";
 import { IconPlugConnected, IconPlugConnectedX } from "@tabler/icons-react";
-import type { DeviceInfo, DeviceSettings } from "@/interfaces/api";
-import { api, useApi } from "@/lib/api";
+import type { DeviceInfo, DeviceSettings, DeviceUpdate, PrudleSettings } from "@/interfaces/api";
+import { api, json, useApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { usePrudle } from "@/lib/blackout";
 import { Shell } from "@/components/Shell";
@@ -84,8 +84,8 @@ export default function SettingsPage() {
                             <div className="flex flex-col gap-4 rounded-xl bg-panel p-5">
                                 <p className="text-lg">No frame yet.</p>
                                 <p className="text-muted">
-                                    A new frame shows a QR code: scan it with your phone&apos;s camera. Or type
-                                    the code under it.
+                                    A new frame shows a QR code: scan it with your phone&apos;s camera. Or
+                                    type the code under it.
                                 </p>
                                 <Button
                                     component={Link}
@@ -118,7 +118,7 @@ function PrudleSetting() {
         setSaving(true);
         setError("");
         try {
-            await api("/me/prudle/settings", { method: "PUT", body: JSON.stringify({ off: !play }) });
+            await api("/me/prudle/settings", { method: "PUT", body: json<PrudleSettings>({ off: !play }) });
             reload();
         } catch (e) {
             setError((e as Error).message);
@@ -194,7 +194,7 @@ function FrameCard({ device, onChange }: { device: DeviceInfo; onChange: () => v
         try {
             await api(`/me/devices/${device.id}`, {
                 method: "PATCH",
-                body: JSON.stringify({ name, settings: s }),
+                body: json<DeviceUpdate>({ name, settings: s }),
             });
             setSaved(true);
             onChange();

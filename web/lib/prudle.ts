@@ -89,15 +89,13 @@ export function countText(turns: Turn[], maxPicks: number): string {
     if (n !== undefined) return colors(n);
     const more = Math.max(0, ...turns.filter((t) => t.count === "more").map((t) => t.size));
     const fewer = Math.min(Infinity, ...turns.filter((t) => t.count === "fewer").map((t) => t.size));
-    return (
-        more && fewer < Infinity
-            ? `More than ${more}, fewer than ${fewer}`
-            : more
-              ? `More than ${colors(more)}`
-              : fewer < Infinity
-                ? `Fewer than ${colors(fewer)}`
-                : `1 to ${maxPicks} colors`
-    );
+    return more && fewer < Infinity
+        ? `More than ${more}, fewer than ${fewer}`
+        : more
+          ? `More than ${colors(more)}`
+          : fewer < Infinity
+            ? `Fewer than ${colors(fewer)}`
+            : `1 to ${maxPicks} colors`;
 }
 
 // countMark is a turn's count in a few characters: "< 3", "> 1", "= 2".

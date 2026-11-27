@@ -90,7 +90,7 @@ type OverrideBody struct {
 	Cause    string              `json:"cause"`
 	CauseURL string              `json:"cause_url"`
 	// Kind is worked out from the cause when empty.
-	Kind schedule.Kind `json:"kind"`
+	Kind schedule.Kind `json:"kind,omitempty"`
 	Note string        `json:"note"`
 }
 

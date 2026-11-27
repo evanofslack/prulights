@@ -3,9 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Alert, Button, Skeleton } from "@mantine/core";
-import type { PrudleNight, PrudleState } from "@/interfaces/api";
+import type { PrudleGuess, PrudleNight, PrudleState } from "@/interfaces/api";
 import type { Color, ColorKey } from "@/interfaces/schedule";
-import { api, useApi } from "@/lib/api";
+import { api, json, useApi } from "@/lib/api";
 import { usePrudle } from "@/lib/blackout";
 import { usePalette } from "@/lib/palette";
 import { type Mark, type Turn, guessError, shareText } from "@/lib/prudle";
@@ -16,8 +16,9 @@ import { History, PrudleBoard as Board, crown } from "./Prudle";
 // and never sends the answer before then. PrudleResult, PrudleSection (your
 // wins and streak, and how the family did tonight) and PrudleSignIn come after.
 
-const post = <T,>(path: string, body: unknown) =>
-    api<T>(path, { method: "POST", body: JSON.stringify(body) });
+// a guess, or {} to pass
+const post = <T,>(path: string, body: PrudleGuess | Record<string, never>) =>
+    api<T>(path, { method: "POST", body: json(body) });
 
 export function PrudleBoard({ date }: { date: string }) {
     const { data, error, reload } = useApi<PrudleState>(`/me/prudle/${date}`);
@@ -50,7 +51,7 @@ function Game({ initial, palette }: { initial: PrudleState; palette: Map<ColorKe
     const g = { on, out, turns, won: !st.can_play };
     const error = guessError(g, picks, st.max_picks);
 
-    const send = async (path: string, body: unknown) => {
+    const send = async (path: string, body: PrudleGuess | Record<string, never>) => {
         setBusy(true);
         setFailed("");
         try {

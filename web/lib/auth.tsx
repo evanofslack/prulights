@@ -7,7 +7,7 @@ import {
     type PublicKeyCredentialCreationOptionsJSON,
     type PublicKeyCredentialRequestOptionsJSON,
 } from "@simplewebauthn/browser";
-import type { Ceremony, MeResponse } from "@/interfaces/api";
+import type { Ceremony, MeResponse, RegisterBegin } from "@/interfaces/api";
 import { api, ApiError } from "./api";
 
 // Who's signed in, and the passkey flows. The session is an HttpOnly cookie;
@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const register = useCallback(async (from: RegisterFrom, name: string) => {
-        const begin = await post<Ceremony>("/auth/register/begin", { ...from, name });
+        const begin = await post<Ceremony>("/auth/register/begin", { ...from, name } satisfies RegisterBegin);
         const response = await startRegistration({
             optionsJSON: begin.options as PublicKeyCredentialCreationOptionsJSON,
         });

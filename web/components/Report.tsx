@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { Button, Modal, Textarea } from "@mantine/core";
 import { IconFlag } from "@tabler/icons-react";
-import type { NightReports, Report } from "@/interfaces/api";
+import type { NightReports, Report, ReportRequest } from "@/interfaces/api";
 import type { ColorKey } from "@/interfaces/schedule";
-import { api, useApi } from "@/lib/api";
+import { api, json, useApi } from "@/lib/api";
 import { usePrudle } from "@/lib/blackout";
 import { colorNames } from "@/lib/format";
 import { usePalette } from "@/lib/palette";
@@ -125,7 +125,7 @@ function ReportModal({
         try {
             await api<Report>(`/me/reports/${date}`, {
                 method: "PUT",
-                body: JSON.stringify({ colors: picked, note }),
+                body: json<ReportRequest>({ colors: picked, note }),
             });
             onSent();
         } catch (e) {
