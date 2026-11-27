@@ -4,13 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Menu } from "@mantine/core";
-import {
-    IconAdjustments,
-    IconLogout,
-    IconSettings,
-    IconUserPlus,
-    IconUserCircle,
-} from "@tabler/icons-react";
+import { IconAdjustments, IconLogout, IconSettings, IconUserPlus, IconUserCircle } from "@tabler/icons-react";
 import { useAuth } from "@/lib/auth";
 import { InviteModal } from "./InviteModal";
 
@@ -38,7 +32,7 @@ export function Account() {
                         className="flex items-center gap-1.5 rounded-md px-2.5 py-2 text-base text-muted hover:text-fg sm:px-3"
                     >
                         <IconUserCircle size={22} />
-                        <span className="hidden max-w-24 truncate sm:inline">{me.name}</span>
+                        <span className="max-w-20 truncate sm:max-w-24">{me.name}</span>
                     </button>
                 </Menu.Target>
                 <Menu.Dropdown>

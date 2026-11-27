@@ -30,22 +30,22 @@ function PublicTotals({ date, tonight }: { date: string; tonight?: string }) {
     const { data } = useApi<NightStatsResponse>(`/lightings/${date}/stats`);
     const future = tonight !== undefined && date > tonight;
     return (
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-muted sm:justify-start">
+        <div className="flex flex-col items-center gap-3 text-muted sm:items-start">
             {data && data.seen > 0 && (
                 <span className="inline-flex items-center gap-2">
                     <IconEye size={18} aria-hidden /> Seen by {data.seen}
                     {data.rated > 0 && (
                         <>
                             {" · "}
-                            <Stars value={Math.round(data.average)} size="xs" /> {data.average.toFixed(1)}
+                            <Stars value={Math.round(data.average)} size="sm" /> {data.average.toFixed(1)}
                         </>
                     )}
                 </span>
             )}
             {!future && (
-                <Link href="/login" className="underline hover:text-fg">
+                <Button component={Link} href="/login" variant="default" size="md">
                     Sign in to log
-                </Link>
+                </Button>
             )}
         </div>
     );
@@ -110,19 +110,18 @@ function Members({ date }: { date: string }) {
         <section aria-label="Sightings" className="flex flex-col gap-3 rounded-xl bg-panel p-4 text-left">
             {data.can_log && !mine && (
                 <Button
-                    size="md"
-                    variant="light"
-                    leftSection={<IconEye size={20} />}
+                    size="lg"
+                    leftSection={<IconEye size={22} />}
                     loading={busy}
                     onClick={() => save({})}
-                    className="self-center sm:self-start"
+                    className="w-full sm:w-auto sm:self-start"
                 >
                     I saw it
                 </Button>
             )}
             {mine && (
                 <div className="flex flex-col gap-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                         <span className="inline-flex shrink-0 items-center gap-1.5 text-lg font-bold text-accent">
                             <IconCheck size={20} /> You saw it
                         </span>
@@ -137,15 +136,6 @@ function Members({ date }: { date: string }) {
                         ) : (
                             <Stars value={mine.rating} size="md" />
                         )}
-                        {data.can_log && (
-                            <button
-                                type="button"
-                                className="ml-auto min-h-11 shrink-0 px-1 text-muted underline hover:text-fg"
-                                onClick={remove}
-                            >
-                                Undo
-                            </button>
-                        )}
                     </div>
                     {data.can_log && noting && (
                         <div id="note" className="flex scroll-mt-4 flex-col gap-2">
@@ -159,7 +149,7 @@ function Members({ date }: { date: string }) {
                                 autosize
                                 minRows={2}
                             />
-                            <div className="flex min-h-11 flex-wrap items-center gap-3">
+                            <div className="flex flex-wrap items-center gap-3 empty:hidden">
                                 {note.trim() !== (mine.note ?? "") && (
                                     <Button
                                         size="sm"
@@ -172,15 +162,6 @@ function Members({ date }: { date: string }) {
                                 )}
                                 {note.length > 240 && (
                                     <span className="text-sm text-muted">{280 - note.length} left</span>
-                                )}
-                                {mine.rating > 0 && (
-                                    <button
-                                        type="button"
-                                        className="ml-auto min-h-11 px-1 text-muted underline hover:text-fg"
-                                        onClick={() => save({ rating: 0 })}
-                                    >
-                                        Clear stars
-                                    </button>
                                 )}
                             </div>
                         </div>
@@ -198,6 +179,27 @@ function Members({ date }: { date: string }) {
                             sightingsChanged();
                         }}
                     />
+                    {/* the take-backs, apart from the stars so a thumb can't hit them by mistake */}
+                    {data.can_log && (
+                        <div className="flex flex-wrap items-center gap-x-6">
+                            <button
+                                type="button"
+                                className="min-h-11 px-1 text-muted underline hover:text-fg"
+                                onClick={remove}
+                            >
+                                Undo
+                            </button>
+                            {mine.rating > 0 && (
+                                <button
+                                    type="button"
+                                    className="min-h-11 px-1 text-muted underline hover:text-fg"
+                                    onClick={() => save({ rating: 0 })}
+                                >
+                                    Clear stars
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
             {!data.can_log && !mine && others.length === 0 && (
@@ -212,7 +214,7 @@ function Members({ date }: { date: string }) {
                             <span className="flex min-w-0 flex-col">
                                 <span className="flex items-center gap-2">
                                     <span className="font-bold">{x.name}</span> saw it{" "}
-                                    <Stars value={x.rating} size="xs" />
+                                    <Stars value={x.rating} size="sm" />
                                 </span>
                                 {x.note && <span className="text-muted">&ldquo;{x.note}&rdquo;</span>}
                             </span>

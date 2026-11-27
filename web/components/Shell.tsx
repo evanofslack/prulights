@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ActionIcon, Popover, Tooltip } from "@mantine/core";
+import { ActionIcon, Popover } from "@mantine/core";
 import { IconApi, IconBrandGithub, IconInfoCircle, IconMaximize } from "@tabler/icons-react";
 import { useMeta } from "@/lib/api";
 import { Account } from "./Account";
@@ -75,31 +75,31 @@ function Footer({ width }: { width: string }) {
         router.push("/display");
     };
     const icon = { variant: "subtle", color: "gray", size: "xl", radius: "md" } as const;
+    // icons on a phone, icons and words on a computer
+    const item =
+        "inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-md px-2.5 text-muted hover:bg-raised hover:text-fg";
+    const word = "hidden sm:inline";
     return (
         <footer className="border-t border-line bg-panel">
             <div className={`mx-auto flex items-center justify-end gap-1 px-3 py-2 sm:px-4 ${width}`}>
-                <Tooltip label="Full screen">
-                    <ActionIcon {...icon} aria-label="Full screen" onClick={fullScreen}>
-                        <IconMaximize size={22} />
-                    </ActionIcon>
-                </Tooltip>
-                <Tooltip label="API docs">
-                    <ActionIcon {...icon} component="a" href="/docs" aria-label="API docs">
-                        <IconApi size={22} />
-                    </ActionIcon>
-                </Tooltip>
-                <Tooltip label="Source">
-                    <ActionIcon
-                        {...icon}
-                        component="a"
-                        href="https://github.com/evanofslack/prulights"
-                        target="_blank"
-                        rel="noopener"
-                        aria-label="Source"
-                    >
-                        <IconBrandGithub size={22} />
-                    </ActionIcon>
-                </Tooltip>
+                <button type="button" className={item} aria-label="Full screen" onClick={fullScreen}>
+                    <IconMaximize size={22} />
+                    <span className={word}>Full screen</span>
+                </button>
+                <a className={item} href="/docs" aria-label="API docs">
+                    <IconApi size={22} />
+                    <span className={word}>API</span>
+                </a>
+                <a
+                    className={item}
+                    href="https://github.com/evanofslack/prulights"
+                    target="_blank"
+                    rel="noopener"
+                    aria-label="Source"
+                >
+                    <IconBrandGithub size={22} />
+                    <span className={word}>Source</span>
+                </a>
                 <Popover opened={credit} onChange={setCredit} position="top-end" width={280} shadow="md">
                     <Popover.Target>
                         <ActionIcon

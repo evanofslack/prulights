@@ -15,12 +15,17 @@
   so both are spelled out under their attribute.
 */
 @theme {
+    /* the main reader is older and on a phone: the small sizes stay readable */
+    --text-xs: 0.875rem;
+    --text-xs--line-height: 1.35;
+    --text-sm: 0.9375rem;
+    --text-sm--line-height: 1.4;
     --color-surface: var(--mantine-color-dark-8); /* page: the night sky */
     --color-panel: var(--mantine-color-dark-7); /* cards */
     --color-raised: var(--mantine-color-dark-6); /* inputs, chips */
     --color-fg: var(--mantine-color-dark-0);
     --color-muted: var(--mantine-color-dark-2);
-    --color-subtle: var(--mantine-color-dark-3);
+    --color-subtle: #80859a;
     --color-line: var(--mantine-color-dark-5);
     --color-accent: var(--mantine-color-gold-4);
     --color-on-accent: var(--mantine-color-dark-9);
@@ -36,7 +41,7 @@
     --color-raised: var(--mantine-color-dark-6);
     --color-fg: var(--mantine-color-dark-0);
     --color-muted: var(--mantine-color-dark-2);
-    --color-subtle: var(--mantine-color-dark-3);
+    --color-subtle: #80859a;
     --color-line: var(--mantine-color-dark-5);
     --color-accent: var(--mantine-color-gold-4);
     --color-on-accent: var(--mantine-color-dark-9);

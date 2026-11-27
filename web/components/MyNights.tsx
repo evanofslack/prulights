@@ -95,7 +95,7 @@ function Log() {
                                         <span className="truncate text-muted">
                                             {n.lighting.scheduled ? n.lighting.cause : "Plain white"}
                                         </span>
-                                        {n.rating > 0 && <Rating value={n.rating} readOnly size="xs" />}
+                                        {n.rating > 0 && <Rating value={n.rating} readOnly size="sm" />}
                                         {n.note && <span className="text-fg">&ldquo;{n.note}&rdquo;</span>}
                                     </span>
                                 </Link>
