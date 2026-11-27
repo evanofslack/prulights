@@ -2,16 +2,45 @@
 
 What color is the Pru tonight?
 
-prulights tracks the lighting schedule for the crown of the Prudential Tower in Boston. It has:
+prulights showcases the lights atop the Prudential Tower in Boston.
 
-- a public API for the schedule, with an OpenAPI spec and a calendar feed
-- a web app for checking tonight's colors, logging sightings and rating them
-- server-drawn images for a small color e-ink frame (Waveshare PhotoPainter), plus an emulator for that frame in the web app
+- Go server scrapes the schedule and serves it as a public API.
+- Next.js app shows tonight's colors, upcoming schedule, and lets users sign in to track what they've seen.
 
-Live at https://prulights.evanslack.dev (coming soon).
+## demo
 
-The schedule comes from the Prudential Center's public
+<https://prulights.evanslack.dev>
+
+## api
+
+The API is open and needs no key. Docs are at <https://prulights.evanslack.dev/docs>.
+
+```bash
+curl https://prulights.evanslack.dev/api/v1/tonight
+```
+
+There is also a calendar feed at `/api/v1/calendar.ics`.
+
+## getting started
+
+Run the prebuilt container. The schedule is kept in sqlite under `/data`:
+
+```bash
+docker run -p 8080:8080 -v prulights:/data evanofslack/prulights:latest
+```
+
+## development
+
+Needs go, node and [just](https://github.com/casey/just).
+
+```bash
+just start
+```
+
+Then open <http://localhost:3000>. `just check` runs the same checks as CI, and `just` lists the rest.
+
+## credit
+
+The schedule comes from the Prudential Center's
 [tower lighting pages](https://www.prudentialcenter.com/experiences/events/31-nights-of-light/).
-This project is not affiliated with the Prudential Center, BXP or Prudential Financial.
-
-See `plans/prulights.md` for the design.
+Not affiliated with the Prudential Center, BXP or Prudential Financial.
