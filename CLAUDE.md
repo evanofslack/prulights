@@ -67,6 +67,9 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
 - Mantine (controls) + Tailwind 4 (layout, config in CSS). Utilities beat Mantine's styles (CSS layers).
 - Tokens in `web/styles/index.css` (`surface`, `panel`, `raised`, `fg`, `muted`, `subtle`, `line`,
   `accent`, …) point at the Mantine theme in `web/lib/theme.ts`. Use tokens, not raw Tailwind colors.
+  Three levels in both looks, in even steps: `surface` (page) < `panel` (cards, header, footer) < `raised`
+  (inputs, chips). Mantine's own body and default controls are mapped onto them (`resolver`), so don't patch a
+  level with `dark:`.
 - Two looks: dark (night sky) and light (e-ink paper). The system's choice until the header's sun/moon
   toggle (`SchemeToggle.tsx`) picks one; both are spelled out per `data-mantine-color-scheme`, so a subtree
   can pin one (`/display` stays dark). On paper the tower is a night picture in a card. Lighting colors in
@@ -96,8 +99,9 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   `MyNights.tsx`) and `#calendar` (`Month.tsx`, month in `?m=`, changed with `router.replace`, no scroll; your
   nights get a dot, a noted one links to `/night?d=…#note`). On a computer (`wide`, `lg:`) it's two columns under
   tonight: the week over the calendar on the left, Prudle, your nights and lately on the right (signed out, the
-  calendar takes the right). The tower scene is never cropped (`SCENE` in `Night.tsx` keeps 480×760). In
-  "This week", a run of white nights or of Prudle-hidden nights is one row. Then `/night?d=`, `/display` (always-on, no chrome; Esc leaves),
+  calendar takes the right). The tower scene is never cropped (the `.scene` class in `index.css` keeps 480×760); on a computer it's
+  about the window's height and sticky, so it stays in view beside long notes. In
+  "This week", a run of white nights or of Prudle-hidden nights is one row. Then `/night?d=`, `/display` (always-on, no chrome, tonight only; Esc leaves),
   `/docs` (stock Swagger UI from `swagger-ui-dist`, copied to `public/swagger` by `npm run swagger` before
   dev/build; don't bundle swagger-ui through next, its OpenAPI 3.1 support breaks), `/emulator` (frame
   previews; only when `/meta` says `dev`, settings live in the url), `/claim?code=` (a frame's setup QR
@@ -130,7 +134,10 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
 - Reports (`server/reports.go`, `components/Report.tsx`): "Colors wrong?" under a night, members only, one per
   person per night, for the week before tonight and any night after (`canReport`). They change nothing on their
   own: `/admin/reports/{date}/accept` writes an override (picked colors, the night keeps its cause) and closes
-  the night's open reports; `…/dismiss` just closes them. Re-reporting opens it again.
+  the night's open reports; `…/dismiss` just closes them. Re-reporting opens it again. The panel (`SawIt.tsx`)
+  is you first, then one row per other person with their sighting and report together (`useReports`); a report
+  shows as a flag and `Swatches`. Take-backs (Undo, Clear stars, Change, Take back) are icon buttons: a word under
+  `sm`, a tooltip above, found by `aria-label` in e2e.
 - Photos (`server/photos.go`, `components/Photos.tsx`): one per person per night inside `canLog`, members only.
   The browser shrinks it to a jpeg (`lib/photo.ts`, which also turns HEIC into one) and `PUT`s the raw
   `image/jpeg` body (`sameOrigin` takes json or that); the server decodes and re-encodes it (1600px + a 400px

@@ -21,8 +21,8 @@
     --text-sm: 0.9375rem;
     --text-sm--line-height: 1.4;
     --color-surface: var(--mantine-color-dark-8); /* page: the night sky */
-    --color-panel: var(--mantine-color-dark-7); /* cards */
-    --color-raised: var(--mantine-color-dark-6); /* inputs, chips */
+    --color-panel: var(--mantine-color-dark-7); /* cards, header, footer: a step above the page */
+    --color-raised: var(--mantine-color-dark-6); /* inputs, chips: a step above a panel */
     --color-fg: var(--mantine-color-dark-0);
     --color-muted: var(--mantine-color-dark-2);
     --color-subtle: #80859a;
@@ -67,6 +67,27 @@
     --color-tower-line: #6e6c66;
     --color-window: #aeaca4;
     --soften: 84%;
+}
+
+/* the tower scene (components/Night.tsx), in the drawing's 480×760 shape. A phone:
+   full width. A computer: the window's height under the header (it stays in view
+   while the text scrolls), up to 900px, but never so wide that the text beside it
+   gets under 20rem (the page is 72rem at most, with 2rem padding and a 2.5rem gap) */
+@layer components {
+    .scene {
+        aspect-ratio: 480 / 760;
+        width: 100%;
+    }
+    @media (width >= 40rem) {
+        .scene {
+            --scene-h: max(
+                360px,
+                min(calc(100dvh - 7rem), 900px, calc((min(100vw, 72rem) - 24.5rem) * 760 / 480))
+            );
+            height: var(--scene-h);
+            width: calc(var(--scene-h) * 480 / 760);
+        }
+    }
 }
 
 /* a visible keyboard focus ring everywhere */

@@ -72,7 +72,7 @@ for (const [kind, view] of Object.entries(views)) {
     await p.click("footer [aria-label='Full screen']");
     await p.waitForURL(/\/display$/);
     await p.waitForSelector("h1");
-    check(`${kind}: display shows seven nights`, (await p.locator("main ul li").count()) === 7);
+    check(`${kind}: display shows only tonight`, (await p.locator("main ul").count()) === 0);
     check(`${kind}: display has no header`, (await p.locator("header").count()) === 0);
     await shot(p, `${kind}-display`);
     await p.keyboard.press("Escape");

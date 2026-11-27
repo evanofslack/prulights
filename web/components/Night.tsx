@@ -11,9 +11,9 @@ import { HIDDEN, HIDDEN_NAME, usePrudle } from "@/lib/blackout";
 import { Crown, Tower } from "./Tower";
 
 // the tower scene's box, the drawing's own shape (480×760, see Tower) so nothing is
-// cut off: full width on a phone, and on a computer as tall as fits, width to match
-const SCENE =
-    "aspect-[480/760] w-full sm:h-[clamp(400px,64dvh,640px)] sm:w-[calc(clamp(400px,64dvh,640px)*480/760)]";
+// cut off: full width on a phone, and on a computer as tall as the window
+// allows while leaving the text beside it room (the `scene` class, styles/index.css)
+const SCENE = "scene";
 
 interface NightProps {
     lighting: Lighting;
@@ -36,8 +36,9 @@ export function Night({ lighting: l, tonight, publishedThrough, children }: Nigh
         <section className="flex flex-col gap-5 sm:flex-row sm:items-stretch sm:gap-10">
             {/* the whole scene, never cropped: its box keeps the drawing's shape. At night
                 the tower runs to the phone's edges and fades into the page; on paper it's a
-                night picture in a card */}
-            <div className="relative overflow-hidden rounded-2xl shadow-lg sm:shrink-0 sm:self-start dark:-mx-4 dark:-mt-8 dark:rounded-none dark:shadow-none sm:dark:mx-0 sm:dark:mt-0 sm:dark:rounded-2xl">
+                night picture in a card. On a computer it stays in view while the notes
+                beside it scroll */}
+            <div className="relative overflow-hidden rounded-2xl shadow-lg sm:sticky sm:top-4 sm:shrink-0 sm:self-start dark:-mx-4 dark:-mt-8 dark:rounded-none dark:shadow-none sm:dark:mx-0 sm:dark:mt-0 sm:dark:rounded-2xl">
                 <Tower
                     bands={bands}
                     sky={sky}
@@ -54,7 +55,7 @@ export function Night({ lighting: l, tonight, publishedThrough, children }: Nigh
             </div>
             {/* the text keeps a fixed top: centering it would move it each time the
                 "I saw it" panel under it grows */}
-            <div className="flex w-full flex-col gap-3 text-center sm:pt-16 sm:text-left">
+            <div className="flex w-full min-w-0 flex-col gap-3 text-center sm:pt-16 sm:text-left">
                 <p className="text-lg text-muted">
                     <span className="font-bold text-fg">{when}</span>
                     {when === "Tonight" || when === "Tomorrow" || when === "Last night"
@@ -137,7 +138,7 @@ export function Upcoming({ nights, tonight }: { nights: Lighting[]; tonight?: st
     }
     const dayName = (d: string) => (relativeName(d, tonight) === "Tomorrow" ? "Tomorrow" : weekdayAbbr(d));
     return (
-        <ul className="flex flex-col divide-y divide-line overflow-hidden rounded-xl bg-panel dark:bg-raised dark:shadow-lg">
+        <ul className="flex flex-col divide-y divide-line overflow-hidden rounded-xl bg-panel">
             {rows.map((run) => {
                 const l = run[0];
                 const end = run[run.length - 1];
@@ -146,7 +147,7 @@ export function Upcoming({ nights, tonight }: { nights: Lighting[]; tonight?: st
                     <li key={l.date}>
                         <Link
                             href={masked ? "/#prudle" : `/night?d=${l.date}`}
-                            className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-raised sm:gap-4 dark:hover:bg-line"
+                            className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-raised sm:gap-4"
                         >
                             <Crown
                                 bands={masked ? HIDDEN : bandsOf(l.colors, palette)}
@@ -173,11 +174,7 @@ export function Upcoming({ nights, tonight }: { nights: Lighting[]; tonight?: st
                                     {masked ? HIDDEN_NAME : colorNames(l.colors, palette)}
                                 </span>
                                 <span className="line-clamp-2 text-muted">
-                                    {masked
-                                        ? "Until tonight's Prudle is over"
-                                        : l.scheduled
-                                          ? l.cause
-                                          : "Plain white"}
+                                    {masked ? "Hidden by Prudle" : l.scheduled ? l.cause : "Plain white"}
                                 </span>
                             </span>
                             <IconChevronRight size={18} className="-mr-1 shrink-0 text-subtle" aria-hidden />

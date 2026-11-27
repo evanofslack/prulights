@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Button, Modal, Textarea } from "@mantine/core";
-import { IconFlag } from "@tabler/icons-react";
 import type { NightReports, Report, ReportRequest } from "@/interfaces/api";
 import type { ColorKey } from "@/interfaces/schedule";
 import { api, json, useApi } from "@/lib/api";
@@ -13,83 +12,29 @@ import { ColorGrid } from "./Prudle";
 
 const MAX_COLORS = 6;
 
-// Reports sits at the foot of the "I saw it" panel: "Colors wrong?" opens a
-// picker for what they really were, and the open reports show as one quiet
-// line each. A report changes nothing until an admin accepts it. Hidden while
+// useReports is a night's open color reports ("Colors wrong?"), for the "I saw
+// it" panel to show beside each person (components/SawIt.tsx). A report
+// changes nothing until an admin accepts it. Undefined while loading, and while
 // Prudle hides the night (a report gives its colors away).
-export function Reports({ date }: { date: string }) {
-    const palette = usePalette();
+export function useReports(date: string) {
     const hidden = usePrudle().hidden(date);
     const { data, reload } = useApi<NightReports>(hidden ? null : `/reports/${date}`);
-    const [open, setOpen] = useState(false);
-    if (hidden || !data || data.date !== date) return null;
-
-    const shown = data.reports.filter((r) => r.status === "open");
-    const mine = shown.find((r) => r.mine);
-    const others = shown.filter((r) => !r.mine);
-    if (!data.can_report && shown.length === 0) return null;
-
-    const withdraw = async () => {
-        await api<void>(`/me/reports/${date}`, { method: "DELETE" });
-        reload();
+    if (hidden || !data || data.date !== date) return undefined;
+    const open = data.reports.filter((r) => r.status === "open");
+    return {
+        mine: open.find((r) => r.mine),
+        others: open.filter((r) => !r.mine),
+        canReport: data.can_report,
+        reload,
+        withdraw: async () => {
+            await api<void>(`/me/reports/${date}`, { method: "DELETE" });
+            reload();
+        },
     };
-
-    return (
-        <div className="flex flex-col gap-2 border-t border-line pt-3">
-            {others.map((r) => (
-                <p key={r.name} className="text-muted">
-                    <span className="font-bold text-fg">{r.name}</span> says it was{" "}
-                    {colorNames(r.colors, palette)}
-                    {r.note && <> &ldquo;{r.note}&rdquo;</>}
-                </p>
-            ))}
-            {mine && (
-                <p className="flex flex-wrap items-center gap-x-3 text-muted">
-                    <span>You said it was {colorNames(mine.colors, palette)}.</span>
-                    {data.can_report && (
-                        <>
-                            <button
-                                type="button"
-                                className="min-h-11 px-1 underline hover:text-fg"
-                                onClick={() => setOpen(true)}
-                            >
-                                Change
-                            </button>
-                            <button
-                                type="button"
-                                className="min-h-11 px-1 underline hover:text-fg"
-                                onClick={withdraw}
-                            >
-                                Take back
-                            </button>
-                        </>
-                    )}
-                </p>
-            )}
-            {data.can_report && !mine && (
-                <button
-                    type="button"
-                    className="inline-flex min-h-11 items-center gap-2 self-center px-1 text-muted underline hover:text-fg sm:self-start"
-                    onClick={() => setOpen(true)}
-                >
-                    <IconFlag size={18} aria-hidden /> Colors wrong?
-                </button>
-            )}
-            <ReportModal
-                date={date}
-                mine={mine}
-                opened={open}
-                onClose={() => setOpen(false)}
-                onSent={() => {
-                    setOpen(false);
-                    reload();
-                }}
-            />
-        </div>
-    );
 }
 
-function ReportModal({
+// ReportModal picks the colors someone really saw, and an optional note.
+export function ReportModal({
     date,
     mine,
     opened,

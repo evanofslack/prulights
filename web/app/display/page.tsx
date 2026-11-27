@@ -5,13 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { TonightResponse } from "@/interfaces/api";
 import { useApi } from "@/lib/api";
-import { colorNames, longDate, relativeName, shortDate, weekdayAbbr } from "@/lib/format";
+import { colorNames, longDate } from "@/lib/format";
 import { bandsOf, usePalette } from "@/lib/palette";
-import { Crown, Tower } from "@/components/Tower";
+import { Tower } from "@/components/Tower";
 import { useSky } from "@/lib/sky";
 
-// /display is for a spare screen left on: the lit tower, tonight, and the week
-// ahead. It re-checks every 5 minutes (and so rolls over at 4am), keeps the
+// /display is for a spare screen left on: the lit tower and tonight, nothing
+// else. It re-checks every 5 minutes (and so rolls over at 4am), keeps the
 // screen awake where the browser allows, hides the cursor when idle, and
 // drifts slowly so nothing burns in.
 export default function DisplayPage() {
@@ -62,44 +62,21 @@ export default function DisplayPage() {
                             sky={sky}
                             night={data.date}
                             live
-                            className="h-[94vh] w-[38vw] max-w-[620px] shrink-0 rounded-[2vh]"
+                            className="h-[94vh] w-[42vw] max-w-[620px] shrink-0 rounded-[2vh]"
                         />
-                        <div className="flex max-w-[48vw] min-w-0 flex-col gap-[3vh] pb-[2vh]">
-                            <div>
-                                <p className="text-[2.4vh] text-[#98a1b8]">
-                                    <span className="font-bold text-[#eef1f8]">Tonight</span> ·{" "}
-                                    {longDate(data.date)}
-                                </p>
-                                <h1 className="text-[7vh] leading-tight font-bold">
-                                    {colorNames(data.lighting.colors, palette)}
-                                </h1>
-                                <p className="text-[3.6vh] leading-snug">
-                                    {data.lighting.scheduled
-                                        ? `for ${data.lighting.cause}`
-                                        : "No special lighting tonight"}
-                                </p>
-                            </div>
-                            <ul className="flex flex-col gap-[1.2vh]">
-                                {data.upcoming.map((l) => (
-                                    <li key={l.date} className="flex items-center gap-[1.4vh] text-[2.3vh]">
-                                        <Crown
-                                            bands={bandsOf(l.colors, palette)}
-                                            className="h-[4vh] w-[4vh]"
-                                        />
-                                        <span className="w-[13vh] shrink-0 text-[#98a1b8]">
-                                            {relativeName(l.date, data.date) === "Tomorrow"
-                                                ? "Tomorrow"
-                                                : `${weekdayAbbr(l.date)} ${shortDate(l.date)}`}
-                                        </span>
-                                        <span className="truncate">
-                                            {colorNames(l.colors, palette)}
-                                            {l.scheduled && (
-                                                <span className="text-[#98a1b8]"> · {l.cause}</span>
-                                            )}
-                                        </span>
-                                    </li>
-                                ))}
-                            </ul>
+                        <div className="flex max-w-[46vw] min-w-0 flex-col gap-[1.5vh] pb-[2vh]">
+                            <p className="text-[3vh] text-[#98a1b8]">
+                                <span className="font-bold text-[#eef1f8]">Tonight</span> ·{" "}
+                                {longDate(data.date)}
+                            </p>
+                            <h1 className="text-[9vh] leading-tight font-bold">
+                                {colorNames(data.lighting.colors, palette)}
+                            </h1>
+                            <p className="text-[4.4vh] leading-snug">
+                                {data.lighting.scheduled
+                                    ? `for ${data.lighting.cause}`
+                                    : "No special lighting tonight"}
+                            </p>
                         </div>
                     </>
                 )}

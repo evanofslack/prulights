@@ -86,7 +86,7 @@ await shot(opal, "prudle-family");
 
 // Opal turns Prudle off: the rest of December shows
 await opal.goto(`${URL}/settings`);
-await opal.click(`label:has-text("Play Prudle in December")`);
+await opal.click(`label:has-text("Play Prudle")`);
 await opal.waitForFunction(() => !document.querySelector("input[type=checkbox]")?.checked);
 await opal.goto(`${URL}/?m=2026-12`);
 await opal.waitForSelector(night("2026-12-25"));
