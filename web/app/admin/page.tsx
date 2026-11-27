@@ -25,6 +25,7 @@ import { colorNames, shortDate } from "@/lib/format";
 import { bandsOf, usePalette } from "@/lib/palette";
 import { InviteModal } from "@/components/InviteModal";
 import { Crown } from "@/components/Tower";
+import { CauseLink } from "@/components/CauseLink";
 import { Shell } from "@/components/Shell";
 
 // /admin: the people, their ideas, corrections to the schedule, the scraper,
@@ -229,7 +230,12 @@ function ReportedNightRow({
                 </Link>
                 <span className="min-w-0 flex-1 truncate">
                     Listed {colorNames(l.colors, palette)}
-                    {l.cause && ` for ${l.cause}`}
+                    {l.cause && (
+                        <>
+                            {" for "}
+                            <CauseLink cause={l.cause} url={l.cause_url} size={14} />
+                        </>
+                    )}
                 </span>
             </div>
             <ul className="flex flex-col gap-1 pl-12">
@@ -361,7 +367,12 @@ function Corrections() {
                             <span className="min-w-0 flex-1">
                                 <span className="block truncate">
                                     {colorNames(o.colors, palette)}
-                                    {o.cause && ` for ${o.cause}`}
+                                    {o.cause && (
+                                        <>
+                                            {" for "}
+                                            <CauseLink cause={o.cause} url={o.cause_url} size={14} />
+                                        </>
+                                    )}
                                 </span>
                                 {o.note && (
                                     <span className="block truncate text-sm text-muted">{o.note}</span>

@@ -16,7 +16,7 @@ for (const [kind, view] of Object.entries(views)) {
     );
     check(`${kind}: tonight names its colors`, (await p.locator("h1").textContent()).length > 2);
     // runs of plain white nights share a row ("Thu–Mon")
-    const rows = await p.locator("#week ul li a[href^='/night?d=']").allTextContents();
+    const rows = await p.locator("#week ul li:has(a[href^='/night?d='])").allTextContents();
     check(
         `${kind}: the week ahead, white runs grouped`,
         rows.length >= 1 && rows.length <= 7 && /^Tomorrow/.test(rows[0]),

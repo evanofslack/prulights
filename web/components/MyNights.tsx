@@ -6,10 +6,11 @@ import { Button, Rating, Skeleton } from "@mantine/core";
 import type { MySightings, MyStats } from "@/interfaces/api";
 import { useApi, useOnSightingsChanged } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { colorNames, shortDate, weekdayAbbr } from "@/lib/format";
+import { colorNames, longDate, shortDate, weekdayAbbr } from "@/lib/format";
 import { bandsOf, usePalette } from "@/lib/palette";
 import { HIDDEN, HIDDEN_NAME, usePrudle } from "@/lib/blackout";
 import { Crown } from "./Tower";
+import { CauseLink } from "./CauseLink";
 import { ErrorNote } from "./Shell";
 
 const RECENT = 5;
@@ -74,30 +75,42 @@ function Log() {
             </dl>
             <ul className="flex flex-col divide-y divide-line overflow-hidden rounded-xl bg-panel">
                 {shown.map((n) => (
-                    <li key={n.date}>
+                    <li
+                        key={n.date}
+                        className="relative flex items-start gap-4 px-4 py-3 transition-colors hover:bg-raised"
+                    >
+                        {/* the whole row opens the night; the cause's own link sits above it */}
                         <Link
                             href={`/night?d=${n.date}`}
-                            className="flex items-start gap-4 px-4 py-3 transition-colors hover:bg-raised"
-                        >
-                            <Crown
-                                bands={hidden(n.date) ? HIDDEN : bandsOf(n.lighting.colors, palette)}
-                                className="mt-1 h-11 w-11"
-                            />
-                            <span className="w-16 shrink-0">
-                                <span className="block font-bold">{weekdayAbbr(n.date)}</span>
-                                <span className="block text-sm text-muted">{shortDate(n.date)}</span>
+                            aria-label={`${longDate(n.date)}: ${hidden(n.date) ? HIDDEN_NAME : colorNames(n.lighting.colors, palette)}`}
+                            className="absolute inset-0"
+                        />
+                        <Crown
+                            bands={hidden(n.date) ? HIDDEN : bandsOf(n.lighting.colors, palette)}
+                            className="mt-1 h-11 w-11"
+                        />
+                        <span className="w-16 shrink-0">
+                            <span className="block font-bold">{weekdayAbbr(n.date)}</span>
+                            <span className="block text-sm text-muted">{shortDate(n.date)}</span>
+                        </span>
+                        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                            <span className="truncate text-lg">
+                                {hidden(n.date) ? HIDDEN_NAME : colorNames(n.lighting.colors, palette)}
                             </span>
-                            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                                <span className="truncate text-lg">
-                                    {hidden(n.date) ? HIDDEN_NAME : colorNames(n.lighting.colors, palette)}
-                                </span>
-                                <span className="truncate text-muted">
-                                    {n.lighting.scheduled ? n.lighting.cause : "Plain white"}
-                                </span>
-                                {n.rating > 0 && <Rating value={n.rating} fractions={2} readOnly size="sm" />}
-                                {n.note && <span className="text-fg">&ldquo;{n.note}&rdquo;</span>}
+                            <span className="truncate text-muted">
+                                {n.lighting.scheduled ? (
+                                    <CauseLink
+                                        cause={n.lighting.cause}
+                                        url={hidden(n.date) ? undefined : n.lighting.cause_url}
+                                        className="relative z-10"
+                                    />
+                                ) : (
+                                    "Plain white"
+                                )}
                             </span>
-                        </Link>
+                            {n.rating > 0 && <Rating value={n.rating} fractions={2} readOnly size="sm" />}
+                            {n.note && <span className="text-fg">&ldquo;{n.note}&rdquo;</span>}
+                        </span>
                     </li>
                 ))}
             </ul>
