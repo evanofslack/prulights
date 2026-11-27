@@ -232,7 +232,7 @@ function Chip({
             disabled={!!mark}
             aria-pressed={picked || mark === "hit"}
             aria-label={mark ? `${c.label}: ${WORD[mark]}` : c.label}
-            className={`flex min-h-11 min-w-0 items-center gap-2 rounded-lg px-1.5 py-1 text-left text-sm font-medium transition ${
+            className={`flex min-h-11 min-w-0 items-center gap-1.5 rounded-lg px-1 py-1 text-left text-sm font-medium transition ${
                 picked || mark === "hit"
                     ? "bg-raised ring-2 ring-accent"
                     : hint
@@ -241,7 +241,7 @@ function Chip({
             } ${mark === "miss" ? "opacity-40" : mark === "close" ? "opacity-70" : "active:scale-95"}`}
         >
             <span
-                className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-line"
+                className="relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-line sm:h-8 sm:w-8"
                 style={{ background: swatch(c, palette) }}
             >
                 {mark === "miss" && (
