@@ -64,7 +64,7 @@ export default function HomePage() {
                         </Night>
                     )}
                     {/* on a computer: the week over the calendar on the left, your
-                        side (Prudle, your nights, lately) on the right. Signed out
+                        side (Prudle or practice, your nights, lately) on the right. Signed out
                         there's no right side, so the calendar takes it. */}
                     <div className="flex flex-col gap-12 lg:grid lg:grid-cols-2 lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-10">
                         <section
@@ -79,8 +79,8 @@ export default function HomePage() {
                         {me && (
                             <div className="flex min-w-0 flex-col gap-12 lg:col-start-2 lg:row-span-2 lg:row-start-1">
                                 <PrudleSection tonight={data.date} />
-                                <MyNights />
                                 {!season && <PracticeCard />}
+                                <MyNights />
                                 <Lately tonight={data.date} />
                             </div>
                         )}
