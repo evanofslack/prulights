@@ -112,12 +112,19 @@ func tonightView(c *canvas, d *Data, th theme) {
 	}
 }
 
-// stars draws five stars centered on cy starting at x, the first rating
-// filled, and returns where they end.
-func stars(c *canvas, x, cy int, r float64, rating int, ink Ink) int {
+// stars draws five stars centered on cy starting at x, filled up to the
+// rating (a half star for a half), and returns where they end.
+func stars(c *canvas, x, cy int, r float64, rating float64, ink Ink) int {
 	for i := range 5 {
-		cx := float64(x) + r + float64(i)*(2*r+6)
-		c.star(pt{cx, float64(cy)}, r, ink, i >= rating)
+		o := pt{float64(x) + r + float64(i)*(2*r+6), float64(cy)}
+		switch n := float64(i); {
+		case n+1 <= rating:
+			c.star(o, r, ink, false)
+		case n+0.5 <= rating:
+			c.halfStar(o, r, ink)
+		default:
+			c.star(o, r, ink, true)
+		}
 	}
 	return x + int(5*(2*r+6))
 }

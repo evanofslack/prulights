@@ -144,6 +144,19 @@ func (c *canvas) star(o pt, r float64, ink Ink, hollow bool) {
 	c.polyline(append(pts, pts[0]), 2, Solid(ink))
 }
 
+// halfStar draws a star outline with its left half filled. Pulling the right
+// half's points onto the center line gives exactly the left half: the star is
+// symmetric, and its top and bottom inner points sit on that line.
+func (c *canvas) halfStar(o pt, r float64, ink Ink) {
+	pts := starPoints(o, r)
+	left := make([]pt, len(pts))
+	for i, p := range pts {
+		left[i] = pt{min(p.x, o.x), p.y}
+	}
+	c.polygon(left, Solid(ink))
+	c.polyline(append(pts, pts[0]), 2, Solid(ink))
+}
+
 func starPoints(o pt, r float64) []pt {
 	pts := make([]pt, 10)
 	for i := range pts {

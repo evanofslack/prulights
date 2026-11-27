@@ -138,9 +138,9 @@ func seed(ctx context.Context, st *store.Store, names []string, reset bool, rng 
 		out[i].Name = u.Name
 
 		for _, d := range seedDates(i, rng, tonight) {
-			rating := 0
+			rating := 0.0
 			if rng.Float64() >= 0.2 {
-				rating = []int{3, 4, 4, 5, 5, 5}[rng.IntN(6)]
+				rating = []float64{3, 3.5, 4, 4.5, 5, 5}[rng.IntN(6)]
 			}
 			note := ""
 			if rng.Float64() < 0.3 {

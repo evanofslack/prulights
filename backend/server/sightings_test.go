@@ -41,8 +41,12 @@ func TestSightingWindow(t *testing.T) {
 		t.Errorf("1am = %d", rec.Code)
 	}
 	for body, want := range map[string]int{
-		`{"rating":6}`:  400,
-		`{"rating":-1}`: 400,
+		`{"rating":6}`:   400,
+		`{"rating":-1}`:  400,
+		`{"rating":0.3}`: 400,
+		`{"rating":5.5}`: 400,
+		`{"rating":4.5}`: 200,
+		`{"rating":0.5}`: 200,
 		`{"note":"` + strings.Repeat("é", 281) + `"}`: 400,
 		`{"note":"` + strings.Repeat("é", 280) + `"}`: 200,
 	} {
@@ -93,13 +97,13 @@ func TestMyStats(t *testing.T) {
 	// Dec 10 red, Dec 11 nothing listed (white), Dec 12 blue/pink/gold, but not
 	// tonight yet: the streak counts back from last night
 	s.now = func() time.Time { return time.Date(2026, 12, 13, 19, 0, 0, 0, schedule.Boston) }
-	call(t, s, "PUT", "/api/v1/me/sightings/2026-12-10", `{"rating":3}`, mom)
+	call(t, s, "PUT", "/api/v1/me/sightings/2026-12-10", `{"rating":3.5}`, mom)
 	call(t, s, "PUT", "/api/v1/me/sightings/2026-12-11", `{}`, mom)
 	call(t, s, "PUT", "/api/v1/me/sightings/2026-12-12", `{"rating":5}`, mom)
 	call(t, s, "PUT", "/api/v1/me/sightings/2026-12-08", `{}`, mom)
 
 	st := decodeAs[MyStats](t, call(t, s, "GET", "/api/v1/me/stats", "", mom).Body.Bytes())
-	if st.Seen != 4 || st.Rated != 2 || st.Average != 4 || st.Streak != 3 || st.LogFrom != "2026-12-06" {
+	if st.Seen != 4 || st.Rated != 2 || st.Average != 4.25 || st.Streak != 3 || st.LogFrom != "2026-12-06" {
 		t.Errorf("stats = %+v", st)
 	}
 	// white on the unlisted night doesn't count; red, blue, gold, pink once each, alphabetical

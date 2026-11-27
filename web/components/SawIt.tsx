@@ -33,7 +33,7 @@ export function SawIt({ date, tonight }: { date: string; tonight?: string }) {
 
 function Stars({ value, size = "sm" }: { value: number; size?: "xs" | "sm" | "md" }) {
     return value > 0 ? (
-        <Rating value={value} readOnly size={size} aria-label={`${value} of 5 stars`} />
+        <Rating value={value} fractions={2} readOnly size={size} aria-label={`${value} of 5 stars`} />
     ) : null;
 }
 
@@ -48,7 +48,7 @@ function PublicTotals({ date, tonight }: { date: string; tonight?: string }) {
                     {data.rated > 0 && (
                         <>
                             {" · "}
-                            <Stars value={Math.round(data.average)} size="sm" /> {data.average.toFixed(1)}
+                            <Stars value={Math.round(data.average * 2) / 2} size="sm" /> {data.average.toFixed(1)}
                         </>
                     )}
                 </span>
@@ -157,7 +157,8 @@ function Members({ date }: { date: string }) {
                             <Rating
                                 value={mine.rating}
                                 onChange={(rating) => save({ rating })}
-                                size="lg"
+                                fractions={2}
+                                size="xl"
                                 aria-label="Your rating"
                                 readOnly={busy}
                             />

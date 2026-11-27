@@ -34,10 +34,18 @@ async function person(browser, name, ...inviteArgs) {
 // word), named by its aria-label
 const act = (word) => `button[aria-label="${word}"]`;
 
-// rate clicks the nth star of the rating control
+// rate taps the rating control at n stars
+// (halves too): a tap on the star's left side is a half, its right side whole
 async function rate(p, n) {
-    const input = p.locator(`[aria-label="Your rating"] input[value="${n}"]`);
-    await p.click(`label[for="${await input.getAttribute("id")}"]`);
+    const whole = Math.ceil(n);
+    const input = p.locator(`[aria-label="Your rating"] input[value="${whole}"]`);
+    const box = await p.locator(`label[for="${await input.getAttribute("id")}"]`).boundingBox();
+    const x = box.x + box.width * (n === whole ? 0.75 : 0.25);
+    const y = box.y + box.height / 2;
+    // hover first: the half under the pointer comes to the top as it moves
+    await p.mouse.move(x, y);
+    await p.waitForTimeout(100);
+    await p.mouse.click(x, y);
 }
 
 const addDays = (d, n) => {
@@ -89,8 +97,12 @@ for (const [label, size] of [
     await mom.click(btn("I saw it"));
     await mom.waitForSelector("text=You saw it");
     const seen = await h1y();
-    await rate(mom, 3);
+    await rate(mom, 3.5);
     await mom.waitForSelector(act("Clear stars"));
+    await mom.waitForFunction(
+        () => document.querySelector('[aria-label="Your rating"] input[value="3.5"]')?.checked,
+    );
+    check(`${label}: half stars`, true);
     const rated = await h1y();
     await shot(mom, `sightings-rated-${label}`);
     await mom.click(act("Clear stars"));

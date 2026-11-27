@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"math"
 	"time"
 
 	"github.com/evanofslack/prulights/schedule"
@@ -15,7 +16,7 @@ type Sighting struct {
 	UserID    int64
 	Name      string // the person's name, for shared lists
 	Date      schedule.Date
-	Rating    int // 1–5, 0 for none
+	Rating    float64 // 0.5–5 in half stars, 0 for none
 	Note      string
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -23,15 +24,18 @@ type Sighting struct {
 }
 
 // SaveSighting records (or updates) that a user saw a night.
-func (s *Store) SaveSighting(ctx context.Context, userID int64, date schedule.Date, rating int, note string, now time.Time) error {
+// The rating is kept in half stars (half_stars, migration 002); the old
+// whole-star column is cleared.
+func (s *Store) SaveSighting(ctx context.Context, userID int64, date schedule.Date, rating float64, note string, now time.Time) error {
 	var r sql.NullInt64
-	if rating > 0 {
-		r = sql.NullInt64{Int64: int64(rating), Valid: true}
+	if half := int64(math.Round(rating * 2)); half > 0 {
+		r = sql.NullInt64{Int64: half, Valid: true}
 	}
 	t := fmtTime(now)
-	_, err := s.DB.ExecContext(ctx, `insert into sightings (user_id, date, rating, note, created_at, updated_at)
+	_, err := s.DB.ExecContext(ctx, `insert into sightings (user_id, date, half_stars, note, created_at, updated_at)
 		values (?, ?, ?, ?, ?, ?)
-		on conflict (user_id, date) do update set rating = excluded.rating, note = excluded.note, updated_at = excluded.updated_at`,
+		on conflict (user_id, date) do update set half_stars = excluded.half_stars, rating = null,
+			note = excluded.note, updated_at = excluded.updated_at`,
 		userID, date, r, note, t, t)
 	return err
 }
@@ -55,7 +59,7 @@ func (s *Store) DeleteSighting(ctx context.Context, userID int64, date schedule.
 	return err
 }
 
-const sightingCols = `s.user_id, u.name, s.date, coalesce(s.rating, 0), s.note, s.created_at, s.updated_at,
+const sightingCols = `s.user_id, u.name, s.date, coalesce(s.half_stars, 0) / 2.0, s.note, s.created_at, s.updated_at,
 	coalesce(p.sha256, ''), coalesce(p.width, 0), coalesce(p.height, 0)
 	from sightings s join users u on u.id = s.user_id
 	left join photos p on p.user_id = s.user_id and p.date = s.date`
@@ -112,7 +116,7 @@ type NightStats struct {
 func (s *Store) NightStats(ctx context.Context, date schedule.Date) (NightStats, error) {
 	var n NightStats
 	var avg sql.NullFloat64
-	err := s.DB.QueryRowContext(ctx, `select count(*), count(rating), avg(rating) from sightings where date = ?`, date).
+	err := s.DB.QueryRowContext(ctx, `select count(*), count(half_stars), avg(half_stars) / 2.0 from sightings where date = ?`, date).
 		Scan(&n.Seen, &n.Rated, &avg)
 	n.Average = avg.Float64
 	return n, err

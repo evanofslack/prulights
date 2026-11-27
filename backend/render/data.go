@@ -26,7 +26,7 @@ var Views = []View{ViewTonight, ViewWeek, ViewMonth, ViewLog, ViewSetup, ViewGoo
 // Sighting is what the frame's owner logged for a night.
 type Sighting struct {
 	Seen   bool
-	Rating int // 1–5, 0 for none
+	Rating float64 // 0.5–5 in half stars, 0 for none
 }
 
 // ColorCount is how often a color appeared in the nights someone saw.
@@ -40,7 +40,7 @@ type RatedNight struct {
 	Date   schedule.Date
 	Colors []schedule.ColorKey
 	Cause  string
-	Rating int
+	Rating float64
 }
 
 // Stats is the owner's log, for the log view.
@@ -191,13 +191,13 @@ func SampleData(tonight schedule.Date) Data {
 			Favorites: []ColorCount{{schedule.Blue, 21}, {schedule.Gold, 12}, {schedule.Teal, 9}, {schedule.Purple, 7}},
 			Recent: []RatedNight{
 				{Date: "2026-12-11", Colors: []schedule.ColorKey{schedule.White, schedule.Pink, schedule.Maroon}, Cause: "Pawsitively 4Pink", Rating: 5},
-				{Date: "2026-12-10", Colors: []schedule.ColorKey{schedule.Red}, Cause: "Dress for Success", Rating: 4},
+				{Date: "2026-12-10", Colors: []schedule.ColorKey{schedule.Red}, Cause: "Dress for Success", Rating: 3.5},
 				{Date: "2026-12-07", Colors: []schedule.ColorKey{schedule.Blue, schedule.Gold}, Cause: "Angel Flight", Rating: 5},
 				{Date: "2026-12-04", Colors: []schedule.ColorKey{schedule.Blue}, Cause: "Hanukkah", Rating: 3},
 			},
 			Nights: []RatedNight{
 				{Date: "2026-12-11", Colors: []schedule.ColorKey{schedule.White, schedule.Pink, schedule.Maroon}, Rating: 5},
-				{Date: "2026-12-10", Colors: []schedule.ColorKey{schedule.Red}, Rating: 4},
+				{Date: "2026-12-10", Colors: []schedule.ColorKey{schedule.Red}, Rating: 3.5},
 				{Date: "2026-12-08", Colors: []schedule.ColorKey{schedule.Blue, schedule.Teal, schedule.White}},
 				{Date: "2026-12-07", Colors: []schedule.ColorKey{schedule.Blue, schedule.Gold}, Rating: 5},
 				{Date: "2026-12-05", Colors: []schedule.ColorKey{schedule.Blue, schedule.Green}},

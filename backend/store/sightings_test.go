@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -24,7 +25,14 @@ func TestSightings(t *testing.T) {
 
 	s.SaveSighting(ctx, mom.ID, "2026-12-12", 5, "gorgeous in the fog", now)
 	s.SaveSighting(ctx, evan.ID, "2026-12-12", 0, "", now.Add(time.Minute))
-	s.SaveSighting(ctx, mom.ID, "2026-12-10", 3, "", now)
+	s.SaveSighting(ctx, mom.ID, "2026-12-10", 3.5, "", now)
+	s.SaveSighting(ctx, evan.ID, "2026-12-10", 4, "", now)
+	if half, _ := s.NightSightings(ctx, "2026-12-10"); len(half) != 2 || half[0].Rating != 3.5 {
+		t.Errorf("half stars = %+v", half)
+	}
+	if st, _ := s.NightStats(ctx, "2026-12-10"); st != (NightStats{Seen: 2, Rated: 2, Average: 3.75}) {
+		t.Errorf("half star stats = %+v", st)
+	}
 
 	night, err := s.NightSightings(ctx, "2026-12-12")
 	if err != nil || len(night) != 2 || night[0].Name != "Mom" || night[0].Rating != 5 || night[1].Rating != 0 {
@@ -46,8 +54,47 @@ func TestSightings(t *testing.T) {
 		t.Errorf("mine = %+v", mine)
 	}
 	s.DeleteSighting(ctx, mom.ID, "2026-12-10")
-	if counts, _ := s.SightingCounts(ctx); counts[mom.ID] != 1 || counts[evan.ID] != 1 {
+	if counts, _ := s.SightingCounts(ctx); counts[mom.ID] != 1 || counts[evan.ID] != 2 {
 		t.Errorf("counts = %v", counts)
+	}
+}
+
+// A whole-star rating from before half stars (migration 002) comes through.
+func TestHalfStarsMigration(t *testing.T) {
+	ctx := context.Background()
+	file := filepath.Join(t.TempDir(), "p.db")
+	s, err := Open(ctx, file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 12, 12, 23, 0, 0, 0, time.UTC)
+	inv, _ := s.CreateInvite(ctx, Invite{CreatedAt: now, ExpiresAt: now.Add(time.Hour)})
+	u, err := s.Redeem(ctx, inv, NewHandle(), "Mom", []byte("Mom"), []byte(`{}`), now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// back to how 001 left it, with a rating of 4 in the old column
+	for _, q := range []string{
+		`alter table sightings drop column half_stars`,
+		`delete from migrations where version = 2`,
+	} {
+		if _, err := s.DB.ExecContext(ctx, q); err != nil {
+			t.Fatal(q, err)
+		}
+	}
+	if _, err := s.DB.ExecContext(ctx, `insert into sightings (user_id, date, rating, note, created_at, updated_at)
+		values (?, '2026-12-10', 4, '', '', '')`, u.ID); err != nil {
+		t.Fatal(err)
+	}
+	s.Close()
+
+	s, err = Open(ctx, file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	if got, _ := s.NightSightings(ctx, "2026-12-10"); len(got) != 1 || got[0].Rating != 4 {
+		t.Errorf("after migrating = %+v", got)
 	}
 }
 

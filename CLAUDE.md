@@ -125,7 +125,7 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
 - e2e `auth.mjs` uses Chrome's virtual authenticator (CDP `WebAuthn.addVirtualAuthenticator`); `just
   e2e` sets `BASE_URL=http://localhost:8099` so passkeys accept that origin, and `BIN` for invites.
   The e2e scripts run in parallel against one db and names are unique, so each script signs up its own names.
-- Sightings (`server/sightings.go`): "I saw it" + 0–5 stars + a note, open for tonight and the 7 nights before
+- Sightings (`server/sightings.go`): "I saw it" + stars in halves (0.5–5, 0 for none; `half_stars` in the db, the old whole-star `rating` column is unused) + a note, open for tonight and the 7 nights before
   (`canLog`). `/me/stats` and `/me/sightings` both come from `myNights`. `Lately.tsx` after Your nights is a row of
   badges ("Shiv saw it ★4") for everyone else's sightings in the `canLog` window (`/sightings/recent`), hidden when empty. `GET /sightings/{date}` (names,
   notes) is members only; the public sees only totals at `/lightings/{date}/stats`. Admin corrections
