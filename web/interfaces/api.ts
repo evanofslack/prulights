@@ -145,6 +145,36 @@ export interface InviteLink {
   url: string;
   expires_at: string;
 }
+/**
+ * RenameRequest is PUT /api/v1/me/name: a new display name. The answer is
+ * the MeResponse with it.
+ */
+export interface RenameRequest {
+  name: string;
+}
+/**
+ * FeedbackRequest is POST /api/v1/me/feedback: an idea for the site.
+ */
+export interface FeedbackRequest {
+  text: string;
+}
+/**
+ * FeedbackInfo is one idea, as GET /api/v1/admin/feedback lists them (the
+ * ones not done first, newest first).
+ */
+export interface FeedbackInfo {
+  id: number /* int64 */;
+  name: string;
+  text: string;
+  created_at: string;
+  done: boolean;
+}
+/**
+ * FeedbackDone is PUT /api/v1/admin/feedback/{id}: mark an idea done or not.
+ */
+export interface FeedbackDone {
+  done: boolean;
+}
 
 //////////
 // source: devicetypes.go

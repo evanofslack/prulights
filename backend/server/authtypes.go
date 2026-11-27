@@ -56,3 +56,29 @@ type InviteLink struct {
 	URL       string    `json:"url"`
 	ExpiresAt time.Time `json:"expires_at"`
 }
+
+// RenameRequest is PUT /api/v1/me/name: a new display name. The answer is
+// the MeResponse with it.
+type RenameRequest struct {
+	Name string `json:"name"`
+}
+
+// FeedbackRequest is POST /api/v1/me/feedback: an idea for the site.
+type FeedbackRequest struct {
+	Text string `json:"text"`
+}
+
+// FeedbackInfo is one idea, as GET /api/v1/admin/feedback lists them (the
+// ones not done first, newest first).
+type FeedbackInfo struct {
+	ID        int64     `json:"id"`
+	Name      string    `json:"name"`
+	Text      string    `json:"text"`
+	CreatedAt time.Time `json:"created_at"`
+	Done      bool      `json:"done"`
+}
+
+// FeedbackDone is PUT /api/v1/admin/feedback/{id}: mark an idea done or not.
+type FeedbackDone struct {
+	Done bool `json:"done"`
+}

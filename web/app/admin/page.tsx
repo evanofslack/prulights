@@ -3,12 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Badge, Button, MultiSelect, Select, Skeleton, Table, TextInput } from "@mantine/core";
-import { IconRefresh, IconTrash } from "@tabler/icons-react";
+import { IconCheck, IconRefresh, IconTrash } from "@tabler/icons-react";
 import type {
     AdminDevice,
     AcceptReportBody,
     AdminReports,
     AssignFrame,
+    FeedbackDone,
+    FeedbackInfo,
     FrameConfig,
     OverrideBody,
     OverrideInfo,
@@ -25,7 +27,8 @@ import { InviteModal } from "@/components/InviteModal";
 import { Crown } from "@/components/Tower";
 import { Shell } from "@/components/Shell";
 
-// /admin: the people, corrections to the schedule, the scraper, and frames.
+// /admin: the people, their ideas, corrections to the schedule, the scraper,
+// and frames.
 export default function AdminPage() {
     const { me } = useAuth();
     // accepting reports writes a correction: remount the list to show it
@@ -40,6 +43,7 @@ export default function AdminPage() {
                 <div className="flex flex-col gap-10">
                     <h1 className="text-3xl font-bold">Admin</h1>
                     <People />
+                    <Ideas />
                     <Reports onAccepted={() => setCorrected((n) => n + 1)} />
                     <Corrections key={corrected} />
                     <Scraper />
@@ -117,6 +121,53 @@ function People() {
                 onClose={() => setInviting(null)}
                 forUser={inviting ?? undefined}
             />
+        </section>
+    );
+}
+
+// Ideas are what members sent from the box in /settings, the ones not done
+// first.
+function Ideas() {
+    const { data, reload } = useApi<FeedbackInfo[]>("/admin/feedback");
+    if (!data || data.length === 0) return null;
+    const done = (id: number, d: boolean) =>
+        api(`/admin/feedback/${id}`, { method: "PUT", body: json<FeedbackDone>({ done: d }) }).then(reload);
+    const remove = (id: number) => api(`/admin/feedback/${id}`, { method: "DELETE" }).then(reload);
+    return (
+        <section className="flex flex-col gap-3">
+            <h2 className="text-xl font-bold">Ideas</h2>
+            <ul className="flex flex-col divide-y divide-line rounded-xl bg-panel" aria-label="Ideas">
+                {data.map((f) => (
+                    <li key={f.id} className={`flex flex-col gap-2 p-4 ${f.done ? "opacity-60" : ""}`}>
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                            <span className="font-semibold">
+                                {f.name}{" "}
+                                <span className="font-normal text-muted">· {fmtTime(f.created_at)}</span>
+                            </span>
+                            <div className="flex gap-1">
+                                <Button
+                                    size="xs"
+                                    variant="subtle"
+                                    leftSection={<IconCheck size={14} />}
+                                    onClick={() => done(f.id, !f.done)}
+                                >
+                                    {f.done ? "Not done" : "Done"}
+                                </Button>
+                                <Button
+                                    size="xs"
+                                    variant="subtle"
+                                    color="red"
+                                    leftSection={<IconTrash size={14} />}
+                                    onClick={() => remove(f.id)}
+                                >
+                                    Delete
+                                </Button>
+                            </div>
+                        </div>
+                        <p className={`whitespace-pre-wrap ${f.done ? "line-through" : ""}`}>{f.text}</p>
+                    </li>
+                ))}
+            </ul>
         </section>
     );
 }
