@@ -23,7 +23,7 @@ func newTestServer(t *testing.T) *Server {
 	t.Cleanup(func() { st.Close() })
 	dir := t.TempDir()
 	os.WriteFile(filepath.Join(dir, "index.html"), []byte("index"), 0o644)
-	os.WriteFile(filepath.Join(dir, "calendar.html"), []byte("calendar"), 0o644)
+	os.WriteFile(filepath.Join(dir, "night.html"), []byte("night"), 0o644)
 	cfg := config.Default()
 	cfg.StaticDir = dir
 	cfg.MetricsAddr = ""
@@ -54,7 +54,7 @@ func TestStatic(t *testing.T) {
 	s := newTestServer(t)
 	cases := map[string]string{
 		"/":              "index",
-		"/calendar":      "calendar",
+		"/night":         "night",
 		"/somewhere/new": "index",
 	}
 	for path, want := range cases {

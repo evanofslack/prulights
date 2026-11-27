@@ -113,9 +113,8 @@ await mom.waitForSelector("h1");
 await mom.waitForTimeout(300);
 check("tomorrow can't", (await mom.locator(btn("I saw it")).count()) === 0);
 
-// her nights, at the bottom of the home page (the old /log lands there)
-await mom.goto(`${URL}/log`);
-await mom.waitForURL(`${URL}/#nights`);
+// her nights, at the bottom of the home page
+await mom.goto(`${URL}/#nights`);
 await mom.waitForSelector("#nights >> text=Glowing over the Charles");
 check("her nights list both", (await mom.locator("#nights ul li").count()) === 2);
 check(

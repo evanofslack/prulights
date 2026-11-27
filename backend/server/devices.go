@@ -60,8 +60,8 @@ func defaultSettings() DeviceSettings {
 		Theme: themeDark, Scene: string(render.SceneSkyline), Words: string(render.WordsCause)}
 }
 
-// withDefaults fills in the choices that were left out (older settings, or
-// a client that doesn't know them).
+// withDefaults fills in the choices that were left out (a client that
+// doesn't send them).
 func (set DeviceSettings) withDefaults() DeviceSettings {
 	def := defaultSettings()
 	if set.Theme == "" {

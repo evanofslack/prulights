@@ -46,11 +46,10 @@ for (const [kind, view] of Object.entries(views)) {
     check(`${kind}: next month, same page`, new globalThis.URL(p.url()).pathname === "/");
     await shot(p, `${kind}-calendar`);
 
-    // the old /calendar links land on that section
-    await p.goto(`${URL}/calendar?m=2026-12`);
-    await p.waitForURL(/\/\?m=2026-12#calendar$/);
+    // ?m= opens the calendar on a month
+    await p.goto(`${URL}/?m=2026-12#calendar`);
     await p.waitForSelector("#calendar h2:text('December 2026')");
-    check(`${kind}: /calendar lands on the calendar`, true);
+    check(`${kind}: ?m= picks the month`, true);
 
     // a listed night, and its neighbors
     await p.goto(`${URL}/night?d=2026-12-10`);

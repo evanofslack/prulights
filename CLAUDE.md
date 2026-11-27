@@ -40,7 +40,7 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   (`go test ./scrape -update` after reviewing a diff; `just scrape-snapshot` refreshes the pages).
 - `backend/metrics`: the one Prometheus registry.
 - `backend/server`: chi. `/api/...` is JSON; anything else is the static export from `STATIC_DIR`
-  (`/calendar` is served from `calendar.html`, unknown paths fall back to `index.html`).
+  (`/night` is served from `night.html`, unknown paths fall back to `index.html`).
   `/healthz`, `/readyz`; Prometheus on `METRICS_ADDR`, never the public port.
 - Public api (`server/public.go`): `/api/v1/{tonight,lightings,lightings/{date},palette,meta,calendar.ics}`.
   Open, rate limited per client (`PUBLIC_RATE_LIMIT`, client IP from Cloudflare headers when
@@ -89,7 +89,7 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   its own windows. The red beacons blink in their own svg layer (`.beacon`), so blinking never repaints the scene.
 - Web pages: `/` is the whole site on one page, in sections: tonight, `#week`, `#nights` (signed in only,
   `MyNights.tsx`) and `#calendar` (`Month.tsx`, month in `?m=`, changed with `router.replace`, no scroll; your
-  nights get a dot, a noted one links to `/night?d=…#note`). `/calendar` and `/log` only redirect there. Then `/night?d=`, `/display` (always-on, no chrome; Esc leaves),
+  nights get a dot, a noted one links to `/night?d=…#note`). Then `/night?d=`, `/display` (always-on, no chrome; Esc leaves),
   `/docs` (stock Swagger UI from `swagger-ui-dist`, copied to `public/swagger` by `npm run swagger` before
   dev/build; don't bundle swagger-ui through next, its OpenAPI 3.1 support breaks), `/emulator` (frame
   previews; only when `/meta` says `dev`, settings live in the url), `/prudle-lab` (dev only: plays every listed night as Prudle in the
