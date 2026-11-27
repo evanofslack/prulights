@@ -3,16 +3,24 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
+    ActionIcon,
     Alert,
     Button,
     Checkbox,
+    Popover,
     SegmentedControl,
     Skeleton,
     Switch,
     Textarea,
     TextInput,
 } from "@mantine/core";
-import { IconCheck, IconPlugConnected, IconPlugConnectedX, IconSend } from "@tabler/icons-react";
+import {
+    IconCheck,
+    IconInfoCircle,
+    IconPlugConnected,
+    IconPlugConnectedX,
+    IconSend,
+} from "@tabler/icons-react";
 import type {
     DeviceInfo,
     DeviceSettings,
@@ -277,14 +285,39 @@ function PrudleSetting() {
         <section aria-label="Prudle" className="flex flex-col gap-3 rounded-xl bg-panel p-5">
             <h2 className="text-2xl font-bold">Prudle</h2>
             {summary ? (
-                <Switch
-                    size="lg"
-                    checked={!summary.off}
-                    disabled={saving}
-                    onChange={(e) => set(e.currentTarget.checked)}
-                    label="Play Prudle in December"
-                    description="Each December night, guess the crown's colors before you see them. Off shows every color."
-                />
+                <>
+                    {/* only the switch and its two words are the control, so the
+                        line under it can be read and selected */}
+                    <Switch
+                        size="lg"
+                        checked={!summary.off}
+                        disabled={saving}
+                        onChange={(e) => set(e.currentTarget.checked)}
+                        label="Play Prudle"
+                        className="self-start"
+                    />
+                    <p className="text-muted">
+                        Guess the colors during 31 Nights of Light.{" "}
+                        <Popover position="bottom" width={260} shadow="md" withArrow>
+                            <Popover.Target>
+                                <ActionIcon
+                                    variant="subtle"
+                                    color="gray"
+                                    size="lg"
+                                    radius="xl"
+                                    aria-label="About Prudle"
+                                    className="-my-2 inline-flex align-middle"
+                                >
+                                    <IconInfoCircle size={20} />
+                                </ActionIcon>
+                            </Popover.Target>
+                            <Popover.Dropdown>
+                                Hides December&apos;s colors each night until you&apos;ve played. Turn it off
+                                to see every color.
+                            </Popover.Dropdown>
+                        </Popover>
+                    </p>
+                </>
             ) : (
                 <Skeleton height={48} />
             )}

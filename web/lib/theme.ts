@@ -9,8 +9,9 @@ import { createTheme, type CSSVariablesResolver, type MantineColorsTuple } from 
 // a phone (w-full sm:w-auto). Everything else is variant="default" or a quiet
 // text button at least 44px tall (min-h-11).
 
-// dark slots Mantine uses: 0 text, 2 dimmed, 4 borders, 5 hover, 6 default
-// buttons and inputs, 7 the page, 8 panels, 9 deepest
+// dark slots, as the tokens use them: 0 text, 2 muted, 5 lines, 6 raised
+// (inputs, chips), 7 panels (cards, header, footer), 8 the page, 9 deepest.
+// 8 → 7 → 6 are even steps, so a panel reads on the page the way paper's does.
 const dark: MantineColorsTuple = [
     "#eceef4",
     "#c8ccd8",
@@ -18,8 +19,8 @@ const dark: MantineColorsTuple = [
     "#6d7286",
     "#3f4456",
     "#33384a",
-    "#282c3b",
-    "#141824",
+    "#262b3b",
+    "#1a1e2c",
     "#0e111b",
     "#07090f",
 ];
@@ -64,7 +65,8 @@ export const theme = createTheme({
     autoContrast: true,
 });
 
-// resolver puts Mantine's light page and default controls on the paper tokens
+// resolver puts Mantine's page and default controls (modals, menus, popovers,
+// default buttons) on the same tokens as the rest of the site, in both looks
 export const resolver: CSSVariablesResolver = () => ({
     variables: {},
     light: {
@@ -76,7 +78,15 @@ export const resolver: CSSVariablesResolver = () => ({
         "--mantine-color-default-border": "var(--color-line)",
         "--mantine-color-default-color": "var(--color-fg)",
     },
-    dark: {},
+    dark: {
+        "--mantine-color-body": "var(--color-surface)",
+        "--mantine-color-text": "var(--color-fg)",
+        "--mantine-color-dimmed": "var(--color-muted)",
+        "--mantine-color-default": "var(--color-raised)",
+        "--mantine-color-default-hover": "var(--color-line)",
+        "--mantine-color-default-border": "var(--color-line)",
+        "--mantine-color-default-color": "var(--color-fg)",
+    },
 });
 
 // the browser's bar color for each look: the page's surface

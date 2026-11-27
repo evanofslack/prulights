@@ -70,7 +70,7 @@ function NightPage() {
 
 export default function Page() {
     return (
-        <Shell>
+        <Shell wide>
             <Suspense fallback={<NightSkeleton />}>
                 <NightPage />
             </Suspense>

@@ -30,10 +30,22 @@ async function person(browser, name, ...inviteArgs) {
     return p;
 }
 
-// rate clicks the nth star of the rating control
+// act selects one of the panel's take-back buttons: an icon (and, on a phone, a
+// word), named by its aria-label
+const act = (word) => `button[aria-label="${word}"]`;
+
+// rate taps the rating control at n stars
+// (halves too): a tap on the star's left side is a half, its right side whole
 async function rate(p, n) {
-    const input = p.locator(`[aria-label="Your rating"] input[value="${n}"]`);
-    await p.click(`label[for="${await input.getAttribute("id")}"]`);
+    const whole = Math.ceil(n);
+    const input = p.locator(`[aria-label="Your rating"] input[value="${whole}"]`);
+    const box = await p.locator(`label[for="${await input.getAttribute("id")}"]`).boundingBox();
+    const x = box.x + box.width * (n === whole ? 0.75 : 0.25);
+    const y = box.y + box.height / 2;
+    // hover first: the half under the pointer comes to the top as it moves
+    await p.mouse.move(x, y);
+    await p.waitForTimeout(100);
+    await p.mouse.click(x, y);
 }
 
 const addDays = (d, n) => {
@@ -51,6 +63,7 @@ const tonight = (await (await mom.request.get(`${URL}/api/v1/meta`)).json()).ton
 await mom.goto(URL);
 await mom.click(btn("I saw it"));
 await mom.waitForSelector("text=You saw it");
+check("the note box is there before any stars", await mom.locator('[aria-label="Your note"]').isVisible());
 await rate(mom, 4);
 await mom.waitForFunction(
     () => document.querySelector('[aria-label="Your rating"] input[value="4"]')?.checked,
@@ -84,19 +97,23 @@ for (const [label, size] of [
     await mom.click(btn("I saw it"));
     await mom.waitForSelector("text=You saw it");
     const seen = await h1y();
-    await rate(mom, 3);
-    await mom.waitForSelector(btn("Clear stars"));
+    await rate(mom, 3.5);
+    await mom.waitForSelector(act("Clear stars"));
+    await mom.waitForFunction(
+        () => document.querySelector('[aria-label="Your rating"] input[value="3.5"]')?.checked,
+    );
+    check(`${label}: half stars`, true);
     const rated = await h1y();
     await shot(mom, `sightings-rated-${label}`);
-    await mom.click(btn("Clear stars"));
-    await mom.waitForSelector('[aria-label="Your note"]', { state: "detached" });
+    await mom.click(act("Clear stars"));
+    await mom.waitForSelector(act("Clear stars"), { state: "detached" });
     const cleared = await h1y();
     check(
         `${label}: the title stays put while logging`,
         [seen, rated, cleared].every((y) => Math.abs(y - before) < 1),
         `${before} ${seen} ${rated} ${cleared}`,
     );
-    await mom.click(btn("Undo"));
+    await mom.click(act("Undo"));
     await mom.waitForSelector(btn("I saw it"));
 }
 
@@ -153,11 +170,26 @@ check(
 
 // evan sees it on tonight
 await evan.goto(URL);
-await evan.waitForSelector("[aria-label='Also seen by'] >> text=Nana");
+await evan.waitForSelector("[aria-label='Everyone else'] >> text=Nana");
 check(
     "evan sees mom's sighting and note",
-    await evan.locator("[aria-label='Also seen by'] >> text=Glowing over the Charles").isVisible(),
+    await evan.locator("[aria-label='Everyone else'] >> text=Glowing over the Charles").isVisible(),
 );
+
+// evan says tonight's colors were wrong: mom sees him in his own row, the
+// colors as swatches, and he can change or take it back
+await evan.click(act("Colors wrong?"));
+await evan.click('[role=dialog] button[aria-label="Red"]');
+await evan.click(btn("Send"));
+await evan.waitForSelector(act("Take back"));
+check("evan's report shows his change and take back", (await evan.locator(act("Change")).count()) === 1);
+await mom.goto(URL);
+await mom.waitForSelector(`[aria-label='Everyone else'] li:has-text("Ada") [role=img][aria-label="Red"]`);
+check("mom sees evan's report as a swatch in his row", true);
+await shot(mom, "sightings-report");
+await evan.click(act("Take back"));
+await evan.waitForSelector(act("Colors wrong?"));
+check("a report can be taken back", true);
 
 // evan sees her in lately, as a badge; mom doesn't see herself there
 await evan.waitForSelector("#lately >> text=Nana saw it");
@@ -177,7 +209,7 @@ check("signed out: no nights section", (await stranger.locator("#nights").count(
 
 // mom changes her mind about the old night
 await mom.goto(`${URL}/night?d=${addDays(tonight, -7)}`);
-await mom.click(btn("Undo"));
+await mom.click(act("Undo"));
 await mom.waitForSelector(btn("I saw it"));
 check("a sighting can be taken back", true);
 

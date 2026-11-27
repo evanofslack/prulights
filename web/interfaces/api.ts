@@ -561,10 +561,10 @@ export interface PrudleNight {
 
 /**
  * SightingRequest is PUT /api/v1/me/sightings/{date}: "I saw it", with an
- * optional 1–5 rating (0 for none) and a note of up to 280 characters.
+ * optional rating of 0.5–5 in half stars (0 for none) and a note of up to 280 characters.
  */
 export interface SightingRequest {
-  rating: number /* int */;
+  rating: number /* float64 */;
   note: string;
 }
 /**
@@ -574,7 +574,7 @@ export interface Sighting {
   date: schedule.Date;
   name: string;
   mine: boolean;
-  rating: number /* int */;
+  rating: number /* float64 */;
   note: string;
   at: string;
   /**

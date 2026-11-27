@@ -10,10 +10,10 @@ import (
 // spec (except NightStatsResponse, in apitypes.go).
 
 // SightingRequest is PUT /api/v1/me/sightings/{date}: "I saw it", with an
-// optional 1–5 rating (0 for none) and a note of up to 280 characters.
+// optional rating of 0.5–5 in half stars (0 for none) and a note of up to 280 characters.
 type SightingRequest struct {
-	Rating int    `json:"rating"`
-	Note   string `json:"note"`
+	Rating float64 `json:"rating"`
+	Note   string  `json:"note"`
 }
 
 // Sighting is one person's sighting of a night.
@@ -21,7 +21,7 @@ type Sighting struct {
 	Date   schedule.Date `json:"date"`
 	Name   string        `json:"name"`
 	Mine   bool          `json:"mine"`
-	Rating int           `json:"rating"`
+	Rating float64       `json:"rating"`
 	Note   string        `json:"note"`
 	At     time.Time     `json:"at"`
 	// Photo is their picture of the night, if they added one.

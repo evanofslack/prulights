@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"math"
 	"net/http"
 	"slices"
 	"strings"
@@ -88,8 +89,8 @@ func (s *Server) putSighting(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, "you can log tonight and the week before it")
 		return
 	}
-	if req.Rating < 0 || req.Rating > 5 {
-		writeError(w, http.StatusBadRequest, "rating is 1 to 5, or 0 for none")
+	if r := req.Rating; r != 0 && (r < 0.5 || r > 5 || r*2 != math.Trunc(r*2)) {
+		writeError(w, http.StatusBadRequest, "rating is 0.5 to 5 in half stars, or 0 for none")
 		return
 	}
 	req.Note = strings.TrimSpace(req.Note)
@@ -214,7 +215,7 @@ func (s *Server) getMyStats(w http.ResponseWriter, r *http.Request) {
 // statsOf sums up logged nights (newest first).
 func statsOf(nights []LoggedNight, tonight schedule.Date) MyStats {
 	st := MyStats{Seen: len(nights), Favorites: []ColorCount{}, LogFrom: tonight.AddDays(-LogWindow), Tonight: tonight}
-	sum := 0
+	sum := 0.0
 	counts := map[schedule.ColorKey]int{}
 	seen := map[schedule.Date]bool{}
 	for _, n := range nights {
@@ -230,7 +231,7 @@ func statsOf(nights []LoggedNight, tonight schedule.Date) MyStats {
 		}
 	}
 	if st.Rated > 0 {
-		st.Average = float64(sum) / float64(st.Rated)
+		st.Average = sum / float64(st.Rated)
 	}
 	d := tonight
 	if !seen[d] {
