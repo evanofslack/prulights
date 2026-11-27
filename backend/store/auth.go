@@ -66,7 +66,7 @@ func NewHandle() []byte {
 
 func createUser(ctx context.Context, tx *sql.Tx, handle []byte, name string, admin bool, now time.Time) (User, error) {
 	u := User{Handle: handle, Name: name, IsAdmin: admin, CreatedAt: now}
-	res, err := tx.ExecContext(ctx, `INSERT INTO users (handle, name, is_admin, created_at) VALUES (?, ?, ?, ?)`,
+	res, err := tx.ExecContext(ctx, `insert into users (handle, name, is_admin, created_at) values (?, ?, ?, ?)`,
 		u.Handle, name, admin, fmtTime(now))
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE") {
@@ -80,22 +80,22 @@ func createUser(ctx context.Context, tx *sql.Tx, handle []byte, name string, adm
 
 // UserByID finds a user.
 func (s *Store) UserByID(ctx context.Context, id int64) (User, error) {
-	return scanUser(s.DB.QueryRowContext(ctx, `SELECT `+userCols+` FROM users WHERE id = ?`, id))
+	return scanUser(s.DB.QueryRowContext(ctx, `select `+userCols+` from users where id = ?`, id))
 }
 
 // UserByHandle finds a user by passkey user handle.
 func (s *Store) UserByHandle(ctx context.Context, handle []byte) (User, error) {
-	return scanUser(s.DB.QueryRowContext(ctx, `SELECT `+userCols+` FROM users WHERE handle = ?`, handle))
+	return scanUser(s.DB.QueryRowContext(ctx, `select `+userCols+` from users where handle = ?`, handle))
 }
 
 // UserByName finds a user by name, ignoring case.
 func (s *Store) UserByName(ctx context.Context, name string) (User, error) {
-	return scanUser(s.DB.QueryRowContext(ctx, `SELECT `+userCols+` FROM users WHERE name = ? COLLATE NOCASE`, name))
+	return scanUser(s.DB.QueryRowContext(ctx, `select `+userCols+` from users where name = ? collate nocase`, name))
 }
 
 // Users lists everyone, oldest first.
 func (s *Store) Users(ctx context.Context) ([]User, error) {
-	rows, err := s.DB.QueryContext(ctx, `SELECT `+userCols+` FROM users ORDER BY id`)
+	rows, err := s.DB.QueryContext(ctx, `select `+userCols+` from users order by id`)
 	if err != nil {
 		return nil, err
 	}
@@ -125,13 +125,13 @@ func (s *Store) CreateUser(ctx context.Context, name string, now time.Time) (Use
 
 // DeleteUser forgets a user and everything they logged.
 func (s *Store) DeleteUser(ctx context.Context, id int64) error {
-	_, err := s.DB.ExecContext(ctx, `DELETE FROM users WHERE id = ?`, id)
+	_, err := s.DB.ExecContext(ctx, `delete from users where id = ?`, id)
 	return err
 }
 
 // Credentials returns a user's passkeys, as the json the server stored.
 func (s *Store) Credentials(ctx context.Context, userID int64) ([][]byte, error) {
-	rows, err := s.DB.QueryContext(ctx, `SELECT data FROM credentials WHERE user_id = ? ORDER BY created_at`, userID)
+	rows, err := s.DB.QueryContext(ctx, `select data from credentials where user_id = ? order by created_at`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -148,14 +148,14 @@ func (s *Store) Credentials(ctx context.Context, userID int64) ([][]byte, error)
 }
 
 func addCredential(ctx context.Context, tx *sql.Tx, userID int64, id, data []byte, now time.Time) error {
-	_, err := tx.ExecContext(ctx, `INSERT INTO credentials (id, user_id, data, created_at) VALUES (?, ?, ?, ?)`,
+	_, err := tx.ExecContext(ctx, `insert into credentials (id, user_id, data, created_at) values (?, ?, ?, ?)`,
 		id, userID, data, fmtTime(now))
 	return err
 }
 
 // UpdateCredential saves a passkey after a sign-in (its sign count moves).
 func (s *Store) UpdateCredential(ctx context.Context, id, data []byte, now time.Time) error {
-	_, err := s.DB.ExecContext(ctx, `UPDATE credentials SET data = ?, last_used_at = ? WHERE id = ?`, data, fmtTime(now), id)
+	_, err := s.DB.ExecContext(ctx, `update credentials set data = ?, last_used_at = ? where id = ?`, data, fmtTime(now), id)
 	return err
 }
 
@@ -172,8 +172,8 @@ type Invite struct {
 // CreateInvite stores an invite and returns its token.
 func (s *Store) CreateInvite(ctx context.Context, inv Invite) (string, error) {
 	token, hash := NewToken()
-	_, err := s.DB.ExecContext(ctx, `INSERT INTO invites (token_hash, created_by, for_user_id, is_admin, created_at, expires_at)
-		VALUES (?, ?, ?, ?, ?, ?)`, hash, inv.CreatedBy, inv.ForUser, inv.IsAdmin, fmtTime(inv.CreatedAt), fmtTime(inv.ExpiresAt))
+	_, err := s.DB.ExecContext(ctx, `insert into invites (token_hash, created_by, for_user_id, is_admin, created_at, expires_at)
+		values (?, ?, ?, ?, ?, ?)`, hash, inv.CreatedBy, inv.ForUser, inv.IsAdmin, fmtTime(inv.CreatedAt), fmtTime(inv.ExpiresAt))
 	return token, err
 }
 
@@ -195,7 +195,7 @@ func scanInvite(row *sql.Row, now time.Time) (Invite, error) {
 	return inv, nil
 }
 
-const inviteQuery = `SELECT created_by, for_user_id, is_admin, created_at, expires_at, used_at FROM invites WHERE token_hash = ?`
+const inviteQuery = `select created_by, for_user_id, is_admin, created_at, expires_at, used_at from invites where token_hash = ?`
 
 // InviteByToken finds an invite that's still good.
 func (s *Store) InviteByToken(ctx context.Context, token string, now time.Time) (Invite, error) {
@@ -213,7 +213,7 @@ func (s *Store) Redeem(ctx context.Context, token string, handle []byte, name st
 			return err
 		}
 		if inv.ForUser != nil {
-			u, err = scanUser(tx.QueryRowContext(ctx, `SELECT `+userCols+` FROM users WHERE id = ?`, *inv.ForUser))
+			u, err = scanUser(tx.QueryRowContext(ctx, `select `+userCols+` from users where id = ?`, *inv.ForUser))
 		} else {
 			u, err = createUser(ctx, tx, handle, name, inv.IsAdmin, now)
 		}
@@ -223,7 +223,7 @@ func (s *Store) Redeem(ctx context.Context, token string, handle []byte, name st
 		if err := addCredential(ctx, tx, u.ID, credID, credData, now); err != nil {
 			return err
 		}
-		res, err := tx.ExecContext(ctx, `UPDATE invites SET used_at = ?, used_by = ? WHERE token_hash = ? AND used_at IS NULL`,
+		res, err := tx.ExecContext(ctx, `update invites set used_at = ?, used_by = ? where token_hash = ? and used_at is null`,
 			fmtTime(now), u.ID, HashToken(token))
 		if err != nil {
 			return err
@@ -253,7 +253,7 @@ func (s *Store) SignUp(ctx context.Context, handle []byte, name string, credID, 
 // CreateSession signs a user in and returns the session token.
 func (s *Store) CreateSession(ctx context.Context, userID int64, now time.Time, ttl time.Duration) (string, error) {
 	token, hash := NewToken()
-	_, err := s.DB.ExecContext(ctx, `INSERT INTO sessions (token_hash, user_id, created_at, last_seen_at, expires_at) VALUES (?, ?, ?, ?, ?)`,
+	_, err := s.DB.ExecContext(ctx, `insert into sessions (token_hash, user_id, created_at, last_seen_at, expires_at) values (?, ?, ?, ?, ?)`,
 		hash, userID, fmtTime(now), fmtTime(now), fmtTime(now.Add(ttl)))
 	return token, err
 }
@@ -269,8 +269,8 @@ type Session struct {
 func (s *Store) SessionByToken(ctx context.Context, token string, now time.Time) (Session, error) {
 	var sess Session
 	var seen, expires, created string
-	err := s.DB.QueryRowContext(ctx, `SELECT u.id, u.handle, u.name, u.is_admin, u.created_at, s.last_seen_at, s.expires_at
-		FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ?`, HashToken(token)).
+	err := s.DB.QueryRowContext(ctx, `select u.id, u.handle, u.name, u.is_admin, u.created_at, s.last_seen_at, s.expires_at
+		from sessions s join users u on u.id = s.user_id where s.token_hash = ?`, HashToken(token)).
 		Scan(&sess.User.ID, &sess.User.Handle, &sess.User.Name, &sess.User.IsAdmin, &created, &seen, &expires)
 	if errors.Is(err, sql.ErrNoRows) {
 		return sess, ErrNotFound
@@ -287,14 +287,14 @@ func (s *Store) SessionByToken(ctx context.Context, token string, now time.Time)
 
 // ExtendSession slides a session's expiry forward.
 func (s *Store) ExtendSession(ctx context.Context, token string, now time.Time, ttl time.Duration) error {
-	_, err := s.DB.ExecContext(ctx, `UPDATE sessions SET last_seen_at = ?, expires_at = ? WHERE token_hash = ?`,
+	_, err := s.DB.ExecContext(ctx, `update sessions set last_seen_at = ?, expires_at = ? where token_hash = ?`,
 		fmtTime(now), fmtTime(now.Add(ttl)), HashToken(token))
 	return err
 }
 
 // DeleteSession signs a browser out.
 func (s *Store) DeleteSession(ctx context.Context, token string) error {
-	_, err := s.DB.ExecContext(ctx, `DELETE FROM sessions WHERE token_hash = ?`, HashToken(token))
+	_, err := s.DB.ExecContext(ctx, `delete from sessions where token_hash = ?`, HashToken(token))
 	return err
 }
 
@@ -302,10 +302,10 @@ func (s *Store) DeleteSession(ctx context.Context, token string) error {
 // device events and frames no bundle lists any more.
 func (s *Store) DeleteExpired(ctx context.Context, now time.Time) error {
 	t := fmtTime(now)
-	if _, err := s.DB.ExecContext(ctx, `DELETE FROM sessions WHERE expires_at <= ?`, t); err != nil {
+	if _, err := s.DB.ExecContext(ctx, `delete from sessions where expires_at <= ?`, t); err != nil {
 		return fmt.Errorf("sessions: %w", err)
 	}
-	if _, err := s.DB.ExecContext(ctx, `DELETE FROM invites WHERE used_at IS NULL AND expires_at <= ?`, t); err != nil {
+	if _, err := s.DB.ExecContext(ctx, `delete from invites where used_at is null and expires_at <= ?`, t); err != nil {
 		return fmt.Errorf("invites: %w", err)
 	}
 	return s.deleteOldDeviceData(ctx, now)

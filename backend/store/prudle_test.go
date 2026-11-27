@@ -27,12 +27,12 @@ func TestPrudleGames(t *testing.T) {
 		t.Fatalf("before a guess: %v", err)
 	}
 	g := PrudleGame{UserID: mom.ID, Date: "2026-12-10", Answer: []schedule.ColorKey{"red"},
-		Guesses: [][]schedule.ColorKey{{"pink"}}, Status: PrudlePlaying, Misses: 0.5, Turns: 1, CreatedAt: now}
+		Guesses: [][]schedule.ColorKey{{"pink"}}, Status: PrudlePlaying, CreatedAt: now}
 	if err := s.SavePrudleGame(ctx, g); err != nil {
 		t.Fatal(err)
 	}
 	g.Guesses = append(g.Guesses, []schedule.ColorKey{"red"})
-	g.Status, g.Turns, g.FinishedAt = PrudleWon, 2, now.Add(time.Minute)
+	g.Status, g.FinishedAt = PrudleWon, now.Add(time.Minute)
 	g.Answer = []schedule.ColorKey{"blue"} // the answer is kept from the first save
 	if err := s.SavePrudleGame(ctx, g); err != nil {
 		t.Fatal(err)

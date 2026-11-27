@@ -17,23 +17,6 @@ func newTest(t *testing.T) *Store {
 	return s
 }
 
-func TestMeta(t *testing.T) {
-	ctx := context.Background()
-	s := newTest(t)
-	if v, err := s.Meta(ctx, "missing"); err != nil || v != "" {
-		t.Fatalf("missing = %q, %v", v, err)
-	}
-	if err := s.SetMeta(ctx, "k", "a"); err != nil {
-		t.Fatal(err)
-	}
-	if err := s.SetMeta(ctx, "k", "b"); err != nil {
-		t.Fatal(err)
-	}
-	if v, _ := s.Meta(ctx, "k"); v != "b" {
-		t.Fatalf("k = %q, want b", v)
-	}
-}
-
 func TestMigrateTwice(t *testing.T) {
 	ctx := context.Background()
 	file := filepath.Join(t.TempDir(), "p.db")
@@ -42,8 +25,9 @@ func TestMigrateTwice(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := s.SetMeta(ctx, "k", "v"); err != nil {
-			t.Fatal(err)
+		var n int
+		if err := s.DB.QueryRowContext(ctx, `select count(*) from migrations`).Scan(&n); err != nil || n != 1 {
+			t.Fatalf("migrations = %d, %v", n, err)
 		}
 		s.Close()
 	}
