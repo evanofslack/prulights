@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { Anchor, Skeleton } from "@mantine/core";
-import { IconChevronRight, IconExternalLink } from "@tabler/icons-react";
+import { Skeleton } from "@mantine/core";
+import { IconChevronRight } from "@tabler/icons-react";
 import type { Lighting } from "@/interfaces/schedule";
 import { bandsOf, usePalette } from "@/lib/palette";
 import { colorNames, dayOfMonth, longDate, relativeName, shortDate, weekdayAbbr } from "@/lib/format";
 import { useSky } from "@/lib/sky";
 import { HIDDEN, HIDDEN_NAME, usePrudle } from "@/lib/blackout";
 import { Crown, Tower } from "./Tower";
+import { CauseLink } from "./CauseLink";
 
 // the tower scene's box, the drawing's own shape (480×760, see Tower) so nothing is
 // cut off: full width on a phone, and on a computer as tall as the window
@@ -76,26 +77,7 @@ export function Night({ lighting: l, tonight, publishedThrough, children }: Nigh
                 )}
                 {l.scheduled ? (
                     <p className="text-2xl leading-snug">
-                        for{" "}
-                        {l.cause_url ? (
-                            <Anchor
-                                href={l.cause_url}
-                                target="_blank"
-                                rel="noopener"
-                                c="var(--color-fg)"
-                                underline="always"
-                                inherit
-                            >
-                                {l.cause}
-                                <IconExternalLink
-                                    size={18}
-                                    className="ml-1 inline align-baseline text-muted"
-                                    aria-hidden
-                                />
-                            </Anchor>
-                        ) : (
-                            l.cause
-                        )}
+                        for <CauseLink cause={l.cause} url={hidden ? undefined : l.cause_url} size={18} />
                     </p>
                 ) : (
                     <p className="text-xl text-muted">
@@ -144,41 +126,48 @@ export function Upcoming({ nights, tonight }: { nights: Lighting[]; tonight?: st
                 const end = run[run.length - 1];
                 const masked = hidden(l.date);
                 return (
-                    <li key={l.date}>
+                    <li
+                        key={l.date}
+                        className="relative flex items-center gap-3 px-4 py-3 transition-colors hover:bg-raised sm:gap-4"
+                    >
+                        {/* the whole row opens the night; the cause's own link sits above it */}
                         <Link
                             href={masked ? "/#prudle" : `/night?d=${l.date}`}
-                            className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-raised sm:gap-4"
-                        >
-                            <Crown
-                                bands={masked ? HIDDEN : bandsOf(l.colors, palette)}
-                                className="h-11 w-11"
-                            />
-                            <span className="w-28 shrink-0 whitespace-nowrap">
-                                <span className="block font-bold">
-                                    {run.length > 1
-                                        ? `${dayName(l.date)}–${weekdayAbbr(end.date)}`
-                                        : dayName(l.date)}
-                                </span>
-                                <span className="block text-sm text-muted">
-                                    {run.length > 1
-                                        ? `${shortDate(l.date)}–${
-                                              l.date.slice(0, 7) === end.date.slice(0, 7)
-                                                  ? dayOfMonth(end.date)
-                                                  : shortDate(end.date)
-                                          }`
-                                        : shortDate(l.date)}
-                                </span>
+                            aria-label={`${longDate(l.date)}: ${masked ? HIDDEN_NAME : colorNames(l.colors, palette)}`}
+                            className="absolute inset-0"
+                        />
+                        <Crown bands={masked ? HIDDEN : bandsOf(l.colors, palette)} className="h-11 w-11" />
+                        <span className="w-28 shrink-0 whitespace-nowrap">
+                            <span className="block font-bold">
+                                {run.length > 1
+                                    ? `${dayName(l.date)}–${weekdayAbbr(end.date)}`
+                                    : dayName(l.date)}
                             </span>
-                            <span className="min-w-0 flex-1">
-                                <span className="block truncate text-lg">
-                                    {masked ? HIDDEN_NAME : colorNames(l.colors, palette)}
-                                </span>
-                                <span className="line-clamp-2 text-muted">
-                                    {masked ? "Hidden by Prudle" : l.scheduled ? l.cause : "Plain white"}
-                                </span>
+                            <span className="block text-sm text-muted">
+                                {run.length > 1
+                                    ? `${shortDate(l.date)}–${
+                                          l.date.slice(0, 7) === end.date.slice(0, 7)
+                                              ? dayOfMonth(end.date)
+                                              : shortDate(end.date)
+                                      }`
+                                    : shortDate(l.date)}
                             </span>
-                            <IconChevronRight size={18} className="-mr-1 shrink-0 text-subtle" aria-hidden />
-                        </Link>
+                        </span>
+                        <span className="min-w-0 flex-1">
+                            <span className="block truncate text-lg">
+                                {masked ? HIDDEN_NAME : colorNames(l.colors, palette)}
+                            </span>
+                            <span className="line-clamp-2 text-muted">
+                                {masked ? (
+                                    "Hidden by Prudle"
+                                ) : l.scheduled ? (
+                                    <CauseLink cause={l.cause} url={l.cause_url} className="relative z-10" />
+                                ) : (
+                                    "Plain white"
+                                )}
+                            </span>
+                        </span>
+                        <IconChevronRight size={18} className="-mr-1 shrink-0 text-subtle" aria-hidden />
                     </li>
                 );
             })}
