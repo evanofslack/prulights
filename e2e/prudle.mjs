@@ -60,7 +60,7 @@ await wren.click(btn("Guess 2 colors"));
 await wren.waitForSelector('[aria-live=polite] >> text=Close');
 check("a guess with an extra color doesn't win", await wren.locator("text=Fewer than 2 colors tonight.").isVisible());
 check("pink is close to red", await wren.locator('button[aria-label="Pink: Close"]').isVisible());
-check("a guess is a try", await wren.locator("text=1/6").isVisible());
+check("a guess is a try", await wren.locator("text=1/6 guesses").isVisible());
 await wren.click(btn("Guess 1 color"));
 await wren.waitForSelector("text=Prudle: got it in 2 guesses");
 check("solving shows tonight's colors", (await wren.locator("h1").first().textContent()).includes("Red"));

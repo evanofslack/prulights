@@ -9,12 +9,13 @@ import { api, json, useApi } from "@/lib/api";
 import { usePrudle } from "@/lib/blackout";
 import { usePalette } from "@/lib/palette";
 import { type Mark, type Turn, guessError, shareText } from "@/lib/prudle";
-import { History, PrudleBoard as Board, crown } from "./Prudle";
+import { History, MarkedSwatch, PrudleBoard as Board, WORD, crown } from "./Prudle";
 
 // Prudle on the home page, December only. PrudleBoard is tonight's game, in
 // the place of tonight's colors until it's over; the server grades each guess
 // and never sends the answer before then. PrudleResult, PrudleSection (your
 // wins and streak, and how the family did tonight) and PrudleSignIn come after.
+// Outside December, PracticeCard leads to /prudle.
 
 // a guess, or {} to pass
 const post = <T,>(path: string, body: PrudleGuess | Record<string, never>) =>
@@ -74,6 +75,7 @@ function Game({ initial, palette }: { initial: PrudleState; palette: Map<ColorKe
     return (
         <section id="prudle" aria-label="Tonight's Prudle" className="scroll-mt-4">
             <Board
+                scene
                 date={st.date}
                 label="Tonight's Prudle"
                 cause={st.cause}
@@ -225,5 +227,51 @@ export function PrudleSignIn() {
                 Sign in to play
             </Button>
         </div>
+    );
+}
+
+// PracticeCard leads to practice on past nights, outside December. It shows
+// the game instead of naming it: three colors marked the way the board marks
+// them (on, close, off), and a tilted "Play now!" sticker on its corner.
+const SAMPLE: [ColorKey, Mark][] = [
+    ["red", "hit"],
+    ["pink", "close"],
+    ["blue", "miss"],
+];
+
+export function PracticeCard() {
+    const palette = usePalette();
+    return (
+        <Link
+            href="/prudle"
+            className="relative mt-3 flex items-center justify-between gap-4 rounded-xl bg-panel px-4 py-4 hover:bg-raised"
+        >
+            <span className="sticker absolute -top-4 right-3 rounded-lg bg-pop px-3 py-1 text-base font-extrabold text-on-pop shadow-lg ring-2 ring-surface">
+                Play now!
+            </span>
+            <span className="flex min-w-0 flex-col gap-2">
+                <span className="text-2xl font-bold">Prudle</span>
+                <span className="text-lg text-muted">
+                    Guess the tower&apos;s colors from the night&apos;s cause.
+                </span>
+                {palette && (
+                    <span className="flex flex-wrap items-center gap-x-4 gap-y-1" aria-hidden>
+                        {SAMPLE.map(([k, m]) => {
+                            const c = palette.get(k);
+                            if (!c) return null;
+                            return (
+                                <span key={k} className="inline-flex items-center gap-1.5 text-muted">
+                                    <MarkedSwatch c={c} palette={palette} mark={m} className="h-7 w-7" />
+                                    {WORD[m]}
+                                </span>
+                            );
+                        })}
+                    </span>
+                )}
+            </span>
+            <span className="text-3xl text-muted" aria-hidden>
+                ›
+            </span>
+        </Link>
     );
 }
