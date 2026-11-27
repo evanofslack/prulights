@@ -30,17 +30,19 @@ function NightPage() {
                 component={Link}
                 href={`/night?d=${addDays(d, -1)}`}
                 variant="default"
+                size="md"
                 leftSection={<IconChevronLeft size={18} />}
             >
                 {shortDate(addDays(d, -1))}
             </Button>
-            <Button component={Link} href="/" variant="subtle">
+            <Button component={Link} href="/" variant="default" size="md">
                 Tonight
             </Button>
             <Button
                 component={Link}
                 href={`/night?d=${addDays(d, 1)}`}
                 variant="default"
+                size="md"
                 rightSection={<IconChevronRight size={18} />}
             >
                 {shortDate(addDays(d, 1))}

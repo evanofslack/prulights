@@ -11,7 +11,8 @@ import {
     GRID,
     byMark,
     canPick,
-    countMark,
+    countWords,
+    marksLabel,
     countText,
     glyphs,
     known,
@@ -95,11 +96,11 @@ export function PrudleBoard(p: BoardProps) {
     const g = { on: p.on, out: p.out, won: p.over };
     return (
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-8">
-            <div className="relative overflow-hidden rounded-2xl shadow-lg sm:sticky sm:top-4 sm:w-[42%] sm:shrink-0">
+            <div className="relative overflow-hidden rounded-2xl shadow-lg sm:sticky sm:top-4 sm:shrink-0">
                 <Tower
                     bands={p.bands}
                     night={p.date}
-                    className="block h-[34dvh] min-h-[220px] w-full sm:h-[64dvh] sm:max-h-[620px] sm:min-h-[420px]"
+                    className="block h-[34dvh] min-h-[220px] w-full sm:h-[clamp(420px,64dvh,620px)] sm:w-[calc(clamp(420px,64dvh,620px)*480/760)]"
                     title={
                         p.over ? "The Prudential Tower" : "The Prudential Tower, its colors still to guess"
                     }
@@ -333,12 +334,14 @@ function LastGuess({ turn, palette }: { turn: Turn; palette: Map<ColorKey, Color
 // History is the guesses as glyph rows with their count.
 export function History({ turns }: { turns: Turn[] }) {
     return (
-        <ol className="flex flex-col gap-0.5 rounded-xl bg-panel px-3 py-2 font-mono text-sm">
+        <ol className="flex flex-col gap-1 text-base">
             {turns.map((t, i) => (
                 <li key={i} className="flex items-center gap-3">
-                    <span className="w-4 text-muted">{i + 1}</span>
-                    <span className="tracking-widest">{glyphs(t)}</span>
-                    <span className="ml-auto text-muted">{countMark(t)}</span>
+                    <span className="w-16 shrink-0 text-muted">Guess {i + 1}</span>
+                    <span className="font-mono text-xl tracking-widest" aria-label={marksLabel(t)}>
+                        {glyphs(t)}
+                    </span>
+                    <span className="ml-auto text-muted">{countWords(t)}</span>
                 </li>
             ))}
         </ol>

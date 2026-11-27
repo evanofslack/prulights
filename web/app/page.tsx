@@ -17,6 +17,7 @@ import { inSeason, usePrudle } from "@/lib/blackout";
 // / is the whole site on one page: tonight, the week, signed in your nights,
 // and the month. Each section loads on its own. In December, signed in,
 // tonight is a Prudle until it's played: the game stands in for its colors.
+// On a phone it's one column; on a computer the calendar sits beside the rest.
 export default function HomePage() {
     // re-check every 10 minutes, so a page left open rolls over to the next night
     const { data, error, reload } = useApi<TonightResponse>("/tonight", 10 * 60_000);
@@ -34,7 +35,7 @@ export default function HomePage() {
         document.getElementById(location.hash.slice(1))?.scrollIntoView();
     }, [ready]);
     return (
-        <Shell>
+        <Shell wide>
             {error && !data && <ErrorNote error={error} retry={reload} />}
             {!data && !error && <NightSkeleton />}
             {data && (
@@ -56,16 +57,33 @@ export default function HomePage() {
                             <SawIt date={data.date} tonight={data.date} />
                         </Night>
                     )}
-                    <section id="week" aria-label="This week" className="flex scroll-mt-4 flex-col gap-4">
-                        <h2 className="text-2xl font-bold">This week</h2>
-                        <Upcoming nights={data.upcoming} tonight={data.date} />
-                    </section>
-                    {me && <PrudleSection tonight={data.date} />}
-                    <MyNights />
-                    <Lately tonight={data.date} />
-                    <Suspense fallback={<Skeleton height={480} radius="lg" />}>
-                        <Month tonight={data.date} />
-                    </Suspense>
+                    {/* on a computer: the week over the calendar on the left, your
+                        side (Prudle, your nights, lately) on the right. Signed out
+                        there's no right side, so the calendar takes it. */}
+                    <div className="flex flex-col gap-12 lg:grid lg:grid-cols-2 lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-10">
+                        <section
+                            id="week"
+                            aria-label="This week"
+                            className="flex min-w-0 scroll-mt-4 flex-col gap-4 lg:col-start-1 lg:row-start-1"
+                        >
+                            <h2 className="text-2xl font-bold">This week</h2>
+                            <Upcoming nights={data.upcoming} tonight={data.date} />
+                        </section>
+                        {me && (
+                            <div className="flex min-w-0 flex-col gap-12 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+                                <PrudleSection tonight={data.date} />
+                                <MyNights />
+                                <Lately tonight={data.date} />
+                            </div>
+                        )}
+                        <div
+                            className={`min-w-0 ${me ? "lg:col-start-1 lg:row-start-2" : "lg:col-start-2 lg:row-span-2 lg:row-start-1"}`}
+                        >
+                            <Suspense fallback={<Skeleton height={480} radius="lg" />}>
+                                <Month tonight={data.date} />
+                            </Suspense>
+                        </div>
+                    </div>
                 </div>
             )}
         </Shell>

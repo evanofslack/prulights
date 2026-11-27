@@ -4,6 +4,10 @@ import { createTheme, type CSSVariablesResolver, type MantineColorsTuple } from 
 // Two looks: the night sky (deep ink-indigo page, soft white text, a candle-gold
 // accent like the lit crown) and paper (warm grey-white, ink text, brass), the
 // way the e-ink frame looks by day. Both are kept a little muted.
+//
+// Buttons: one main action per screen, a filled size="lg" Button, full width on
+// a phone (w-full sm:w-auto). Everything else is variant="default" or a quiet
+// text button at least 44px tall (min-h-11).
 
 // dark slots Mantine uses: 0 text, 2 dimmed, 4 borders, 5 hover, 6 default
 // buttons and inputs, 7 the page, 8 panels, 9 deepest

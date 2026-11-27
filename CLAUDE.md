@@ -73,13 +73,16 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   swatches and crowns go through `soft()` (`lib/palette.tsx`, `--soften`); the api keeps the true colors.
   Plain white nights get no swatch on the calendar. Keep colors muted.
 - The main user is an older reader on a phone: large type, high contrast, one obvious main action per
-  screen, big tap targets.
+  screen, big tap targets. The smallest text is 14px (`--text-xs`/`--text-sm` are raised in `index.css`). The main
+  action is a filled `size="lg"` Button, full width on a phone; take-backs are quiet 44px text buttons kept away
+  from it. Same components and order on both sizes: one column under `lg`, wider layouts at `lg:`.
 
 ## Conventions
 - Commits: short, lowercase, imperative, 3–5 words ("add scraper parsers").
 - PRs: 4–6 word titles, 1–2 sentence descriptions. Work goes up as a `gh stack`.
 - Credit prudentialcenter.com as the source; keep the "not affiliated" credit (the footer's info
-  popover; the footer is one right-aligned row of icons: full screen, API docs, GitHub, info). The web tower
+  popover; the footer is one right-aligned row of icons: full screen, API docs, GitHub, info, with words beside
+  the first three on a computer). The web tower
   (`components/Tower.tsx`, same geometry as `render/art.go`) shows the PRUDENTIAL letters on the
   crown as they are on the building; the frame leaves them out (too small). No Prudential logos.
 - The web tower is a sharp svg with a printed look, not the frame's dither (`lib/print.ts`): flat colors
@@ -91,7 +94,10 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   its own windows. The red beacons blink in their own svg layer (`.beacon`), so blinking never repaints the scene.
 - Web pages: `/` is the whole site on one page, in sections: tonight, `#week`, `#nights` (signed in only,
   `MyNights.tsx`) and `#calendar` (`Month.tsx`, month in `?m=`, changed with `router.replace`, no scroll; your
-  nights get a dot, a noted one links to `/night?d=…#note`). Then `/night?d=`, `/display` (always-on, no chrome; Esc leaves),
+  nights get a dot, a noted one links to `/night?d=…#note`). On a computer (`wide`, `lg:`) it's two columns under
+  tonight: the week over the calendar on the left, Prudle, your nights and lately on the right (signed out, the
+  calendar takes the right). The tower scene is never cropped (`SCENE` in `Night.tsx` keeps 480×760). In
+  "This week", a run of white nights or of Prudle-hidden nights is one row. Then `/night?d=`, `/display` (always-on, no chrome; Esc leaves),
   `/docs` (stock Swagger UI from `swagger-ui-dist`, copied to `public/swagger` by `npm run swagger` before
   dev/build; don't bundle swagger-ui through next, its OpenAPI 3.1 support breaks), `/emulator` (frame
   previews; only when `/meta` says `dev`, settings live in the url), `/claim?code=` (a frame's setup QR
