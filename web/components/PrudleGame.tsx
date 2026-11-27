@@ -149,7 +149,7 @@ export function PrudleResult({ date }: { date: string }) {
                       ? "Prudle: out of guesses"
                       : "Prudle: you peeked"}
             </div>
-            {n > 0 && <History turns={turns} tries={data.tries} />}
+            {n > 0 && <History turns={turns} />}
             {n > 0 && (
                 <Button variant="default" size="md" className="self-start" onClick={share}>
                     {shared ? "Copied" : "Share"}

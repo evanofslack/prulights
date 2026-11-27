@@ -19,8 +19,7 @@ import {
 } from "@/lib/prudle";
 import { Tower } from "./Tower";
 
-// The Prudle board, shared by the game on / (PrudleGame.tsx) and the lab
-// (/prudle-lab). It's laid out like tonight on /: the tower on the left (on a
+// The Prudle board, played on / (PrudleGame.tsx). It's laid out like tonight on /: the tower on the left (on a
 // phone, on top) and the game beside it. The crown fills in as colors are
 // found; the count line says what the guesses said of how many; the grid is
 // small chips, a family to a row, marked on, close or off.
@@ -159,7 +158,7 @@ export function PrudleBoard(p: BoardProps) {
                             {p.aside}
                         </div>
 
-                        {p.turns.length > 1 && <History turns={p.turns} tries={p.tries} />}
+                        {p.turns.length > 1 && <History turns={p.turns} />}
                     </>
                 )}
             </div>
@@ -265,7 +264,7 @@ function Chip({
 }
 
 // Key is the marks in one line.
-export function Key() {
+function Key() {
     return (
         <span className="inline-flex items-center gap-3">
             {(["hit", "close", "miss"] as Mark[]).map((m) => (
@@ -278,10 +277,8 @@ export function Key() {
     );
 }
 
-// Tries is the guesses as dots: filled for used, then how far past the limit
-// (the lab plays on past it).
-export function Tries({ used, tries }: { used: number; tries: number }) {
-    const over = used - tries;
+// Tries is the guesses as dots: filled for used.
+function Tries({ used, tries }: { used: number; tries: number }) {
     return (
         <span
             className="flex items-center gap-1 text-sm text-muted"
@@ -290,9 +287,7 @@ export function Tries({ used, tries }: { used: number; tries: number }) {
             {Array.from({ length: tries }, (_, i) => (
                 <Light key={i} mark={i < used ? "hit" : "miss"} size={12} />
             ))}
-            <span className="ml-1 tabular-nums">
-                {over > 0 ? <span className="font-bold text-danger">{over} over</span> : `${used}/${tries}`}
-            </span>
+            <span className="ml-1 tabular-nums">{`${used}/${tries}`}</span>
         </span>
     );
 }
@@ -328,9 +323,7 @@ function LastGuess({ turn, palette }: { turn: Turn; palette: Map<ColorKey, Color
                     ? `Fewer than ${turn.size} colors tonight.`
                     : turn.count === "more"
                       ? `More than ${turn.size} ${turn.size === 1 ? "color" : "colors"} tonight.`
-                      : turn.count === "exact"
-                        ? `${turn.size} is the right number.`
-                        : `Not ${turn.size}.`}
+                      : `${turn.size} is the right number.`}
                 {turn.picks.some((p) => p.mark === "close") && " Close: another color in its row is on."}
             </p>
         </div>
@@ -338,42 +331,17 @@ function LastGuess({ turn, palette }: { turn: Turn; palette: Map<ColorKey, Color
 }
 
 // History is the guesses as glyph rows with their count.
-export function History({ turns, tries }: { turns: Turn[]; tries: number }) {
+export function History({ turns }: { turns: Turn[] }) {
     return (
         <ol className="flex flex-col gap-0.5 rounded-xl bg-panel px-3 py-2 font-mono text-sm">
             {turns.map((t, i) => (
-                <li key={i} className={`flex items-center gap-3 ${i >= tries ? "text-danger" : ""}`}>
+                <li key={i} className="flex items-center gap-3">
                     <span className="w-4 text-muted">{i + 1}</span>
                     <span className="tracking-widest">{glyphs(t)}</span>
                     <span className="ml-auto text-muted">{countMark(t)}</span>
                 </li>
             ))}
         </ol>
-    );
-}
-
-// Answer is a night's colors as named pills.
-export function Answer({ keys, palette }: { keys: ColorKey[]; palette: Map<ColorKey, Color> }) {
-    return (
-        <ul className="flex flex-wrap gap-2">
-            {keys.map((k) => {
-                const c = palette.get(k);
-                return (
-                    <li
-                        key={k}
-                        className="flex items-center gap-2 rounded-full bg-panel py-1 pr-3 pl-1 text-lg"
-                    >
-                        {c && (
-                            <span
-                                className="h-7 w-7 rounded-full border border-line"
-                                style={{ background: swatch(c, palette) }}
-                            />
-                        )}
-                        {c?.label ?? k}
-                    </li>
-                );
-            })}
-        </ul>
     );
 }
 

@@ -28,7 +28,7 @@ func rowOf(t Turn) string {
 	return fmt.Sprintf("%s %s %d", b.String(), t.Count, t.Size)
 }
 
-// TestGames plays the shared cases in testdata/games.json.
+// TestGames plays the cases in testdata/games.json.
 func TestGames(t *testing.T) {
 	raw, err := os.ReadFile("testdata/games.json")
 	if err != nil {
