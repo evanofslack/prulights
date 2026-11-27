@@ -20,7 +20,6 @@ var seedPool = []string{"Logan", "Kendall", "Roman", "Shiv", "Connor", "Tom", "G
 const (
 	seedMax    = 5
 	seedNights = 60 // how far back the seeded sightings go
-	seedWindow = 7  // the nights before tonight that can still be logged
 )
 
 var seedNotes = []string{

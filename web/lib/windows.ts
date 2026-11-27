@@ -14,7 +14,6 @@
 // Times are Boston minutes from noon on the night's date: 0 is noon, 540 is
 // 9pm, 720 midnight, 960 the 4am rollover.
 
-export const NOON = 0;
 export const NINE_PM = 540;
 const MORNING = -720; // lit since before the picture starts
 const ROLLOVER = 960;

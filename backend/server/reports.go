@@ -30,7 +30,7 @@ func (s *Server) mountAdminReports(r chi.Router) {
 // canReport is whether a night takes reports: the week before tonight (like
 // "I saw it") and every night after, since the schedule can be wrong ahead.
 func canReport(d, tonight schedule.Date) bool {
-	return d >= tonight.AddDays(-logWindow)
+	return d >= tonight.AddDays(-LogWindow)
 }
 
 // validColors checks a picked set of colors: 1 to 6 palette keys.
