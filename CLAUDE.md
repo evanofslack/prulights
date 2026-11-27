@@ -178,7 +178,7 @@ is in `plans/prulights.md`, build plan in `plans/build.md`.
   tonight's size (`PrudleBoard scene`). Easy start (default) ramps by finished games (`most`: one color for 3,
   two through 8, then any); Random is any night. Show me ends a game, Skip moves on (played, but not toward the
   ramp). Signed out is fine; the played dates, count and mode are kept in localStorage. The home page's
-  `PracticeCard` (outside December; under Your nights signed in, under This week signed out) shows the game as
+  `PracticeCard` (outside December; above Your nights signed in, under This week signed out) shows the game as
   three marked swatches (`MarkedSwatch`) with a tilted "Play now!" sticker (`.sticker`, the `pop` token, the one
   loud color). Tonight's December board is the same big scene. e2e `practice.mjs`.
 - Frame setup: an unclaimed frame's bundle is the welcome screen (`setup`, tonight + 6) plus `wifi`; a
